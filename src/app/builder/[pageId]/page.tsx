@@ -9,8 +9,8 @@ export default async function BuilderPage({
 }: {
   params: Promise<{ pageId: string }>;
 }) {
-  const user = await requireUser();
   const { pageId } = await params;
+  const user = await requireUser(`/builder/${pageId}`);
   const page = await prisma.page.findFirst({
     where: { id: pageId, userId: user.id },
   });

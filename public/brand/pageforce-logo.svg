@@ -1,0 +1,11 @@
+<svg width="640" height="160" viewBox="0 0 640 160" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Pageforce logo</title>
+  <desc id="desc">A page-shaped mark with a lightning bolt and the Pageforce wordmark.</desc>
+  <rect x="24" y="24" width="112" height="112" rx="28" fill="#0F6FA8"/>
+  <path d="M56 48.2C56 45.88 57.88 44 60.2 44H91.28L112 64.72V111.8C112 114.12 110.12 116 107.8 116H60.2C57.88 116 56 114.12 56 111.8V48.2Z" fill="#F7FBFF"/>
+  <path d="M91 44V61.5C91 63.43 92.57 65 94.5 65H112" fill="#BCEBFF"/>
+  <path d="M80.6 63.4L66 84H78.3L74.9 101.6L90.4 79.8H78.25L80.6 63.4Z" fill="#0F6FA8"/>
+  <path d="M66 56H82M66 106H86" stroke="#0F6FA8" stroke-width="5" stroke-linecap="round" opacity="0.28"/>
+  <text x="168" y="94" fill="#102B3A" font-family="Inter, Arial, sans-serif" font-size="68" font-weight="760" letter-spacing="0">Pageforce</text>
+  <text x="172" y="124" fill="#607482" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="500" letter-spacing="0">Mini landing page builder</text>
+</svg>

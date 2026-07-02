@@ -10,11 +10,11 @@ export async function getCurrentUser() {
   return user;
 }
 
-export async function requireUser() {
+export async function requireUser(nextPath?: string) {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/login");
+    redirect(nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login");
   }
 
   return user;

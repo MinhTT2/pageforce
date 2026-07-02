@@ -1,4 +1,5 @@
 import type { BlockType, PageBlock, PageSchema } from "@/types/blocks";
+import { pageSchemaValidator } from "@/lib/validators";
 
 export const emptyPageSchema: PageSchema = {
   version: 1,
@@ -62,15 +63,6 @@ export function createBlock(type: BlockType): PageBlock {
 }
 
 export function normalizePageSchema(value: unknown): PageSchema {
-  if (
-    value &&
-    typeof value === "object" &&
-    "version" in value &&
-    "blocks" in value &&
-    Array.isArray((value as PageSchema).blocks)
-  ) {
-    return value as PageSchema;
-  }
-
-  return emptyPageSchema;
+  const parsed = pageSchemaValidator.safeParse(value);
+  return parsed.success ? parsed.data : emptyPageSchema;
 }

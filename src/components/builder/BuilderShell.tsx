@@ -73,6 +73,15 @@ export function BuilderShell({ page }: BuilderShellProps) {
     });
   }
 
+  function previewPage() {
+    if (status !== "PUBLISHED") {
+      setMessage("Publish this page before opening the public preview.");
+      return;
+    }
+
+    window.open(`/p/${slug}`, "_blank");
+  }
+
   async function savePage() {
     setSaving(true);
     setMessage("");
@@ -82,9 +91,10 @@ export function BuilderShell({ page }: BuilderShellProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, slug, status, schema }),
     });
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
 
     setSaving(false);
-    setMessage(response.ok ? "Saved" : "Could not save page");
+    setMessage(response.ok ? "Saved" : payload?.error ?? "Could not save page");
   }
 
   return (
@@ -104,9 +114,9 @@ export function BuilderShell({ page }: BuilderShellProps) {
         </div>
         <div className="flex items-center gap-2">
           {message ? <span className="text-sm text-zinc-500">{message}</span> : null}
-          <Button variant="secondary" onClick={() => window.open(`/p/${slug}`, "_blank")}>
+          <Button variant="secondary" onClick={previewPage}>
             <Eye size={16} />
-            Preview
+            {status === "PUBLISHED" ? "Public preview" : "Draft"}
           </Button>
           <Button onClick={savePage} disabled={saving}>
             <Save size={16} />

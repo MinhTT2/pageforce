@@ -41,7 +41,16 @@ export async function PATCH(
   const parsed = pagePatchValidator.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 422 });
+    return NextResponse.json(
+      {
+        error: "Invalid payload",
+        details: parsed.error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 422 },
+    );
   }
 
   const page = await prisma.page.findFirst({

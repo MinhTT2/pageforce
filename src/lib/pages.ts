@@ -10,6 +10,7 @@ export function toPageSummary(page: {
   title: string;
   slug: string;
   status: PageStatus;
+  publishedAt: Date | null;
   updatedAt: Date;
 }): PageSummary {
   return {
@@ -17,6 +18,7 @@ export function toPageSummary(page: {
     title: page.title,
     slug: page.slug,
     status: page.status,
+    publishedAt: page.publishedAt?.toISOString() ?? null,
     updatedAt: page.updatedAt.toISOString(),
   };
 }
@@ -26,26 +28,38 @@ export function toEditablePage(page: {
   title: string;
   slug: string;
   status: PageStatus;
+  publishedAt: Date | null;
   updatedAt: Date;
-  schema: Prisma.JsonValue;
+  draftSchema: Prisma.JsonValue;
 }): EditablePage {
   return {
     ...toPageSummary(page),
-    schema: normalizePageSchema(page.schema),
+    draftSchema: normalizePageSchema(page.draftSchema),
   };
 }
 
-export async function createPageForUser(userId: string, title = "Untitled page") {
+export async function getPageForUser(userId: string) {
+  return prisma.page.findUnique({
+    where: { userId },
+  });
+}
+
+export async function getOrCreatePageForUser(userId: string, title = "Untitled page") {
+  const existingPage = await prisma.page.findUnique({
+    where: { userId },
+  });
+
+  if (existingPage) {
+    return { page: existingPage, created: false };
+  }
+
   const slug = await createUniqueSlug(fallbackSlug(title));
 
-  return prisma.page.create({
-    data: {
-      userId,
-      title,
-      slug,
-      schema: emptyPageSchema,
-    },
+  const page = await prisma.page.create({
+    data: { userId, title, slug, draftSchema: emptyPageSchema },
   });
+
+  return { page, created: true };
 }
 
 export async function createUniqueSlug(base: string, currentPageId?: string) {

@@ -10,7 +10,9 @@ This file is the source of truth for agents working in this repository. Read it 
 
 ## Project Overview
 
-Pageforce is a Mini Web Builder SaaS MVP. Users register, create landing pages, compose pages from JSON-backed blocks, publish pages, and view published pages at `/p/[slug]`.
+Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, get one landing page, compose it from JSON-backed blocks, publish it, and view the published page at `/p/[slug]`.
+
+Each Supabase Auth user owns at most one `Page` record for the MVP.
 
 ## Stack
 
@@ -23,13 +25,30 @@ Pageforce is a Mini Web Builder SaaS MVP. Users register, create landing pages, 
 - Prisma 6 for app data access.
 - Vercel for deployment.
 
+## Environments
+
+- Local/dev uses the `pageforge-dev` Supabase project.
+- Vercel Production uses the `pageforge-prod` Supabase project.
+- Keep local `.env` pointed at `pageforge-dev` and set `PAGEFORGE_ENV="development"`.
+- Vercel Production must set `PAGEFORGE_ENV="production"` and use `pageforge-prod` database/auth values.
+- Do not point local `.env`, local Prisma commands, or local browser testing at the production Supabase project.
+- Required environment variables:
+  - `PAGEFORGE_ENV`
+  - `DATABASE_URL`
+  - `DIRECT_URL`
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
 ## Architecture Rules
 
 - Supabase Auth is the user source of truth. Users live in Supabase `auth.users`.
 - Do not create a Prisma `User` model for the MVP.
 - App data lives in Prisma models, currently `Page`.
-- `Page.userId` stores the Supabase Auth user id.
-- Public pages render from JSON schemas stored in `Page.schema`.
+- `Page.userId` stores the Supabase Auth user id and is unique for the MVP.
+- `Page.draftSchema` stores the builder draft.
+- `Page.publishedSchema` stores the public snapshot.
+- Publishing copies `draftSchema` to `publishedSchema`, sets `status = PUBLISHED`, and stamps `publishedAt`.
+- Public pages render from `Page.publishedSchema`, never directly from `draftSchema`.
 - Keep shared block rendering logic reusable between builder preview and public render.
 
 ## Auth Rules
@@ -37,8 +56,16 @@ Pageforce is a Mini Web Builder SaaS MVP. Users register, create landing pages, 
 - Use Supabase SSR helpers from `src/lib/supabase`.
 - Guard `/dashboard` and `/builder` routes.
 - Public route `/p/[slug]` must not require auth.
-- Public route `/p/[slug]` only renders pages with `status = PUBLISHED`.
+- Public route `/p/[slug]` only renders pages with `status = PUBLISHED` and a non-null `publishedSchema`.
 - API routes that mutate or read private data must get the current Supabase user and enforce ownership with `userId`.
+
+## Page API Rules
+
+- `POST /api/pages` must reuse the current user's existing page if one exists.
+- `PATCH /api/pages/[pageId]` saves draft metadata/content only: title, slug, and `draftSchema`.
+- `PATCH /api/pages/[pageId]` must not publish and must not trust client-sent status changes.
+- `POST /api/pages/[pageId]/publish` is the only publish path.
+- Delete, update, get, and publish operations must enforce `Page.userId = current Supabase user id`.
 
 ## Builder Rules
 
@@ -49,6 +76,8 @@ Pageforce is a Mini Web Builder SaaS MVP. Users register, create landing pages, 
   - validation in `src/lib/validators.ts`;
   - rendering support in `src/components/blocks/BlockRenderer.tsx`;
   - editing controls in the builder UI.
+- Builder preview edits `draftSchema`.
+- Public render uses `publishedSchema`.
 - MVP reorder uses up/down buttons. Do not add drag-and-drop unless requested.
 - MVP images use URLs. Do not add uploads unless requested.
 
@@ -57,15 +86,19 @@ Pageforce is a Mini Web Builder SaaS MVP. Users register, create landing pages, 
 - Prefer shadcn/ui components from `src/components/ui`.
 - If a needed shadcn component is missing, add it with the shadcn CLI instead of hand-rolling a different design system.
 - Use lucide-react icons for icon buttons and common actions.
-- Keep the builder workflow-first: dashboard, page list, editor, and publish flow matter more than marketing sections.
+- Keep the builder workflow-first: dashboard, single landing page management, editor, and publish flow matter more than marketing sections.
 - Builder is desktop-first for the MVP. Mobile should not be badly broken, but breakpoint editing is out of scope.
+- Design system primitives live in `src/components/ui`; prefer semantic tokens from `src/app/globals.css` over hard-coded color scales for shared UI.
 
 ## Quality Gates
 
 - Run `npm run lint` after code changes.
 - Run `npm run build` before handing off substantial changes.
+- Run `npm run test` for substantial logic, validator, schema, or builder changes.
 - Run `npm run prisma:generate` after Prisma schema changes.
-- If changing DB schema, create and review a Prisma migration with `npm run prisma:migrate`.
+- If changing DB schema for local/dev, create and review a Prisma migration with `npm run prisma:migrate`.
+- Production must use committed migrations with `npm run prisma:deploy`.
+- Never run `prisma migrate dev` or `npm run prisma:migrate` against production.
 - If `.env` or Supabase credentials are missing, report the blocker clearly instead of faking database verification.
 
 ## Prompt Best Practices
@@ -82,12 +115,17 @@ When changing builder features, update the type, validator, renderer, editor, an
 
 When changing auth or database behavior, never query users through Prisma. Get users from Supabase session helpers and enforce `Page.userId` ownership.
 
+When changing publish behavior, preserve the draft/public split: save updates `draftSchema`; publish copies it to `publishedSchema`; public pages render only the published snapshot.
+
+When changing Prisma schema, include the intended migration command in the handoff. For production, mention `npm run prisma:deploy`; do not imply that `migrate dev` is safe for production.
+
 When changing UI, preserve existing shadcn/Tailwind conventions and verify the main workflow in the browser when possible.
 
 When finishing, report:
 
 - main files changed;
 - checks run;
+- migration status if the database schema changed;
 - any remaining blocker, especially missing Supabase env vars or migrations.
 
 ## Recommended MCPs
@@ -110,6 +148,7 @@ Lower-priority MCPs:
 ## Do Not
 
 - Do not commit `.env` or credentials.
+- Do not commit service-role keys, access tokens, personal MCP config, or production project secrets.
 - Do not add a Prisma `User` model for the MVP.
-- Do not add drag-and-drop, uploads, templates, SEO settings, analytics, teams, custom domains, undo/redo, or breakpoint editing unless explicitly requested.
+- Do not add multi-page sites, teams, billing, analytics, custom domains, subdomains, drag-and-drop, uploads, templates, SEO settings, undo/redo, or breakpoint editing unless explicitly requested.
 - Do not replace the chosen stack without a new architecture decision.

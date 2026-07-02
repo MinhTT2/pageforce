@@ -21,6 +21,7 @@ export function CreatePageButton() {
 
     if (response.ok) {
       router.push(`/builder/${page.id}`);
+      router.refresh();
     }
   }
 

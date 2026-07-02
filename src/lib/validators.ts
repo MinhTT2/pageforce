@@ -51,9 +51,10 @@ export const pageSchemaValidator = z.object({
   ),
 });
 
-export const pagePatchValidator = z.object({
-  title: z.string().min(1).max(120).optional(),
-  slug: z.string().min(1).max(80).optional(),
-  status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
-  schema: pageSchemaValidator.optional(),
-});
+export const pagePatchValidator = z
+  .object({
+    title: z.string().min(1).max(120).optional(),
+    slug: z.string().min(1).max(80).optional(),
+    draftSchema: pageSchemaValidator.optional(),
+  })
+  .strict();

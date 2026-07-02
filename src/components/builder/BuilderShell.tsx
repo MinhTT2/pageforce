@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Eye, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, Rocket, Save, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { blockLabels, createBlock } from "@/lib/blocks";
 import { slugify } from "@/lib/slug";
 import type { BlockType, PageBlock, PageSchema } from "@/types/blocks";
-import type { EditablePage, PageStatus } from "@/types/page";
+import type { EditablePage } from "@/types/page";
 
 type BuilderShellProps = {
   page: EditablePage;
@@ -23,12 +23,13 @@ const blockTypes: BlockType[] = ["hero", "text", "image", "button"];
 export function BuilderShell({ page }: BuilderShellProps) {
   const [title, setTitle] = useState(page.title);
   const [slug, setSlug] = useState(page.slug);
-  const [status, setStatus] = useState<PageStatus>(page.status);
-  const [schema, setSchema] = useState<PageSchema>(page.schema);
+  const [status, setStatus] = useState(page.status);
+  const [schema, setSchema] = useState<PageSchema>(page.draftSchema);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
-    page.schema.blocks[0]?.id ?? null,
+    page.draftSchema.blocks[0]?.id ?? null,
   );
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
 
   const selectedBlock = useMemo(
@@ -86,15 +87,52 @@ export function BuilderShell({ page }: BuilderShellProps) {
     setSaving(true);
     setMessage("");
 
+    const { ok, payload } = await saveDraft();
+
+    setSaving(false);
+    if (ok && payload?.status) {
+      setStatus(payload.status);
+    }
+    setMessage(ok ? "Saved" : payload?.error ?? "Could not save page");
+  }
+
+  async function publishPage() {
+    setPublishing(true);
+    setMessage("");
+
+    const draft = await saveDraft();
+
+    if (!draft.ok) {
+      setPublishing(false);
+      setMessage(draft.payload?.error ?? "Could not save page before publishing");
+      return;
+    }
+
+    const response = await fetch(`/api/pages/${page.id}/publish`, {
+      method: "POST",
+    });
+    const payload = (await response.json().catch(() => null)) as
+      | { error?: string; status?: typeof status }
+      | null;
+
+    setPublishing(false);
+    if (response.ok && payload?.status) {
+      setStatus(payload.status);
+    }
+    setMessage(response.ok ? "Published" : payload?.error ?? "Could not publish page");
+  }
+
+  async function saveDraft() {
     const response = await fetch(`/api/pages/${page.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, slug, status, schema }),
+      body: JSON.stringify({ title, slug, draftSchema: schema }),
     });
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    const payload = (await response.json().catch(() => null)) as
+      | { error?: string; status?: typeof status }
+      | null;
 
-    setSaving(false);
-    setMessage(response.ok ? "Saved" : payload?.error ?? "Could not save page");
+    return { ok: response.ok, payload };
   }
 
   return (
@@ -118,6 +156,10 @@ export function BuilderShell({ page }: BuilderShellProps) {
             <Eye size={16} />
             {status === "PUBLISHED" ? "Public preview" : "Draft"}
           </Button>
+          <Button variant="secondary" onClick={publishPage} disabled={publishing}>
+            <Rocket size={16} />
+            {publishing ? "Publishing..." : "Publish"}
+          </Button>
           <Button onClick={savePage} disabled={saving}>
             <Save size={16} />
             {saving ? "Saving..." : "Save"}
@@ -137,11 +179,9 @@ export function BuilderShell({ page }: BuilderShellProps) {
           <div className="mt-8 space-y-3">
             <label className="text-sm font-medium text-zinc-700">Slug</label>
             <Input value={slug} onChange={(event) => setSlug(slugify(event.target.value))} />
-            <label className="text-sm font-medium text-zinc-700">Status</label>
-            <Select value={status} onChange={(event) => setStatus(event.target.value as PageStatus)}>
-              <option value="DRAFT">Draft</option>
-              <option value="PUBLISHED">Published</option>
-            </Select>
+            <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
+              Status: {status.toLowerCase()}
+            </div>
           </div>
         </aside>
         <section className="overflow-auto p-6">

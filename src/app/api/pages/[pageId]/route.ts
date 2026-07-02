@@ -68,8 +68,7 @@ export async function PATCH(
     data: {
       ...(data.title ? { title: data.title } : {}),
       ...(data.slug ? { slug: await createUniqueSlug(data.slug, pageId) } : {}),
-      ...(data.status ? { status: data.status } : {}),
-      ...(data.schema ? { schema: schemaToJson(data.schema) } : {}),
+      ...(data.draftSchema ? { draftSchema: schemaToJson(data.draftSchema) } : {}),
     },
   });
 

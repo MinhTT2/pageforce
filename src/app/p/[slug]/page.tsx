@@ -13,13 +13,13 @@ export default async function PublicPage({
     where: { slug, status: "PUBLISHED" },
   });
 
-  if (!page) {
+  if (!page || !page.publishedSchema) {
     notFound();
   }
 
   return (
     <main className="min-h-screen bg-white">
-      <BlockRenderer schema={normalizePageSchema(page.schema)} />
+      <BlockRenderer schema={normalizePageSchema(page.publishedSchema)} />
     </main>
   );
 }

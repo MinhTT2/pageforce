@@ -27,15 +27,14 @@ describe("pagePatchValidator", () => {
     const result = pagePatchValidator.safeParse({
       title: "Landing page",
       slug: "landing-page",
-      status: "PUBLISHED",
-      schema: { version: 1, blocks: [createBlock("text")] },
+      draftSchema: { version: 1, blocks: [createBlock("text")] },
     });
 
     expect(result.success).toBe(true);
   });
 
-  it("rejects invalid status values", () => {
-    const result = pagePatchValidator.safeParse({ status: "ARCHIVED" });
+  it("rejects status updates outside the publish endpoint", () => {
+    const result = pagePatchValidator.safeParse({ status: "PUBLISHED" });
 
     expect(result.success).toBe(false);
   });

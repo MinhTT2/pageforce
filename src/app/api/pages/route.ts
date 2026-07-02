@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { createPageForUser, toPageSummary } from "@/lib/pages";
-import { prisma } from "@/lib/prisma";
+import { getOrCreatePageForUser, getPageForUser, toPageSummary } from "@/lib/pages";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -10,12 +9,9 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const pages = await prisma.page.findMany({
-    where: { userId: user.id },
-    orderBy: { updatedAt: "desc" },
-  });
+  const page = await getPageForUser(user.id);
 
-  return NextResponse.json(pages.map(toPageSummary));
+  return NextResponse.json(page ? [toPageSummary(page)] : []);
 }
 
 export async function POST(request: Request) {
@@ -26,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const page = await createPageForUser(user.id, body.title);
+  const { page, created } = await getOrCreatePageForUser(user.id, body.title);
 
-  return NextResponse.json(toPageSummary(page), { status: 201 });
+  return NextResponse.json(toPageSummary(page), { status: created ? 201 : 200 });
 }

@@ -7,9 +7,10 @@ export type PageSummary = {
   title: string;
   slug: string;
   status: PageStatus;
+  publishedAt: string | null;
   updatedAt: string;
 };
 
 export type EditablePage = PageSummary & {
-  schema: PageSchema;
+  draftSchema: PageSchema;
 };

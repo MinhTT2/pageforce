@@ -1,6 +1,6 @@
 # Dev Workflow
 
-This project uses one Supabase project for dev/preview and a separate Supabase project for production.
+This project uses a Supabase dev project for local development and a separate Supabase production project for real data.
 
 ## Daily Development
 
@@ -10,7 +10,7 @@ npm run prisma:generate
 npm run dev
 ```
 
-Use `.env` for local development and point it at the Supabase dev project.
+Use root `.env` for local development and point it at the `pageforge-dev` Supabase project. Keep `PAGEFORGE_ENV="development"` locally so Prisma guard scripts can refuse production-unsafe commands.
 
 ## Quality Checks
 
@@ -34,18 +34,19 @@ npm run test:e2e
 
 ## Database Environments
 
-- Local development: Supabase dev project.
-- Vercel Preview: Supabase dev project.
-- Vercel Production: Supabase production project.
+- Local development: `pageforge-dev` Supabase project.
+- Vercel Preview: no dedicated database for now; either leave disabled or point at dev intentionally.
+- Vercel Production: `pageforge-prod` Supabase project.
 
 Required variables for each environment:
 
+- `PAGEFORGE_ENV`
 - `DATABASE_URL`
 - `DIRECT_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-Treat the existing project `orwnkmrohrmpsuabuyvy` as dev unless you explicitly promote it to production.
+Use `PAGEFORGE_ENV=development` for local/dev, `PAGEFORGE_ENV=preview` for preview if configured, and `PAGEFORGE_ENV=production` only in Vercel Production.
 
 ## Prisma Migrations
 
@@ -55,13 +56,23 @@ Create and apply local/dev migrations with:
 npm run prisma:migrate
 ```
 
+This command is guarded and will fail if `PAGEFORGE_ENV=production`.
+
 Apply committed migrations to production with:
 
 ```bash
 npm run prisma:deploy
 ```
 
-Do not run `prisma migrate dev` against production.
+Do not run `prisma migrate dev` or `npm run prisma:migrate` against production.
+
+## First Production Setup
+
+- Create a fresh `pageforge-prod` Supabase project.
+- Add the production Supabase values to Vercel Production env.
+- Set `PAGEFORGE_ENV=production` in Vercel Production.
+- Run `npm run prisma:deploy` against production during the first deploy.
+- Create a separate production user; do not reuse dev test accounts for smoke tests.
 
 ## Builder Changes
 

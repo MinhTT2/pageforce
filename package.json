@@ -12,8 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "prisma:generate": "prisma generate",
-    "prisma:deploy": "prisma migrate deploy",
-    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "node scripts/guard-prisma-env.mjs migrate-deploy && prisma migrate deploy",
+    "prisma:migrate": "node scripts/guard-prisma-env.mjs migrate-dev && prisma migrate dev",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {

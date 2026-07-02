@@ -13,14 +13,19 @@ Mini Web Builder SaaS MVP built with Next.js, TypeScript, TailwindCSS, Supabase 
 
 ## Setup
 
+Create two Supabase projects before filling env values:
+
+- `pageforge-dev` for local development and test users/pages.
+- `pageforge-prod` for Vercel Production and real data.
+
 ```bash
-cp .env.example .env
 npm install
+cp .env.example .env
 npm run prisma:generate
 npm run prisma:migrate
 ```
 
-Fill `.env` with Supabase project values before running migrations.
+Fill `.env` with the `pageforge-dev` Supabase values before running migrations. Keep `PAGEFORGE_ENV="development"` locally. Do not point local `.env` at the production Supabase project.
 
 ## Development
 
@@ -42,11 +47,18 @@ Open http://localhost:3000.
 
 ## Deploy
 
-Set these Vercel environment variables:
+Set these Vercel Production environment variables with values from `pageforge-prod`:
 
+- `PAGEFORGE_ENV=production`
 - `DATABASE_URL`
 - `DIRECT_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-Then deploy the Next.js app on Vercel.
+Then deploy the Next.js app on Vercel. Production migrations should use:
+
+```bash
+npm run prisma:deploy
+```
+
+Never run `npm run prisma:migrate` against production.

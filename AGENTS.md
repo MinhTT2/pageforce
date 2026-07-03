@@ -79,7 +79,9 @@ Each Supabase Auth user can own multiple `Page` records.
   - editing controls in the builder UI.
 - Builder edits the live page schema.
 - Public render uses the live page schema.
-- MVP reorder uses up/down buttons. Do not add drag-and-drop unless requested.
+- Blocks are added by dragging from the palette onto the canvas (with a drop-position indicator) or by clicking a palette item.
+- Reordering uses drag-and-drop (dnd-kit) via a per-block drag handle; the handle is keyboard accessible (Space/Enter to lift, arrow keys to move, Space to drop, Esc to cancel).
+- Page-wide design tokens (`settings.tokens`: colors, fonts, radius, spacing) drive rendering through `--pf-*` CSS variables; per-block `style` overrides re-scope those variables. Colors are validated hex-only — do not relax this (style-attribute injection guard).
 - MVP images use URLs. Do not add uploads unless requested.
 
 ## UI Rules
@@ -151,5 +153,5 @@ Lower-priority MCPs:
 - Do not commit `.env` or credentials.
 - Do not commit service-role keys, access tokens, personal MCP config, or production project secrets.
 - Do not add a Prisma `User` model for the MVP.
-- Do not add teams, billing, analytics, custom domains, subdomains, drag-and-drop, uploads, templates, SEO settings, undo/redo, or breakpoint editing unless explicitly requested.
+- Do not add teams, billing, analytics, custom domains, subdomains, uploads, templates, undo/redo, or breakpoint editing unless explicitly requested.
 - Do not replace the chosen stack without a new architecture decision.

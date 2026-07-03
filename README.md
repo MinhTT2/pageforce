@@ -70,9 +70,11 @@ Open http://localhost:3000.
 - Register, login, logout, guarded dashboard and builder.
 - Google sign-in through Supabase Auth.
 - Multi-page dashboard with create, list, edit title/slug, and delete.
-- Builder with sidebar, canvas preview, properties panel.
-- Four block types: Hero, Text, Image, Button.
-- Add, edit, delete, reorder blocks with buttons.
+- Builder with draggable block palette, live canvas, and tabbed inspector (Content/Style per block, Page/Design for the page).
+- Eleven block types: Hero, Text, Image, Button, Features, Testimonials, Pricing, FAQ, CTA, Lead Form, Footer.
+- Drag blocks from the palette onto the canvas, reorder with drag-and-drop (keyboard accessible), duplicate and delete per block.
+- Per-block style overrides (background, text, accent color, alignment, padding, width) on top of page-wide design tokens (brand color, fonts, radius, spacing) with three starter presets.
+- Page settings for meta title/description and slug; public pages render SEO metadata.
 - Save JSON schema to Postgres and update the public page immediately.
 - Public render for every page URL.
 

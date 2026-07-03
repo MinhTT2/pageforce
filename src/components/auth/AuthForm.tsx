@@ -14,6 +14,7 @@ type AuthFormProps = {
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const nextPath = getSafeNextPath(searchParams.get("next"));
   const [error, setError] = useState(searchParams.get("error") || "");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,7 +48,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       return;
     }
 
-    router.push("/dashboard");
+    router.push(nextPath);
     router.refresh();
   }
 
@@ -61,7 +62,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth/callback?next=/dashboard`,
+        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
       },
     });
 
@@ -72,6 +73,9 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   const isLogin = mode === "login";
+  const authLinkHref = isLogin
+    ? `/register?next=${encodeURIComponent(nextPath)}`
+    : `/login?next=${encodeURIComponent(nextPath)}`;
 
   return (
     <form
@@ -104,24 +108,25 @@ export function AuthForm({ mode }: AuthFormProps) {
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <Input name="email" type="email" placeholder="Email" required />
+        <Input name="email" type="email" placeholder="Email" required disabled={googleLoading} />
         <Input
           name="password"
           type="password"
           placeholder="Password"
           required
           minLength={6}
+          disabled={googleLoading}
         />
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {notice ? <p className="text-sm text-success">{notice}</p> : null}
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full" disabled={loading || googleLoading}>
         {loading ? "Please wait..." : isLogin ? "Log in" : "Register"}
       </Button>
       <p className="text-sm text-muted-foreground">
         {isLogin ? "No account yet?" : "Already have an account?"}{" "}
         <Link
-          href={isLogin ? "/register" : "/login"}
+          href={authLinkHref}
           className="font-medium text-foreground underline-offset-4 hover:underline"
         >
           {isLogin ? "Register" : "Log in"}
@@ -129,6 +134,14 @@ export function AuthForm({ mode }: AuthFormProps) {
       </p>
     </form>
   );
+}
+
+function getSafeNextPath(next: string | null) {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return next;
 }
 
 function GoogleIcon() {

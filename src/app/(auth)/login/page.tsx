@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { getSafeNextPath } from "@/lib/auth-routes";
 import { getCurrentUser } from "@/lib/auth";
 
 type LoginPageProps = {
@@ -29,12 +30,4 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <SiteFooter />
     </div>
   );
-}
-
-function getSafeNextPath(next: string | undefined) {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) {
-    return "/dashboard";
-  }
-
-  return next;
 }

@@ -8,7 +8,7 @@ export default function DashboardLayout({
 }>) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <SiteHeader authenticated />
+      <SiteHeader />
       <div className="flex-1">{children}</div>
       <SiteFooter />
     </div>

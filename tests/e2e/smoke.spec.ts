@@ -3,7 +3,17 @@ import { expect, test } from "@playwright/test";
 test("home page links to the dashboard", async ({ page }) => {
   await page.goto("/");
 
+  const mainNavigation = page.getByLabel("Main navigation");
+
   await expect(page.getByRole("heading", { name: "Pageforce" })).toBeVisible();
+  await expect(mainNavigation.getByRole("link", { name: "Log in" })).toHaveAttribute(
+    "href",
+    "/login?next=%2F",
+  );
+  await expect(mainNavigation.getByRole("link", { name: "Register" })).toHaveAttribute(
+    "href",
+    "/register?next=%2F",
+  );
   await expect(page.getByRole("link", { name: "Open dashboard" })).toHaveAttribute(
     "href",
     "/dashboard",
@@ -21,6 +31,15 @@ test("auth pages render", async ({ page }) => {
 test("dashboard redirects anonymous users to login", async ({ page }) => {
   await page.goto("/dashboard");
 
-  await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
+  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard$/);
   await expect(page.getByRole("heading", { name: "Log in to Pageforce" })).toBeVisible();
+});
+
+test("unsafe auth next paths fall back to the dashboard", async ({ page }) => {
+  await page.goto("/login?next=https%3A%2F%2Fevil.example");
+
+  await expect(page.locator("form").getByRole("link", { name: "Register" })).toHaveAttribute(
+    "href",
+    "/register?next=%2Fdashboard",
+  );
 });

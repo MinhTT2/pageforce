@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
+import { getSafeNextPath } from "@/lib/auth-routes";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthFormProps = {
@@ -176,14 +177,6 @@ export function AuthForm({ mode }: AuthFormProps) {
       </p>
     </form>
   );
-}
-
-function getSafeNextPath(next: string | null) {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) {
-    return "/dashboard";
-  }
-
-  return next;
 }
 
 function getAuthErrorMessage(message: string, mode: AuthFormProps["mode"]) {

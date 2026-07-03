@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { normalizePageSchema } from "@/lib/blocks";
 import { createUniqueSlug, schemaToJson, toEditablePage } from "@/lib/pages";
 import { prisma } from "@/lib/prisma";
 import { pagePatchValidator } from "@/lib/validators";
@@ -63,7 +64,7 @@ export async function PATCH(
   }
 
   const data = parsed.data;
-  const schema = data.schema ? schemaToJson(data.schema) : null;
+  const schema = data.schema ? schemaToJson(normalizePageSchema(data.schema)) : null;
   const updated = await prisma.page.update({
     where: { id: pageId },
     data: {

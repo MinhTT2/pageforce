@@ -23,6 +23,7 @@ type CreatePageDialogProps = {
 
 type CreatePageResponse = {
   error?: string;
+  id?: string;
 };
 
 export function CreatePageDialog({ defaultOpen = false, label = "New page" }: CreatePageDialogProps) {
@@ -54,6 +55,11 @@ export function CreatePageDialog({ defaultOpen = false, label = "New page" }: Cr
     }
 
     setOpen(false);
+    if (page.id) {
+      router.push(`/builder/${page.id}`);
+      return;
+    }
+
     router.refresh();
   }
 

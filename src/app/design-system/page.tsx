@@ -1,4 +1,5 @@
-import { ArrowRight, Check, ExternalLink, Save, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Check, ExternalLink, Image as ImageIcon, Save, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -165,6 +166,46 @@ export default function DesignSystemPage() {
                 </div>
                 <div className="rounded-md border border-border bg-surface p-3 text-sm">
                   Button block
+                </div>
+              </PanelContent>
+            </Panel>
+          </div>
+        </section>
+
+        <section className="grid gap-3">
+          <h2 className="text-sm font-semibold">Visual Surfaces</h2>
+          <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
+            <div className="overflow-hidden rounded-lg border border-border bg-card shadow-xs">
+              <div className="relative aspect-[16/8] bg-muted">
+                <Image
+                  src="https://images.unsplash.com/photo-1556761175-4b46a572b786?q=80&w=1400&auto=format&fit=crop"
+                  alt=""
+                  fill
+                  unoptimized
+                  sizes="(min-width: 768px) 620px, 100vw"
+                  className="object-cover"
+                />
+              </div>
+              <div className="p-4">
+                <p className="text-xs font-medium uppercase tracking-normal text-primary">
+                  Landing preview
+                </p>
+                <h3 className="mt-2 text-lg font-semibold">A real image anchors the page.</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Use photos in previews, empty states, and examples so the product feels tangible.
+                </p>
+              </div>
+            </div>
+            <Panel className="rounded-lg">
+              <PanelHeader>
+                <h3 className="text-sm font-semibold">Image fallback</h3>
+              </PanelHeader>
+              <PanelContent>
+                <div className="grid aspect-[16/10] place-items-center rounded-md border border-dashed border-border bg-surface text-muted-foreground">
+                  <div className="text-center">
+                    <ImageIcon className="mx-auto size-7" />
+                    <p className="mt-3 text-sm font-medium">Add an image URL</p>
+                  </div>
                 </div>
               </PanelContent>
             </Panel>

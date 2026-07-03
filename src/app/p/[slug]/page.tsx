@@ -10,16 +10,16 @@ export default async function PublicPage({
 }) {
   const { slug } = await params;
   const page = await prisma.page.findFirst({
-    where: { slug, status: "PUBLISHED" },
+    where: { slug },
   });
 
-  if (!page || !page.publishedSchema) {
+  if (!page) {
     notFound();
   }
 
   return (
     <main className="min-h-screen bg-white">
-      <BlockRenderer schema={normalizePageSchema(page.publishedSchema)} />
+      <BlockRenderer schema={normalizePageSchema(page.draftSchema)} />
     </main>
   );
 }

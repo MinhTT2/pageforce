@@ -40,7 +40,7 @@ export default function DesignSystemPage() {
             <p className="text-sm font-medium text-muted-foreground">Pageforce</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-normal">Design System V1</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              SaaS-minimal primitives for dashboard, builder, publishing, and page management flows.
+              SaaS-minimal primitives for dashboard, builder, and page management flows.
             </p>
           </div>
           <Badge variant="success">
@@ -72,14 +72,14 @@ export default function DesignSystemPage() {
                 Save
               </Button>
               <Button variant="secondary">
-                Publish
+                Open page
                 <ArrowRight />
               </Button>
               <Button variant="outline">
                 <ExternalLink />
                 Preview
               </Button>
-              <Button variant="ghost">Draft</Button>
+              <Button variant="ghost">URL</Button>
               <Button variant="destructive">
                 <Trash2 />
                 Delete
@@ -98,20 +98,20 @@ export default function DesignSystemPage() {
               <Field label="Page title" description="Shown in the dashboard and editor header.">
                 <Input defaultValue="Launch page" />
               </Field>
-              <Field label="Status">
-                <Select defaultValue="draft">
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
+              <Field label="Visibility">
+                <Select defaultValue="public">
+                  <option value="public">Public</option>
+                  <option value="hidden">Hidden</option>
                 </Select>
               </Field>
               <Field label="Hero copy" className="md:col-span-2">
-                <Textarea defaultValue="Build and publish landing pages from simple JSON-backed blocks." />
+                <Textarea defaultValue="Build landing pages from simple JSON-backed blocks." />
               </Field>
               <Field label="Slug" error="Use lowercase letters, numbers, and hyphens only.">
                 <Input defaultValue="Launch Page" aria-invalid />
               </Field>
               <Field label="Disabled field">
-                <Input defaultValue="Locked by publish state" disabled />
+                <Input defaultValue="Managed by page settings" disabled />
               </Field>
             </PanelContent>
           </Panel>
@@ -122,8 +122,8 @@ export default function DesignSystemPage() {
           <Panel>
             <PanelContent className="flex flex-wrap gap-2">
               <Badge>Default</Badge>
-              <Badge variant="secondary">Draft</Badge>
-              <Badge variant="success">Published</Badge>
+              <Badge variant="secondary">Saved</Badge>
+              <Badge variant="success">Live</Badge>
               <Badge variant="warning">Needs review</Badge>
               <Badge variant="destructive">Failed</Badge>
               <Badge variant="outline">Outline</Badge>

@@ -1,12 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import type { PageStatus, Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { Edit, ExternalLink, Plus, Sparkles } from "lucide-react";
 import { headers } from "next/headers";
 import { CreatePageDialog } from "@/components/dashboard/CreatePageDialog";
 import { DeletePageButton } from "@/components/dashboard/DeletePageButton";
 import { EditPageDialog } from "@/components/dashboard/EditPageDialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
@@ -23,8 +22,6 @@ export default async function DashboardPage() {
       id: true,
       title: true,
       slug: true,
-      status: true,
-      publishedAt: true,
       updatedAt: true,
       draftSchema: true,
     },
@@ -44,7 +41,7 @@ export default async function DashboardPage() {
               Dashboard
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Manage every landing page, preview drafts, and jump into the builder from one place.
+              Manage every landing page, open public URLs, and jump into the builder from one place.
             </p>
           </div>
           <CreatePageDialog />
@@ -58,30 +55,34 @@ export default async function DashboardPage() {
                 Create, edit details, delete, or open any page in the builder.
               </p>
             </div>
-            {pages.length ? <CreatePageDialog label="Create page" /> : null}
           </div>
 
           {pages.length ? (
             <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
               {pages.map((page) => {
-                const publicUrl =
-                  page.status === "PUBLISHED" ? `${publicOrigin}/p/${page.slug}` : null;
+                const publicUrl = `${publicOrigin}/p/${page.slug}`;
 
                 return (
                   <article
                     key={page.id}
-                    className="overflow-hidden rounded-lg border border-border bg-background shadow-xs"
+                    className="relative overflow-hidden rounded-lg border border-border bg-background shadow-xs transition hover:border-foreground/30"
                   >
+                    <Link
+                      href={publicUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Open ${page.title}`}
+                      className="absolute inset-0 z-0"
+                    />
                     <DashboardPagePreview schema={normalizePageSchema(page.draftSchema)} />
-                    <div className="grid gap-4 p-4">
+                    <div className="pointer-events-none relative z-10 grid gap-4 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <h3 className="truncate font-medium text-foreground">{page.title}</h3>
                           <p className="mt-1 truncate text-sm text-muted-foreground">
-                            {publicUrl ?? "Publish to get URL"}
+                            {publicUrl}
                           </p>
                         </div>
-                        <StatusBadge status={page.status} />
                       </div>
 
                       <dl className="grid gap-2 text-sm">
@@ -89,12 +90,6 @@ export default async function DashboardPage() {
                           <dt className="text-muted-foreground">Updated</dt>
                           <dd className="text-right text-foreground">
                             {formatDateTime(page.updatedAt)}
-                          </dd>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-muted-foreground">Published</dt>
-                          <dd className="text-right text-foreground">
-                            {page.publishedAt ? formatDateTime(page.publishedAt) : "Not published"}
                           </dd>
                         </div>
                       </dl>
@@ -115,7 +110,7 @@ export default async function DashboardPage() {
                   Create your first landing page
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Start with a blank page, add blocks in the builder, then publish when it is ready.
+                  Start with a blank page, add blocks in the builder, then share its public URL.
                 </p>
                 <div className="mt-5 flex justify-center">
                   <CreatePageDialog defaultOpen label="Create first page" />
@@ -133,8 +128,6 @@ type DashboardPageItem = {
   id: string;
   title: string;
   slug: string;
-  status: PageStatus;
-  publishedAt: Date | null;
   updatedAt: Date;
   draftSchema: Prisma.JsonValue;
 };
@@ -143,7 +136,7 @@ function DashboardPagePreview({ schema }: { schema: PageSchema }) {
   const previewBlocks = schema.blocks.slice(0, 4);
 
   return (
-    <div className="aspect-[16/10] overflow-hidden border-b border-border bg-canvas">
+    <div className="pointer-events-none aspect-[16/10] overflow-hidden border-b border-border bg-canvas">
       {previewBlocks.length ? (
         <div className="pointer-events-none h-full overflow-hidden bg-white">
           {previewBlocks.map((block) => (
@@ -155,7 +148,7 @@ function DashboardPagePreview({ schema }: { schema: PageSchema }) {
           <div>
             <div className="mx-auto h-2 w-16 rounded-full bg-muted-foreground/20" />
             <div className="mx-auto mt-3 h-2 w-28 rounded-full bg-muted-foreground/30" />
-            <p className="mt-5 text-xs font-medium text-muted-foreground">Blank draft</p>
+            <p className="mt-5 text-xs font-medium text-muted-foreground">Blank page</p>
           </div>
         </div>
       )}
@@ -223,36 +216,21 @@ function PreviewBlock({ block }: { block: PageBlock }) {
   );
 }
 
-function StatusBadge({ status }: { status: DashboardPageItem["status"] }) {
-  if (status === "PUBLISHED") {
-    return <Badge variant="success">Published</Badge>;
-  }
-
-  return <Badge variant="secondary">Draft</Badge>;
-}
-
-function PageActions({ page, publicUrl }: { page: DashboardPageItem; publicUrl: string | null }) {
+function PageActions({ page, publicUrl }: { page: DashboardPageItem; publicUrl: string }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="pointer-events-auto relative z-20 flex flex-wrap gap-2">
       <Button asChild size="sm">
         <Link href={`/builder/${page.id}`}>
           <Edit />
           Builder
         </Link>
       </Button>
-      {publicUrl ? (
-        <Button asChild variant="outline" size="sm">
-          <Link href={publicUrl} target="_blank" rel="noreferrer">
-            <ExternalLink />
-            Public
-          </Link>
-        </Button>
-      ) : (
-        <Button variant="outline" size="sm" disabled>
+      <Button asChild variant="outline" size="sm">
+        <Link href={publicUrl} target="_blank" rel="noreferrer">
           <ExternalLink />
           Public
-        </Button>
-      )}
+        </Link>
+      </Button>
       <EditPageDialog page={{ id: page.id, title: page.title, slug: page.slug }} />
       <DeletePageButton pageId={page.id} title={page.title} />
     </div>

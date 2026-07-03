@@ -27,13 +27,13 @@ describe("pagePatchValidator", () => {
     const result = pagePatchValidator.safeParse({
       title: "Landing page",
       slug: "landing-page",
-      draftSchema: { version: 1, blocks: [createBlock("text")] },
+      schema: { version: 1, blocks: [createBlock("text")] },
     });
 
     expect(result.success).toBe(true);
   });
 
-  it("rejects status updates outside the publish endpoint", () => {
+  it("rejects client-sent status updates", () => {
     const result = pagePatchValidator.safeParse({ status: "PUBLISHED" });
 
     expect(result.success).toBe(false);

@@ -7,7 +7,7 @@ const productLinks = [
   { href: "/register", label: "Register" },
 ];
 
-const websiteInfo = ["Mini landing page builder", "Draft-safe publishing", "Public page sharing"];
+const websiteInfo = ["Mini landing page builder", "Live page saving", "Public page sharing"];
 
 const socialLinks = [
   { href: "#", label: "Facebook", icon: FacebookIcon },

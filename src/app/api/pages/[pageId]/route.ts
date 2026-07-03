@@ -63,12 +63,15 @@ export async function PATCH(
   }
 
   const data = parsed.data;
+  const schema = data.schema ? schemaToJson(data.schema) : null;
   const updated = await prisma.page.update({
     where: { id: pageId },
     data: {
       ...(data.title ? { title: data.title } : {}),
       ...(data.slug ? { slug: await createUniqueSlug(data.slug, pageId) } : {}),
-      ...(data.draftSchema ? { draftSchema: schemaToJson(data.draftSchema) } : {}),
+      ...(schema ? { draftSchema: schema, publishedSchema: schema } : {}),
+      status: "PUBLISHED",
+      publishedAt: new Date(),
     },
   });
 

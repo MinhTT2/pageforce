@@ -10,7 +10,7 @@ This file is the source of truth for agents working in this repository. Read it 
 
 ## Project Overview
 
-Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, create landing pages, compose them from JSON-backed blocks, publish them, and view published pages at `/p/[slug]`.
+Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, create landing pages, compose them from JSON-backed blocks, save changes live, and view public pages at `/p/[slug]`.
 
 Each Supabase Auth user can own multiple `Page` records.
 
@@ -45,10 +45,10 @@ Each Supabase Auth user can own multiple `Page` records.
 - Do not create a Prisma `User` model for the MVP.
 - App data lives in Prisma models, currently `Page`.
 - `Page.userId` stores the Supabase Auth user id and is indexed for ownership lookups.
-- `Page.draftSchema` stores the builder draft.
-- `Page.publishedSchema` stores the public snapshot.
-- Publishing copies `draftSchema` to `publishedSchema`, sets `status = PUBLISHED`, and stamps `publishedAt`.
-- Public pages render from `Page.publishedSchema`, never directly from `draftSchema`.
+- `Page.draftSchema` currently stores the live builder schema. The column name is legacy.
+- `Page.publishedSchema` is kept in sync for compatibility, but there is no separate publish step in the MVP.
+- Saving updates the live schema and the public page immediately.
+- Public pages render from the current live schema.
 - Keep shared block rendering logic reusable between builder preview and public render.
 
 ## Auth Rules
@@ -56,17 +56,17 @@ Each Supabase Auth user can own multiple `Page` records.
 - Use Supabase SSR helpers from `src/lib/supabase`.
 - Guard `/dashboard` and `/builder` routes.
 - Public route `/p/[slug]` must not require auth.
-- Public route `/p/[slug]` only renders pages with `status = PUBLISHED` and a non-null `publishedSchema`.
+- Public route `/p/[slug]` renders any existing page by slug.
 - API routes that mutate or read private data must get the current Supabase user and enforce ownership with `userId`.
 
 ## Page API Rules
 
 - `GET /api/pages` lists all pages owned by the current user.
 - `POST /api/pages` creates a new page for the current user.
-- `PATCH /api/pages/[pageId]` saves draft metadata/content only: title, slug, and `draftSchema`.
-- `PATCH /api/pages/[pageId]` must not publish and must not trust client-sent status changes.
-- `POST /api/pages/[pageId]/publish` is the only publish path.
-- Delete, update, get, and publish operations must enforce `Page.userId = current Supabase user id`.
+- `PATCH /api/pages/[pageId]` saves live metadata/content: title, slug, and `schema`.
+- `PATCH /api/pages/[pageId]` must not trust client-sent status changes.
+- There is no separate publish endpoint in the MVP.
+- Delete, update, and get operations must enforce `Page.userId = current Supabase user id`.
 
 ## Builder Rules
 
@@ -77,8 +77,8 @@ Each Supabase Auth user can own multiple `Page` records.
   - validation in `src/lib/validators.ts`;
   - rendering support in `src/components/blocks/BlockRenderer.tsx`;
   - editing controls in the builder UI.
-- Builder preview edits `draftSchema`.
-- Public render uses `publishedSchema`.
+- Builder edits the live page schema.
+- Public render uses the live page schema.
 - MVP reorder uses up/down buttons. Do not add drag-and-drop unless requested.
 - MVP images use URLs. Do not add uploads unless requested.
 
@@ -87,7 +87,7 @@ Each Supabase Auth user can own multiple `Page` records.
 - Prefer shadcn/ui components from `src/components/ui`.
 - If a needed shadcn component is missing, add it with the shadcn CLI instead of hand-rolling a different design system.
 - Use lucide-react icons for icon buttons and common actions.
-- Keep the builder workflow-first: dashboard, landing page management, editor, and publish flow matter more than marketing sections.
+- Keep the builder workflow-first: dashboard, landing page management, editor, and public URL flow matter more than marketing sections.
 - Builder is desktop-first for the MVP. Mobile should not be badly broken, but breakpoint editing is out of scope.
 - Design system primitives live in `src/components/ui`; prefer semantic tokens from `src/app/globals.css` over hard-coded color scales for shared UI.
 
@@ -116,7 +116,7 @@ When changing builder features, update the type, validator, renderer, editor, an
 
 When changing auth or database behavior, never query users through Prisma. Get users from Supabase session helpers and enforce `Page.userId` ownership.
 
-When changing publish behavior, preserve the draft/public split: save updates `draftSchema`; publish copies it to `publishedSchema`; public pages render only the published snapshot.
+When changing save/public behavior, preserve the live-save model: save updates the current schema and public pages render that current schema.
 
 When changing Prisma schema, include the intended migration command in the handoff. For production, mention `npm run prisma:deploy`; do not imply that `migrate dev` is safe for production.
 
@@ -134,7 +134,7 @@ When finishing, report:
 These MCPs are recommended for local agent environments. Do not commit secrets, service-role keys, access tokens, or personal MCP config to this repository.
 
 - Supabase MCP: inspect Supabase project, auth config, schema, SQL, migrations, and future RLS policies.
-- Playwright MCP: verify real browser flows for auth, dashboard, builder, save, publish, and public render.
+- Playwright MCP: verify real browser flows for auth, dashboard, builder, save, public URL navigation, and public render.
 - Context7 or Docs MCP: fetch current docs for Next.js 16, Supabase SSR, Prisma, shadcn/ui, and Tailwind v4.
 - Vercel MCP: manage deployment status, logs, and env vars when production deployment is in scope.
 - GitHub MCP: useful after the project is pushed to GitHub for issues, PRs, and reviews.

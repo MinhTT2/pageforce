@@ -9,7 +9,7 @@ Mini Web Builder SaaS MVP built with Next.js, TypeScript, TailwindCSS, Supabase 
 - `Page.userId` stores the Supabase Auth user id.
 - Each user can own multiple landing pages.
 - Builder saves landing pages as JSON block schemas.
-- Public pages render at `/p/[slug]` only when `status = PUBLISHED`.
+- Public pages render at `/p/[slug]` as soon as a page exists.
 - Agent and MCP setup lives in `AGENTS.md` and `docs/mcp-agent-setup.md`.
 
 ## Setup
@@ -73,8 +73,8 @@ Open http://localhost:3000.
 - Builder with sidebar, canvas preview, properties panel.
 - Four block types: Hero, Text, Image, Button.
 - Add, edit, delete, reorder blocks with buttons.
-- Save JSON schema to Postgres.
-- Public render for published pages.
+- Save JSON schema to Postgres and update the public page immediately.
+- Public render for every page URL.
 
 ## Deploy
 

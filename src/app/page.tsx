@@ -7,7 +7,6 @@ import {
   Globe2,
   Image,
   LogIn,
-  Rocket,
   Save,
   Type,
 } from "lucide-react";
@@ -25,13 +24,13 @@ const features = [
   },
   {
     icon: Save,
-    title: "Save drafts",
-    description: "Keep edits in draft mode while your published page stays stable.",
+    title: "Save live",
+    description: "Update the public page from the builder without a separate publish step.",
   },
   {
-    icon: Rocket,
-    title: "Publish",
-    description: "Ship a clean public page at a shareable slug when it is ready.",
+    icon: Globe2,
+    title: "Share URL",
+    description: "Every page gets a clean public URL as soon as it exists.",
   },
 ];
 
@@ -90,8 +89,8 @@ export default async function Home({ searchParams }: HomeProps) {
                 Build a landing page without turning it into a project.
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-                Pageforce gives every user one focused page, simple JSON-backed blocks, and a
-                publish flow that keeps drafts separate from the live version.
+                Pageforce gives every user a focused workspace, simple JSON-backed blocks, and
+                public URLs that stay ready to share.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button asChild size="lg">
@@ -110,7 +109,7 @@ export default async function Home({ searchParams }: HomeProps) {
               <div className="mt-8 flex flex-wrap gap-3 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-primary" />
-                  Draft-safe publishing
+                  Live public URLs
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-primary" />
@@ -157,12 +156,9 @@ function ProductPreview() {
             <p className="text-xs text-muted-foreground">/p/launch-page</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-lg border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
-              Published
-            </span>
             <Button size="sm">
-              <Rocket />
-              Publish
+              <Globe2 />
+              Open page
             </Button>
           </div>
         </div>
@@ -190,7 +186,7 @@ function ProductPreview() {
                   Launch faster with Pageforce
                 </h3>
                 <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
-                  Create a clean landing page from simple blocks, save it as a draft, and publish
+                  Create a clean landing page from simple blocks, save changes, and share the URL
                   when the message feels right.
                 </p>
                 <div className="mt-5 inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground">

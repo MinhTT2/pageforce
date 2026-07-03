@@ -50,7 +50,7 @@ export function DeletePageButton({ pageId, title }: { pageId: string; title: str
           <DialogTitle>Delete page</DialogTitle>
           <DialogDescription>
             Delete <span className="font-medium text-foreground">{title}</span> permanently.
-            Published links for this page will stop working.
+            Public links for this page will stop working.
           </DialogDescription>
         </DialogHeader>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}

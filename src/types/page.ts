@@ -12,5 +12,5 @@ export type PageSummary = {
 };
 
 export type EditablePage = PageSummary & {
-  draftSchema: PageSchema;
+  schema: PageSchema;
 };

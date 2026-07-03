@@ -34,7 +34,7 @@ export function toEditablePage(page: {
 }): EditablePage {
   return {
     ...toPageSummary(page),
-    draftSchema: normalizePageSchema(page.draftSchema),
+    schema: normalizePageSchema(page.draftSchema),
   };
 }
 
@@ -47,9 +47,18 @@ export async function listPagesForUser(userId: string) {
 
 export async function createPageForUser(userId: string, title = "Untitled page") {
   const slug = await createUniqueSlug(fallbackSlug(title));
+  const now = new Date();
 
   return prisma.page.create({
-    data: { userId, title, slug, draftSchema: emptyPageSchema },
+    data: {
+      userId,
+      title,
+      slug,
+      status: "PUBLISHED",
+      draftSchema: emptyPageSchema,
+      publishedSchema: emptyPageSchema,
+      publishedAt: now,
+    },
   });
 }
 

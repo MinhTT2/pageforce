@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 export function usePublicOrigin() {
   return useSyncExternalStore(subscribeToOrigin, getBrowserOrigin, getServerOrigin);
@@ -19,18 +19,26 @@ function getServerOrigin() {
 }
 
 export function useSaveShortcut(onSave: () => void) {
+  const onSaveRef = useRef(onSave);
+
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  });
+
+  // Subscribe once; the ref keeps the handler current without re-binding the
+  // window listener on every render.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
         event.preventDefault();
-        onSave();
+        onSaveRef.current();
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSave]);
+  }, []);
 }
 
 export function useUnsavedChangesWarning(dirty: boolean) {

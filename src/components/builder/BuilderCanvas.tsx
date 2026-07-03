@@ -1,20 +1,19 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ExternalLink } from "lucide-react";
+import { memo, useCallback, useMemo, type ReactNode } from "react";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { Button } from "@/components/ui/button";
-import type { BlockType, PageSchema } from "@/types/blocks";
+import type { BlockType, PageBlock, PageSchema } from "@/types/blocks";
 import { cn } from "@/lib/utils";
 import { CanvasBlock } from "./CanvasBlock";
 
 export type DropIndicator = { blockId: string; edge: "top" | "bottom" } | "canvas-end" | null;
 
-export function BuilderCanvas({
+export const BuilderCanvas = memo(function BuilderCanvas({
   schema,
   selectedBlockId,
   dropIndicator,
   isPaletteDragging,
-  publicUrl,
   onSelectBlock,
   onDuplicateBlock,
   onDeleteBlock,
@@ -24,7 +23,6 @@ export function BuilderCanvas({
   selectedBlockId: string | null;
   dropIndicator: DropIndicator;
   isPaletteDragging: boolean;
-  publicUrl: string;
   onSelectBlock: (id: string) => void;
   onDuplicateBlock: (id: string) => void;
   onDeleteBlock: (id: string) => void;
@@ -32,22 +30,47 @@ export function BuilderCanvas({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "canvas" });
 
+  // Stable unless selection or the drop indicator actually changes — those are
+  // exactly the renders memo(BlockRenderer) must let through.
+  const renderBlockWrapper = useCallback(
+    (block: PageBlock, children: ReactNode) => (
+      <CanvasBlock
+        block={block}
+        selected={selectedBlockId === block.id}
+        dropEdge={
+          dropIndicator && dropIndicator !== "canvas-end" && dropIndicator.blockId === block.id
+            ? dropIndicator.edge
+            : null
+        }
+        onSelect={onSelectBlock}
+        onDuplicate={onDuplicateBlock}
+        onDelete={onDeleteBlock}
+      >
+        {children}
+      </CanvasBlock>
+    ),
+    [selectedBlockId, dropIndicator, onSelectBlock, onDuplicateBlock, onDeleteBlock],
+  );
+
+  const emptyActions = useMemo(
+    () => (
+      <>
+        <Button size="sm" onClick={() => onAddBlock("hero")}>
+          Add Hero
+        </Button>
+        <Button size="sm" variant="secondary" onClick={() => onAddBlock("features")}>
+          Add Features
+        </Button>
+        <Button size="sm" variant="secondary" onClick={() => onAddBlock("cta")}>
+          Add CTA
+        </Button>
+      </>
+    ),
+    [onAddBlock],
+  );
+
   return (
     <section className="overflow-auto bg-[radial-gradient(circle_at_top,var(--surface)_0%,var(--canvas)_55%)] p-6">
-      <div className="mx-auto mb-4 flex max-w-5xl flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
-            Live preview
-          </p>
-          <h2 className="mt-1 text-lg font-semibold text-foreground">Public page canvas</h2>
-        </div>
-        <Button asChild variant="outline" size="sm">
-          <a href={publicUrl} target="_blank" rel="noreferrer">
-            <ExternalLink />
-            Open public URL
-          </a>
-        </Button>
-      </div>
       <div
         ref={setNodeRef}
         className={cn(
@@ -62,35 +85,8 @@ export function BuilderCanvas({
         >
           <BlockRenderer
             schema={schema}
-            renderBlockWrapper={(block, children) => (
-              <CanvasBlock
-                block={block}
-                selected={selectedBlockId === block.id}
-                dropEdge={
-                  dropIndicator && dropIndicator !== "canvas-end" && dropIndicator.blockId === block.id
-                    ? dropIndicator.edge
-                    : null
-                }
-                onSelect={onSelectBlock}
-                onDuplicate={onDuplicateBlock}
-                onDelete={onDeleteBlock}
-              >
-                {children}
-              </CanvasBlock>
-            )}
-            emptyActions={
-              <>
-                <Button size="sm" onClick={() => onAddBlock("hero")}>
-                  Add Hero
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => onAddBlock("features")}>
-                  Add Features
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => onAddBlock("cta")}>
-                  Add CTA
-                </Button>
-              </>
-            }
+            renderBlockWrapper={renderBlockWrapper}
+            emptyActions={emptyActions}
           />
         </SortableContext>
         {dropIndicator === "canvas-end" && schema.blocks.length > 0 ? (
@@ -99,4 +95,4 @@ export function BuilderCanvas({
       </div>
     </section>
   );
-}
+});

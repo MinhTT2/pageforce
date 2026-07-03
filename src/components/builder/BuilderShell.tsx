@@ -20,12 +20,8 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { blockLabels, createBlock, defaultPageSettings } from "@/lib/blocks";
-import {
-  builderReducer,
-  initialBuilderState,
-  type BuilderState,
-} from "@/lib/builder-state";
-import type { BlockType, PageBlock } from "@/types/blocks";
+import { builderReducer, initialBuilderState } from "@/lib/builder-state";
+import type { BlockType, DesignTokens, PageBlock, PageSettings } from "@/types/blocks";
 import type { EditablePage } from "@/types/page";
 import { BlockPalette, PaletteDragPreview } from "./BlockPalette";
 import { BuilderCanvas, type DropIndicator } from "./BuilderCanvas";
@@ -54,6 +50,18 @@ const collisionDetection: CollisionDetection = (args) => {
   return collisions.sort((a, b) => Number(a.id === "canvas") - Number(b.id === "canvas"));
 };
 
+function sameIndicator(a: DropIndicator, b: DropIndicator): boolean {
+  if (a === b) {
+    return true;
+  }
+
+  if (typeof a !== "object" || typeof b !== "object" || !a || !b) {
+    return false;
+  }
+
+  return a.blockId === b.blockId && a.edge === b.edge;
+}
+
 export function BuilderShell({ page }: { page: EditablePage }) {
   const [state, dispatch] = useReducer(builderReducer, page, initialBuilderState);
   const [previewMode, setPreviewMode] = useState(false);
@@ -62,7 +70,6 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   const publicOrigin = usePublicOrigin();
 
   const settings = state.schema.settings ?? defaultPageSettings;
-  const saving = state.saveStatus === "saving";
   const publicUrl = useMemo(
     () => (publicOrigin ? `${publicOrigin}/p/${state.slug}` : `/p/${state.slug}`),
     [publicOrigin, state.slug],
@@ -77,6 +84,12 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   useEffect(() => {
     blockIdsRef.current = state.schema.blocks.map((block) => block.id);
   }, [state.schema.blocks]);
+
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  });
 
   // Step exactly one list position per arrow press; the stock sortable getter
   // jumps to the nearest rect, which skips items when section heights differ.
@@ -138,19 +151,25 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinates }),
   );
 
-  async function savePage() {
-    if (!state.dirty || saving) {
+  const savePage = useCallback(async () => {
+    const current = stateRef.current;
+
+    if (!current.dirty || current.saveStatus === "saving") {
       return;
     }
 
-    const requestedSlug = state.slug;
+    const requestedSlug = current.slug;
     dispatch({ type: "saveStarted" });
 
     try {
       const response = await fetch(`/api/pages/${page.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: state.title, slug: state.slug, schema: state.schema }),
+        body: JSON.stringify({
+          title: current.title,
+          slug: current.slug,
+          schema: current.schema,
+        }),
       });
       const payload = (await response.json().catch(() => null)) as SaveResponse | null;
 
@@ -162,18 +181,37 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     } catch {
       dispatch({ type: "saveFailed", message: "Could not save page" });
     }
-  }
+  }, [page.id]);
 
   useSaveShortcut(savePage);
   useUnsavedChangesWarning(state.dirty);
 
-  function addBlock(type: BlockType, index?: number) {
-    dispatch({
-      type: "insertBlock",
-      block: createBlock(type),
-      index: index ?? state.schema.blocks.length,
-    });
-  }
+  const addBlock = useCallback((type: BlockType, index?: number) => {
+    dispatch({ type: "insertBlock", block: createBlock(type), index });
+  }, []);
+
+  const selectBlock = useCallback((id: string) => dispatch({ type: "selectBlock", id }), []);
+  const duplicateBlock = useCallback(
+    (id: string) => dispatch({ type: "duplicateBlock", id, newId: crypto.randomUUID() }),
+    [],
+  );
+  const deleteBlock = useCallback((id: string) => dispatch({ type: "deleteBlock", id }), []);
+  const updateBlock = useCallback(
+    (block: PageBlock) => dispatch({ type: "updateBlock", block }),
+    [],
+  );
+  const clearSelection = useCallback(() => dispatch({ type: "selectBlock", id: null }), []);
+  const setTitle = useCallback((value: string) => dispatch({ type: "setTitle", value }), []);
+  const setSlug = useCallback((value: string) => dispatch({ type: "setSlug", value }), []);
+  const updateSettings = useCallback(
+    (patch: Partial<Omit<PageSettings, "tokens">>) => dispatch({ type: "updateSettings", patch }),
+    [],
+  );
+  const updateTokens = useCallback(
+    (patch: Partial<DesignTokens>) => dispatch({ type: "updateTokens", patch }),
+    [],
+  );
+  const togglePreview = useCallback(() => setPreviewMode((current) => !current), []);
 
   function handleDragStart(event: DragStartEvent) {
     const data = event.active.data.current as
@@ -199,25 +237,24 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     }
 
     const over = event.over;
+    let next: DropIndicator = null;
 
-    if (!over) {
-      setDropIndicator(null);
-      return;
+    if (over && over.id === "canvas") {
+      next = "canvas-end";
+    } else if (over) {
+      const translated = event.active.rect.current.translated;
+      const activeCenter = translated ? translated.top + translated.height / 2 : null;
+      const edge =
+        activeCenter !== null && activeCenter > over.rect.top + over.rect.height / 2
+          ? "bottom"
+          : "top";
+
+      next = { blockId: String(over.id), edge };
     }
 
-    if (over.id === "canvas") {
-      setDropIndicator("canvas-end");
-      return;
-    }
-
-    const translated = event.active.rect.current.translated;
-    const activeCenter = translated ? translated.top + translated.height / 2 : null;
-    const edge =
-      activeCenter !== null && activeCenter > over.rect.top + over.rect.height / 2
-        ? "bottom"
-        : "top";
-
-    setDropIndicator({ blockId: String(over.id), edge });
+    // onDragOver fires on every pointer move; returning the previous reference
+    // lets React bail out instead of re-rendering the whole canvas per move.
+    setDropIndicator((current) => (sameIndicator(current, next) ? current : next));
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -255,7 +292,10 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     setDropIndicator(null);
   }
 
-  const announcements = useMemo(() => buildAnnouncements(state), [state]);
+  const announcements = useMemo(
+    () => buildAnnouncements(state.schema.blocks),
+    [state.schema.blocks],
+  );
 
   return (
     <TooltipProvider>
@@ -267,8 +307,8 @@ export function BuilderShell({ page }: { page: EditablePage }) {
           notice={state.notice}
           previewMode={previewMode}
           publicUrl={publicUrl}
-          onTitleChange={(value) => dispatch({ type: "setTitle", value })}
-          onTogglePreview={() => setPreviewMode((current) => !current)}
+          onTitleChange={setTitle}
+          onTogglePreview={togglePreview}
           onSave={savePage}
         />
         {previewMode ? (
@@ -288,34 +328,29 @@ export function BuilderShell({ page }: { page: EditablePage }) {
             onDragCancel={handleDragCancel}
           >
             <main className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_340px] overflow-hidden">
-              <BlockPalette onAdd={(type) => addBlock(type)} />
+              <BlockPalette onAdd={addBlock} />
               <BuilderCanvas
                 schema={state.schema}
                 selectedBlockId={state.selectedBlockId}
                 dropIndicator={dropIndicator}
                 isPaletteDragging={activeDrag?.source === "palette"}
-                publicUrl={publicUrl}
-                onSelectBlock={(id) => dispatch({ type: "selectBlock", id })}
-                onDuplicateBlock={(id) =>
-                  dispatch({ type: "duplicateBlock", id, newId: crypto.randomUUID() })
-                }
-                onDeleteBlock={(id) => dispatch({ type: "deleteBlock", id })}
-                onAddBlock={(type) => addBlock(type)}
+                onSelectBlock={selectBlock}
+                onDuplicateBlock={duplicateBlock}
+                onDeleteBlock={deleteBlock}
+                onAddBlock={addBlock}
               />
               <Inspector
                 selectedBlock={selectedBlock}
                 settings={settings}
                 slug={state.slug}
                 publicUrl={publicUrl}
-                onUpdateBlock={(block) => dispatch({ type: "updateBlock", block })}
-                onDuplicateBlock={(id) =>
-                  dispatch({ type: "duplicateBlock", id, newId: crypto.randomUUID() })
-                }
-                onDeleteBlock={(id) => dispatch({ type: "deleteBlock", id })}
-                onClearSelection={() => dispatch({ type: "selectBlock", id: null })}
-                onSlugChange={(value) => dispatch({ type: "setSlug", value })}
-                onSettingsChange={(patch) => dispatch({ type: "updateSettings", patch })}
-                onTokensChange={(patch) => dispatch({ type: "updateTokens", patch })}
+                onUpdateBlock={updateBlock}
+                onDuplicateBlock={duplicateBlock}
+                onDeleteBlock={deleteBlock}
+                onClearSelection={clearSelection}
+                onSlugChange={setSlug}
+                onSettingsChange={updateSettings}
+                onTokensChange={updateTokens}
               />
             </main>
             <DragOverlay>
@@ -345,20 +380,20 @@ function CanvasDragPreview({ block }: { block: PageBlock }) {
   );
 }
 
-function buildAnnouncements(state: BuilderState): Announcements {
+function buildAnnouncements(blocks: PageBlock[]): Announcements {
   function describe(id: string | number) {
     if (String(id).startsWith("palette:")) {
       const type = String(id).replace("palette:", "") as BlockType;
       return `new ${blockLabels[type]} block`;
     }
 
-    const index = state.schema.blocks.findIndex((block) => block.id === id);
+    const index = blocks.findIndex((block) => block.id === id);
 
     if (index < 0) {
       return "block";
     }
 
-    return `${blockLabels[state.schema.blocks[index].type]} block, position ${index + 1} of ${state.schema.blocks.length}`;
+    return `${blockLabels[blocks[index].type]} block, position ${index + 1} of ${blocks.length}`;
   }
 
   return {

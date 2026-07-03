@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle2, Image as ImageIcon, LayoutDashboard, Sparkles } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
@@ -95,7 +97,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-sm space-y-5 rounded-lg border border-border bg-card p-6 shadow-xs"
+      className="w-full max-w-md space-y-5 rounded-lg border border-border bg-card p-6 shadow-sm"
     >
       <div>
         <h1 className="text-2xl font-semibold text-card-foreground">
@@ -176,6 +178,60 @@ export function AuthForm({ mode }: AuthFormProps) {
         </Link>
       </p>
     </form>
+  );
+}
+
+export function AuthShowcase() {
+  return (
+    <aside className="hidden min-h-[560px] overflow-hidden rounded-lg border border-border bg-panel shadow-sm lg:block">
+      <div className="relative min-h-[560px]">
+        <Image
+          src="https://images.unsplash.com/photo-1518005020951-eccb494ad742?q=80&w=1400&auto=format&fit=crop"
+          alt=""
+          fill
+          unoptimized
+          sizes="520px"
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0.9))]" />
+        <div className="absolute inset-x-5 bottom-5 rounded-lg border border-border bg-card/95 p-4 shadow-lg backdrop-blur">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-normal text-primary">
+                Pageforce preview
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-card-foreground">
+                Ship a page in minutes
+              </h2>
+            </div>
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Sparkles className="size-5" />
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2">
+            <ShowcaseRow icon={LayoutDashboard} label="Manage every page from one dashboard" />
+            <ShowcaseRow icon={ImageIcon} label="Use visual blocks and image sections" />
+            <ShowcaseRow icon={CheckCircle2} label="Save live and share the public URL" />
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function ShowcaseRow({
+  icon: Icon,
+  label,
+}: {
+  icon: typeof CheckCircle2;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm text-surface-foreground">
+      <Icon className="size-4 text-primary" />
+      <span>{label}</span>
+    </div>
   );
 }
 

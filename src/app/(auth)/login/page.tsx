@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { AuthForm } from "@/components/auth/AuthForm";
+import { AuthForm, AuthShowcase } from "@/components/auth/AuthForm";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { getSafeNextPath } from "@/lib/auth-routes";
@@ -22,10 +22,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader />
-      <main className="flex flex-1 items-center justify-center px-6 py-12">
-        <Suspense>
-          <AuthForm mode="login" />
-        </Suspense>
+      <main className="flex flex-1 items-center justify-center bg-[linear-gradient(180deg,var(--background)_0%,var(--surface)_100%)] px-6 py-10">
+        <div className="grid w-full max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,0.88fr)_minmax(420px,1.12fr)]">
+          <div className="flex justify-center lg:justify-end">
+            <Suspense>
+              <AuthForm mode="login" />
+            </Suspense>
+          </div>
+          <AuthShowcase />
+        </div>
       </main>
       <SiteFooter />
     </div>

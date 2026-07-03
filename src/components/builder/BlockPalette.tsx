@@ -2,10 +2,15 @@ import { useDraggable } from "@dnd-kit/core";
 import { Search } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { Input } from "@/components/ui/Input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { blockLabels } from "@/lib/blocks";
 import type { BlockType } from "@/types/blocks";
 import { cn } from "@/lib/utils";
 import { blockGroups, blockOptions } from "./block-meta";
+
+const allBlocks = blockGroups.flatMap((group) => group.blocks);
+const allTab = "all";
 
 export const BlockPalette = memo(function BlockPalette({
   onAdd,
@@ -13,36 +18,36 @@ export const BlockPalette = memo(function BlockPalette({
   onAdd: (type: BlockType) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] = useState(allTab);
   const normalizedQuery = query.trim().toLowerCase();
-  const filteredGroups = useMemo(
-    () =>
-      blockGroups
-        .map((group) => ({
-          ...group,
-          blocks: group.blocks.filter((type) => {
-            const option = blockOptions[type];
-            return (
-              !normalizedQuery ||
-              blockLabels[type].toLowerCase().includes(normalizedQuery) ||
-              option.description.toLowerCase().includes(normalizedQuery)
-            );
-          }),
-        }))
-        .filter((group) => group.blocks.length > 0),
-    [normalizedQuery],
+  const visibleBlocks = useMemo(
+    () => {
+      const source =
+        activeTab === allTab
+          ? allBlocks
+          : blockGroups.find((group) => group.label === activeTab)?.blocks ?? [];
+
+      return source.filter((type) => {
+        const option = blockOptions[type];
+
+        return (
+          !normalizedQuery ||
+          blockLabels[type].toLowerCase().includes(normalizedQuery) ||
+          option.description.toLowerCase().includes(normalizedQuery)
+        );
+      });
+    },
+    [activeTab, normalizedQuery],
   );
-  const hasMatches = filteredGroups.length > 0;
+  const hasMatches = visibleBlocks.length > 0;
 
   return (
-    <aside className="overflow-auto border-r border-border bg-card p-4">
-      <div>
+    <aside className="flex min-h-0 flex-col overflow-hidden border-r border-border bg-card">
+      <div className="border-b border-border p-4">
         <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
           Compose
         </p>
-        <h2 className="mt-1 text-base font-semibold text-card-foreground">Blocks</h2>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Drag onto the canvas, or click to add after the selected block.
-        </p>
+        <h2 className="mt-1 text-base font-semibold text-card-foreground">Block catalog</h2>
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -55,24 +60,33 @@ export const BlockPalette = memo(function BlockPalette({
           />
         </div>
       </div>
-      <div className="mt-4 grid gap-5">
-        {hasMatches ? filteredGroups.map((group) => (
-          <section key={group.label}>
-            <h3 className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
-              {group.label}
-            </h3>
-            <div className="mt-2 grid gap-2">
-              {group.blocks.map((type) => (
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-0 flex-1 gap-0">
+        <div className="border-b border-border px-3 py-2">
+          <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value={allTab} className="flex-none px-2 text-xs">
+              All
+            </TabsTrigger>
+            {blockGroups.map((group) => (
+              <TabsTrigger key={group.label} value={group.label} className="flex-none px-2 text-xs">
+                {group.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+        <TabsContent value={activeTab} className="min-h-0 overflow-auto p-3">
+          {hasMatches ? (
+            <div className="grid grid-cols-2 gap-2">
+              {visibleBlocks.map((type) => (
                 <PaletteItem key={type} type={type} onAdd={onAdd} />
               ))}
             </div>
-          </section>
-        )) : (
-          <p className="rounded-md border border-dashed border-border bg-surface px-3 py-4 text-center text-sm text-muted-foreground">
-            No blocks match
-          </p>
-        )}
-      </div>
+          ) : (
+            <p className="rounded-md border border-dashed border-border bg-surface px-3 py-4 text-center text-sm text-muted-foreground">
+              No blocks match
+            </p>
+          )}
+        </TabsContent>
+      </Tabs>
     </aside>
   );
 });
@@ -86,29 +100,36 @@ function PaletteItem({ type, onAdd }: { type: BlockType; onAdd: (type: BlockType
   });
 
   return (
-    <button
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      // Enter/Space adds the block via native click; keyboard dragging is for
-      // canvas reordering only.
-      onKeyDown={undefined}
-      role={undefined}
-      type="button"
-      onClick={() => onAdd(type)}
-      className={cn(
-        "group grid cursor-grab touch-none gap-2 rounded-lg border border-border bg-surface p-3 text-left transition hover:border-primary/40 hover:bg-accent/45 active:cursor-grabbing",
-        isDragging && "opacity-50",
-      )}
-    >
-      <span className="flex items-center gap-2 text-sm font-semibold text-surface-foreground">
-        <span className="flex size-8 items-center justify-center rounded-md bg-background text-primary">
-          <Icon className="size-4" />
-        </span>
-        Add {blockLabels[type]}
-      </span>
-      <span className="text-xs leading-5 text-muted-foreground">{option.description}</span>
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          ref={setNodeRef}
+          {...listeners}
+          {...attributes}
+          // Enter/Space adds the block via native click; keyboard dragging is for
+          // canvas reordering only.
+          onKeyDown={undefined}
+          role={undefined}
+          type="button"
+          onClick={() => onAdd(type)}
+          aria-label={`Add ${blockLabels[type]} block. ${option.description}`}
+          className={cn(
+            "grid h-24 cursor-grab touch-none place-items-center gap-2 rounded-lg border border-border bg-surface p-2 text-center transition hover:border-primary/40 hover:bg-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing",
+            isDragging && "opacity-50",
+          )}
+        >
+          <span className="flex size-9 items-center justify-center rounded-md bg-background text-primary">
+            <Icon className="size-4" />
+          </span>
+          <span className="w-full truncate text-xs font-semibold text-surface-foreground">
+            {blockLabels[type]}
+          </span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={8}>
+        {option.description}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

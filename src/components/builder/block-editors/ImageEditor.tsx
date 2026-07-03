@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/Input";
 import type { ImageBlock, PageBlock } from "@/types/blocks";
+import { ImageUrlField } from "../fields/ImageUrlField";
 import { Field, Panel } from "../fields/Field";
 
 export function ImageEditor({
@@ -11,14 +12,10 @@ export function ImageEditor({
 }) {
   return (
     <Panel title="Image">
-      <Field label="Image URL">
-        <Input
-          value={block.props.src}
-          onChange={(event) =>
-            onChange({ ...block, props: { ...block.props, src: event.target.value } })
-          }
-        />
-      </Field>
+      <ImageUrlField
+        value={block.props.src}
+        onChange={(src) => onChange({ ...block, props: { ...block.props, src } })}
+      />
       <Field label="Alt text">
         <Input
           value={block.props.alt}

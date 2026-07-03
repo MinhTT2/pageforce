@@ -56,10 +56,12 @@ export const blockLabels: Record<BlockType, string> = {
   hero: "Hero",
   text: "Text",
   image: "Image",
+  carousel: "Carousel",
   button: "Button",
   features: "Features",
   testimonials: "Testimonials",
   pricing: "Pricing",
+  products: "Products",
   faq: "FAQ",
   cta: "CTA",
   leadForm: "Lead Form",
@@ -100,6 +102,34 @@ export function createBlock(type: BlockType): PageBlock {
       props: {
         src: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1600&auto=format&fit=crop",
         alt: "Workspace preview",
+      },
+    };
+  }
+
+  if (type === "carousel") {
+    return {
+      id,
+      type,
+      props: {
+        heading: "See it in action",
+        autoplay: false,
+        items: [
+          {
+            src: "https://images.unsplash.com/photo-1518005020951-eccb494ad742?q=80&w=1600&auto=format&fit=crop",
+            alt: "Modern landing page preview",
+            caption: "Show your product experience in motion.",
+          },
+          {
+            src: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1600&auto=format&fit=crop",
+            alt: "Collaborative workspace",
+            caption: "Highlight the context your customers care about.",
+          },
+          {
+            src: "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1600&auto=format&fit=crop",
+            alt: "Team reviewing launch metrics",
+            caption: "Turn proof points into a visual story.",
+          },
+        ],
       },
     };
   }
@@ -180,6 +210,56 @@ export function createBlock(type: BlockType): PageBlock {
             ctaLabel: "Choose Growth",
             ctaUrl: "#",
             highlighted: true,
+          },
+        ],
+      },
+    };
+  }
+
+  if (type === "products") {
+    return {
+      id,
+      type,
+      props: {
+        eyebrow: "Featured picks",
+        heading: "Products ready to buy",
+        description: "Show prices, badges, and quick purchase links in one scannable grid.",
+        items: [
+          {
+            name: "Classic Watch",
+            description: "A clean everyday timepiece with a brushed steel finish.",
+            price: "$29",
+            originalPrice: "$39",
+            image:
+              "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1200&auto=format&fit=crop",
+            imageAlt: "Classic wrist watch",
+            badge: "Sale",
+            ctaLabel: "Buy now",
+            ctaUrl: "#",
+          },
+          {
+            name: "Running Sneakers",
+            description: "Lightweight support for training days and long walks.",
+            price: "$49",
+            originalPrice: "",
+            image:
+              "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200&auto=format&fit=crop",
+            imageAlt: "Red running sneakers",
+            badge: "",
+            ctaLabel: "Buy now",
+            ctaUrl: "#",
+          },
+          {
+            name: "Wireless Headphones",
+            description: "Immersive sound with a comfortable all-day fit.",
+            price: "$79",
+            originalPrice: "",
+            image:
+              "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1200&auto=format&fit=crop",
+            imageAlt: "Wireless headphones",
+            badge: "",
+            ctaLabel: "Buy now",
+            ctaUrl: "#",
           },
         ],
       },

@@ -17,6 +17,7 @@ export const BuilderCanvas = memo(function BuilderCanvas({
   onSelectBlock,
   onDuplicateBlock,
   onDeleteBlock,
+  onMoveBlock,
   onAddBlock,
 }: {
   schema: PageSchema;
@@ -26,9 +27,14 @@ export const BuilderCanvas = memo(function BuilderCanvas({
   onSelectBlock: (id: string) => void;
   onDuplicateBlock: (id: string) => void;
   onDeleteBlock: (id: string) => void;
+  onMoveBlock: (id: string, delta: number) => void;
   onAddBlock: (type: BlockType) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "canvas" });
+  const indexById = useMemo(
+    () => new Map(schema.blocks.map((block, index) => [block.id, index])),
+    [schema.blocks],
+  );
 
   // Stable unless selection or the drop indicator actually changes — those are
   // exactly the renders memo(BlockRenderer) must let through.
@@ -45,11 +51,23 @@ export const BuilderCanvas = memo(function BuilderCanvas({
         onSelect={onSelectBlock}
         onDuplicate={onDuplicateBlock}
         onDelete={onDeleteBlock}
+        onMove={onMoveBlock}
+        index={indexById.get(block.id) ?? 0}
+        count={schema.blocks.length}
       >
         {children}
       </CanvasBlock>
     ),
-    [selectedBlockId, dropIndicator, onSelectBlock, onDuplicateBlock, onDeleteBlock],
+    [
+      selectedBlockId,
+      dropIndicator,
+      onSelectBlock,
+      onDuplicateBlock,
+      onDeleteBlock,
+      onMoveBlock,
+      indexById,
+      schema.blocks.length,
+    ],
   );
 
   const emptyActions = useMemo(

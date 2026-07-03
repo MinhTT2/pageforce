@@ -2,10 +2,12 @@ export type BlockType =
   | "hero"
   | "text"
   | "image"
+  | "carousel"
   | "button"
   | "features"
   | "testimonials"
   | "pricing"
+  | "products"
   | "faq"
   | "cta"
   | "leadForm"
@@ -85,6 +87,19 @@ export type ImageBlock = BlockBase & {
   };
 };
 
+export type CarouselBlock = BlockBase & {
+  type: "carousel";
+  props: {
+    heading: string;
+    autoplay: boolean;
+    items: Array<{
+      src: string;
+      alt: string;
+      caption: string;
+    }>;
+  };
+};
+
 export type ButtonBlock = BlockBase & {
   type: "button";
   props: {
@@ -133,6 +148,26 @@ export type PricingBlock = BlockBase & {
       ctaLabel: string;
       ctaUrl: string;
       highlighted: boolean;
+    }>;
+  };
+};
+
+export type ProductsBlock = BlockBase & {
+  type: "products";
+  props: {
+    eyebrow: string;
+    heading: string;
+    description: string;
+    items: Array<{
+      name: string;
+      description: string;
+      price: string;
+      originalPrice: string;
+      image: string;
+      imageAlt: string;
+      badge: string;
+      ctaLabel: string;
+      ctaUrl: string;
     }>;
   };
 };
@@ -188,10 +223,12 @@ export type PageBlock =
   | HeroBlock
   | TextBlock
   | ImageBlock
+  | CarouselBlock
   | ButtonBlock
   | FeaturesBlock
   | TestimonialsBlock
   | PricingBlock
+  | ProductsBlock
   | FaqBlock
   | CtaBlock
   | LeadFormBlock

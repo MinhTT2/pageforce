@@ -1,6 +1,7 @@
 import {
   BadgeDollarSign,
   CircleHelp,
+  GalleryHorizontal,
   Image as ImageIcon,
   LayoutTemplate,
   ListChecks,
@@ -9,6 +10,7 @@ import {
   MousePointerClick,
   PanelBottom,
   Send,
+  ShoppingBag,
   Type,
   type LucideIcon,
 } from "lucide-react";
@@ -18,8 +20,8 @@ export const blockGroups: Array<{
   label: string;
   blocks: BlockType[];
 }> = [
-  { label: "Structure", blocks: ["hero", "text", "image", "features"] },
-  { label: "Conversion", blocks: ["cta", "button", "leadForm", "pricing"] },
+  { label: "Structure", blocks: ["hero", "text", "image", "carousel", "features"] },
+  { label: "Conversion", blocks: ["cta", "button", "leadForm", "pricing", "products"] },
   { label: "Trust", blocks: ["testimonials", "faq"] },
   { label: "Utility", blocks: ["footer"] },
 ];
@@ -43,6 +45,10 @@ export const blockOptions: Record<
     icon: ImageIcon,
     description: "Visual section using an image URL.",
   },
+  carousel: {
+    icon: GalleryHorizontal,
+    description: "Image slider with captions and controls.",
+  },
   button: {
     icon: MousePointerClick,
     description: "Standalone call-to-action link.",
@@ -58,6 +64,10 @@ export const blockOptions: Record<
   pricing: {
     icon: BadgeDollarSign,
     description: "Plans, prices, feature lists, and CTAs.",
+  },
+  products: {
+    icon: ShoppingBag,
+    description: "Product grid with prices, badges, and buy links.",
   },
   faq: {
     icon: CircleHelp,

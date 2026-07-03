@@ -41,6 +41,59 @@ export function useSaveShortcut(onSave: () => void) {
   }, []);
 }
 
+export function useUndoRedoShortcuts(onUndo: () => void, onRedo: () => void) {
+  const onUndoRef = useRef(onUndo);
+  const onRedoRef = useRef(onRedo);
+
+  useEffect(() => {
+    onUndoRef.current = onUndo;
+    onRedoRef.current = onRedo;
+  });
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if ((event.metaKey || event.ctrlKey) && key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) {
+          onRedoRef.current();
+        } else {
+          onUndoRef.current();
+        }
+      }
+
+      if (event.ctrlKey && key === "y") {
+        event.preventDefault();
+        onRedoRef.current();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+}
+
+function isEditableTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName;
+
+  return (
+    tagName === "INPUT" ||
+    tagName === "TEXTAREA" ||
+    tagName === "SELECT" ||
+    target.isContentEditable
+  );
+}
+
 export function useUnsavedChangesWarning(dirty: boolean) {
   useEffect(() => {
     if (!dirty) {

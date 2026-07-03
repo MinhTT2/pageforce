@@ -17,6 +17,7 @@ import {
 import { Fragment, memo, type CSSProperties, type ReactNode } from "react";
 import type { BlockAlign, BlockWidth, PageBlock, PageSchema } from "@/types/blocks";
 import { defaultTokens } from "@/lib/blocks";
+import { CarouselViewer } from "@/components/blocks/CarouselViewer";
 import { LeadCaptureForm } from "@/components/blocks/LeadCaptureForm";
 import { BLOCK_PADDING_Y, BLOCK_WIDTH, blockStyleCssVars, tokenCssVars } from "@/lib/design";
 import { cn } from "@/lib/utils";
@@ -206,6 +207,30 @@ const RenderedBlock = memo(function RenderedBlock({
     );
   }
 
+  if (block.type === "carousel") {
+    const { paddingClass, widthClass, align, sectionStyle } = resolveSection(block, {
+      paddingY: "py-(--pf-section-y)",
+      width: "normal",
+      align: "center",
+    });
+
+    return (
+      <section
+        className={cn("px-6", paddingClass, alignClasses[align ?? "center"])}
+        style={sectionStyle}
+      >
+        <div className={cn("mx-auto", widthClass)}>
+          {block.props.heading ? (
+            <h2 className="pf-heading mx-auto mb-8 max-w-3xl text-3xl font-semibold tracking-normal sm:text-4xl">
+              {block.props.heading}
+            </h2>
+          ) : null}
+          <CarouselViewer items={block.props.items} autoplay={block.props.autoplay} />
+        </div>
+      </section>
+    );
+  }
+
   if (block.type === "button") {
     const { paddingClass, widthClass, align, sectionStyle } = resolveSection(block, {
       paddingY: "py-[calc(var(--pf-section-y)*0.5)]",
@@ -357,6 +382,76 @@ const RenderedBlock = memo(function RenderedBlock({
                   <CtaLink href={plan.ctaUrl} variant={plan.highlighted ? "inverse" : "primary"}>
                     {plan.ctaLabel}
                   </CtaLink>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (block.type === "products") {
+    const { paddingClass, widthClass, align, sectionStyle } = resolveSection(block, {
+      paddingY: "py-(--pf-section-y)",
+      width: "wide",
+      align: "center",
+    });
+
+    return (
+      <section className={cn("px-6", paddingClass)} style={sectionStyle}>
+        <div className={cn("mx-auto", widthClass)}>
+          <SectionHeader
+            eyebrow={block.props.eyebrow}
+            heading={block.props.heading}
+            description={block.props.description}
+            align={align ?? "center"}
+          />
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {block.props.items.map((item, index) => (
+              <article
+                key={`${item.name}-${index}`}
+                className="pf-border pf-soft flex flex-col overflow-hidden rounded-(--pf-radius) border text-left"
+              >
+                <div className="relative aspect-[4/3] bg-(--pf-bg)">
+                  {item.image ? (
+                    <Image
+                      src={item.image}
+                      alt={item.imageAlt}
+                      fill
+                      sizes="(min-width: 1024px) 360px, 100vw"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="pf-muted grid h-full place-items-center text-center">
+                      <div>
+                        <ImageIcon className="mx-auto size-7" />
+                        <p className="mt-2 text-xs font-medium">Add an image URL</p>
+                      </div>
+                    </div>
+                  )}
+                  {item.badge ? (
+                    <span className="pf-btn-primary absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-medium">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  <h3 className="pf-heading text-lg font-semibold">{item.name}</h3>
+                  <p className="pf-muted mt-2 flex-1 text-sm leading-6">{item.description}</p>
+                  <div className="mt-5 flex items-baseline gap-2">
+                    <span className="text-2xl font-semibold">{item.price}</span>
+                    {item.originalPrice ? (
+                      <span className="pf-muted text-sm line-through">{item.originalPrice}</span>
+                    ) : null}
+                  </div>
+                  {item.ctaLabel ? (
+                    <div className="mt-5">
+                      <CtaLink href={item.ctaUrl} variant="primary">
+                        {item.ctaLabel}
+                      </CtaLink>
+                    </div>
+                  ) : null}
                 </div>
               </article>
             ))}

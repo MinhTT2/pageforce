@@ -1,5 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
-import { memo } from "react";
+import { Search } from "lucide-react";
+import { memo, useMemo, useState } from "react";
+import { Input } from "@/components/ui/Input";
 import { blockLabels } from "@/lib/blocks";
 import type { BlockType } from "@/types/blocks";
 import { cn } from "@/lib/utils";
@@ -10,6 +12,27 @@ export const BlockPalette = memo(function BlockPalette({
 }: {
   onAdd: (type: BlockType) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredGroups = useMemo(
+    () =>
+      blockGroups
+        .map((group) => ({
+          ...group,
+          blocks: group.blocks.filter((type) => {
+            const option = blockOptions[type];
+            return (
+              !normalizedQuery ||
+              blockLabels[type].toLowerCase().includes(normalizedQuery) ||
+              option.description.toLowerCase().includes(normalizedQuery)
+            );
+          }),
+        }))
+        .filter((group) => group.blocks.length > 0),
+    [normalizedQuery],
+  );
+  const hasMatches = filteredGroups.length > 0;
+
   return (
     <aside className="overflow-auto border-r border-border bg-card p-4">
       <div>
@@ -20,9 +43,20 @@ export const BlockPalette = memo(function BlockPalette({
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
           Drag onto the canvas, or click to add at the end.
         </p>
+        <div className="relative mt-3">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search blocks"
+            aria-label="Search blocks"
+            className="pl-8"
+          />
+        </div>
       </div>
       <div className="mt-4 grid gap-5">
-        {blockGroups.map((group) => (
+        {hasMatches ? filteredGroups.map((group) => (
           <section key={group.label}>
             <h3 className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
               {group.label}
@@ -33,7 +67,11 @@ export const BlockPalette = memo(function BlockPalette({
               ))}
             </div>
           </section>
-        ))}
+        )) : (
+          <p className="rounded-md border border-dashed border-border bg-surface px-3 py-4 text-center text-sm text-muted-foreground">
+            No blocks match
+          </p>
+        )}
       </div>
     </aside>
   );

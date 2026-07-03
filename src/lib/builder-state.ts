@@ -10,6 +10,13 @@ import { slugify } from "@/lib/slug";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
+export type BuilderSnapshot = {
+  title: string;
+  slug: string;
+  schema: PageSchema;
+  selectedBlockId: string | null;
+};
+
 export type BuilderState = {
   title: string;
   slug: string;
@@ -18,22 +25,62 @@ export type BuilderState = {
   dirty: boolean;
   saveStatus: SaveStatus;
   notice: string | null;
+  past: BuilderSnapshot[];
+  future: BuilderSnapshot[];
+  lastEdit: { key: string; at: number } | null;
 };
 
 export type BuilderAction =
-  | { type: "setTitle"; value: string }
-  | { type: "setSlug"; value: string }
+  | { type: "setTitle"; value: string; at: number }
+  | { type: "setSlug"; value: string; at: number }
   | { type: "insertBlock"; block: PageBlock; index?: number }
   | { type: "moveBlock"; from: number; to: number }
-  | { type: "updateBlock"; block: PageBlock }
+  | { type: "updateBlock"; block: PageBlock; at: number }
   | { type: "duplicateBlock"; id: string; newId: string }
   | { type: "deleteBlock"; id: string }
-  | { type: "updateSettings"; patch: Partial<Omit<PageSettings, "tokens">> }
-  | { type: "updateTokens"; patch: Partial<DesignTokens> }
+  | { type: "updateSettings"; patch: Partial<Omit<PageSettings, "tokens">>; at: number }
+  | { type: "updateTokens"; patch: Partial<DesignTokens>; at: number }
   | { type: "selectBlock"; id: string | null }
+  | { type: "undo" }
+  | { type: "redo" }
   | { type: "saveStarted" }
   | { type: "saveSucceeded"; page: EditablePage; requestedSlug: string }
   | { type: "saveFailed"; message: string };
+
+const HISTORY_LIMIT = 50;
+const COALESCE_MS = 1000;
+
+const UNDOABLE = new Set<BuilderAction["type"]>([
+  "setTitle",
+  "setSlug",
+  "insertBlock",
+  "moveBlock",
+  "updateBlock",
+  "duplicateBlock",
+  "deleteBlock",
+  "updateSettings",
+  "updateTokens",
+]);
+
+function snapshotOf(state: BuilderState): BuilderSnapshot {
+  return {
+    title: state.title,
+    slug: state.slug,
+    schema: state.schema,
+    selectedBlockId: state.selectedBlockId,
+  };
+}
+
+// null = structural action (never coalesces); string = coalescing key so a
+// typing burst on the same target becomes a single undo step.
+function editKeyFor(action: BuilderAction): string | null {
+  if (action.type === "setTitle") return "title";
+  if (action.type === "setSlug") return "slug";
+  if (action.type === "updateBlock") return `block:${action.block.id}`;
+  if (action.type === "updateSettings") return `settings:${Object.keys(action.patch).sort().join(",")}`;
+  if (action.type === "updateTokens") return `tokens:${Object.keys(action.patch).sort().join(",")}`;
+  return null;
+}
 
 function normalizeSettings(schema: PageSchema): PageSettings {
   return {
@@ -52,6 +99,9 @@ export function initialBuilderState(page: EditablePage): BuilderState {
     dirty: false,
     saveStatus: "idle",
     notice: null,
+    past: [],
+    future: [],
+    lastEdit: null,
   };
 }
 
@@ -60,12 +110,86 @@ function edited(state: BuilderState, patch: Partial<BuilderState>): BuilderState
 }
 
 export function builderReducer(state: BuilderState, action: BuilderAction): BuilderState {
+  if (action.type === "undo") {
+    const previous = state.past.at(-1);
+
+    if (!previous) {
+      return state;
+    }
+
+    return {
+      ...state,
+      ...previous,
+      past: state.past.slice(0, -1),
+      future: [...state.future, snapshotOf(state)],
+      lastEdit: null,
+      dirty: true,
+      saveStatus: "idle",
+      notice: null,
+    };
+  }
+
+  if (action.type === "redo") {
+    const next = state.future.at(-1);
+
+    if (!next) {
+      return state;
+    }
+
+    return {
+      ...state,
+      ...next,
+      past: [...state.past, snapshotOf(state)],
+      future: state.future.slice(0, -1),
+      lastEdit: null,
+      dirty: true,
+      saveStatus: "idle",
+      notice: null,
+    };
+  }
+
+  const next = applyAction(state, action);
+
+  if (next === state || !UNDOABLE.has(action.type)) {
+    return next;
+  }
+
+  const key = editKeyFor(action);
+  const at = "at" in action ? action.at : 0;
+  const coalesce =
+    key !== null &&
+    state.lastEdit !== null &&
+    state.lastEdit.key === key &&
+    at >= state.lastEdit.at &&
+    at - state.lastEdit.at < COALESCE_MS;
+
+  return {
+    ...next,
+    past: coalesce ? state.past : [...state.past, snapshotOf(state)].slice(-HISTORY_LIMIT),
+    future: [],
+    lastEdit: key === null ? null : { key, at },
+  };
+}
+
+type ApplyableAction = Exclude<BuilderAction, { type: "undo" } | { type: "redo" }>;
+
+function applyAction(state: BuilderState, action: ApplyableAction): BuilderState {
   if (action.type === "setTitle") {
+    if (state.title === action.value) {
+      return state;
+    }
+
     return edited(state, { title: action.value });
   }
 
   if (action.type === "setSlug") {
-    return edited(state, { slug: slugify(action.value) });
+    const slug = slugify(action.value);
+
+    if (state.slug === slug) {
+      return state;
+    }
+
+    return edited(state, { slug });
   }
 
   if (action.type === "insertBlock") {
@@ -98,12 +222,24 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
   }
 
   if (action.type === "updateBlock") {
+    let changed = false;
+    const blocks = state.schema.blocks.map((block) => {
+      if (block.id !== action.block.id) {
+        return block;
+      }
+
+      changed = block !== action.block;
+      return action.block;
+    });
+
+    if (!changed) {
+      return state;
+    }
+
     return edited(state, {
       schema: {
         ...state.schema,
-        blocks: state.schema.blocks.map((block) =>
-          block.id === action.block.id ? action.block : block,
-        ),
+        blocks,
       },
     });
   }
@@ -128,6 +264,11 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
 
   if (action.type === "deleteBlock") {
     const blocks = state.schema.blocks.filter((block) => block.id !== action.id);
+
+    if (blocks.length === state.schema.blocks.length) {
+      return state;
+    }
+
     const selectedBlockId =
       state.selectedBlockId === action.id ? blocks[0]?.id ?? null : state.selectedBlockId;
 
@@ -181,6 +322,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
         : schema.blocks[0]?.id ?? null,
       dirty: false,
       saveStatus: "saved",
+      lastEdit: null,
       notice:
         action.page.slug !== action.requestedSlug
           ? `That slug was taken — published at /p/${action.page.slug}`

@@ -123,7 +123,7 @@ describe("block mutations", () => {
   it("keeps untouched block references identical on updateBlock", () => {
     const state = makeState();
     const edited = { ...state.schema.blocks[1] };
-    const next = builderReducer(state, { type: "updateBlock", block: edited });
+    const next = builderReducer(state, { type: "updateBlock", block: edited, at: 0 });
 
     expect(next.schema.blocks[0]).toBe(state.schema.blocks[0]);
     expect(next.schema.blocks[1]).toBe(edited);
@@ -137,6 +137,7 @@ describe("settings and tokens", () => {
     const next = builderReducer(state, {
       type: "updateSettings",
       patch: { metaTitle: "New title" },
+      at: 0,
     });
 
     expect(next.schema.settings?.metaTitle).toBe("New title");
@@ -149,6 +150,7 @@ describe("settings and tokens", () => {
     const next = builderReducer(state, {
       type: "updateTokens",
       patch: { primaryColor: "#ff0000" },
+      at: 0,
     });
 
     expect(next.schema.settings?.tokens).toEqual({ ...defaultTokens, primaryColor: "#ff0000" });
@@ -159,15 +161,136 @@ describe("settings and tokens", () => {
     const next = builderReducer(state, {
       type: "updateTokens",
       patch: { primaryColor: "#ff0000" },
+      at: 0,
     });
 
     expect(next.schema.blocks).toBe(state.schema.blocks);
   });
 });
 
+describe("undo and redo", () => {
+  it("restores insert, delete, move, and title edits", () => {
+    const state = makeState();
+    const inserted = createBlock("hero");
+    const afterInsert = builderReducer(state, { type: "insertBlock", block: inserted, index: 1 });
+    const afterDelete = builderReducer(afterInsert, {
+      type: "deleteBlock",
+      id: afterInsert.schema.blocks[0].id,
+    });
+    const afterMove = builderReducer(afterDelete, { type: "moveBlock", from: 0, to: 2 });
+    const renamed = builderReducer(afterMove, { type: "setTitle", value: "Renamed", at: 0 });
+
+    const undoTitle = builderReducer(renamed, { type: "undo" });
+    const undoMove = builderReducer(undoTitle, { type: "undo" });
+    const undoDelete = builderReducer(undoMove, { type: "undo" });
+    const undoInsert = builderReducer(undoDelete, { type: "undo" });
+
+    expect(undoTitle.title).toBe(afterMove.title);
+    expect(undoMove.schema.blocks.map((block) => block.id)).toEqual(
+      afterDelete.schema.blocks.map((block) => block.id),
+    );
+    expect(undoDelete.schema.blocks.map((block) => block.id)).toEqual(
+      afterInsert.schema.blocks.map((block) => block.id),
+    );
+    expect(undoInsert.schema.blocks.map((block) => block.id)).toEqual(
+      state.schema.blocks.map((block) => block.id),
+    );
+    expect(undoInsert.dirty).toBe(true);
+  });
+
+  it("redoes an undone edit", () => {
+    const state = makeState();
+    const renamed = builderReducer(state, { type: "setTitle", value: "Renamed", at: 0 });
+    const undone = builderReducer(renamed, { type: "undo" });
+    const redone = builderReducer(undone, { type: "redo" });
+
+    expect(redone.title).toBe("Renamed");
+    expect(redone.future).toHaveLength(0);
+    expect(redone.past).toHaveLength(1);
+  });
+
+  it("clears future when editing after undo", () => {
+    const renamed = builderReducer(makeState(), { type: "setTitle", value: "Renamed", at: 0 });
+    const undone = builderReducer(renamed, { type: "undo" });
+    const edited = builderReducer(undone, { type: "setSlug", value: "new-page", at: 10 });
+
+    expect(edited.future).toHaveLength(0);
+    expect(builderReducer(edited, { type: "redo" })).toBe(edited);
+  });
+
+  it("coalesces rapid edits on the same target", () => {
+    const state = makeState();
+    const firstBlock = { ...state.schema.blocks[0], props: { content: "A", align: "left" } };
+    const secondBlock = { ...firstBlock, props: { content: "AB", align: "left" } };
+    const next = builderReducer(
+      builderReducer(state, { type: "updateBlock", block: firstBlock, at: 0 }),
+      { type: "updateBlock", block: secondBlock, at: 500 },
+    );
+
+    expect(next.past).toHaveLength(1);
+  });
+
+  it("does not coalesce slow edits or edits on different targets", () => {
+    const state = makeState();
+    const firstEdit = { ...state.schema.blocks[0], props: { content: "A", align: "left" } };
+    const secondEdit = { ...firstEdit, props: { content: "AB", align: "left" } };
+    const differentBlock = { ...state.schema.blocks[1], props: { content: "Other", align: "left" } };
+
+    const slow = builderReducer(
+      builderReducer(state, { type: "updateBlock", block: firstEdit, at: 0 }),
+      { type: "updateBlock", block: secondEdit, at: 1500 },
+    );
+    const different = builderReducer(slow, {
+      type: "updateBlock",
+      block: differentBlock,
+      at: 1600,
+    });
+
+    expect(slow.past).toHaveLength(2);
+    expect(different.past).toHaveLength(3);
+  });
+
+  it("keeps structural edits as separate history entries", () => {
+    const state = makeState();
+    const moved = builderReducer(state, { type: "moveBlock", from: 0, to: 2 });
+    const movedBack = builderReducer(moved, { type: "moveBlock", from: 2, to: 0 });
+
+    expect(movedBack.past).toHaveLength(2);
+  });
+
+  it("does not push history for select, save lifecycle, or out-of-bounds moves", () => {
+    const state = makeState();
+    const selected = builderReducer(state, { type: "selectBlock", id: state.schema.blocks[1].id });
+    const saving = builderReducer(selected, { type: "saveStarted" });
+    const moved = builderReducer(saving, { type: "moveBlock", from: 0, to: 9 });
+
+    expect(moved.past).toHaveLength(0);
+  });
+
+  it("caps history at 50 entries", () => {
+    let state = makeState();
+
+    for (let index = 0; index < 60; index += 1) {
+      state = builderReducer(state, {
+        type: "setTitle",
+        value: `Title ${index}`,
+        at: index * 1500,
+      });
+    }
+
+    expect(state.past).toHaveLength(50);
+  });
+
+  it("returns the same reference when undo has no past", () => {
+    const state = makeState();
+
+    expect(builderReducer(state, { type: "undo" })).toBe(state);
+  });
+});
+
 describe("save lifecycle", () => {
   it("slugifies slug edits", () => {
-    const next = builderReducer(makeState(), { type: "setSlug", value: "My Page!" });
+    const next = builderReducer(makeState(), { type: "setSlug", value: "My Page!", at: 0 });
 
     expect(next.slug).toBe("my-page");
     expect(next.dirty).toBe(true);
@@ -181,7 +304,7 @@ describe("save lifecycle", () => {
   });
 
   it("clears dirty and syncs server state on success", () => {
-    const dirtyState = builderReducer(makeState(), { type: "setTitle", value: "Renamed" });
+    const dirtyState = builderReducer(makeState(), { type: "setTitle", value: "Renamed", at: 0 });
     const saving = builderReducer(dirtyState, { type: "saveStarted" });
     const page = makePage();
     const next = builderReducer(saving, {
@@ -221,7 +344,7 @@ describe("save lifecycle", () => {
   });
 
   it("keeps dirty and reports the error on failure", () => {
-    const dirtyState = builderReducer(makeState(), { type: "setTitle", value: "Renamed" });
+    const dirtyState = builderReducer(makeState(), { type: "setTitle", value: "Renamed", at: 0 });
     const next = builderReducer(dirtyState, { type: "saveFailed", message: "Could not save" });
 
     expect(next.dirty).toBe(true);

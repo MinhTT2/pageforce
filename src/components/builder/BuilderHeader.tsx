@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Check, Copy, Eye, Pencil, Save } from "lucide-react";
+import { ArrowLeft, Check, Copy, Eye, Pencil, Redo2, Save, Undo2 } from "lucide-react";
 import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
@@ -14,6 +14,10 @@ export const BuilderHeader = memo(function BuilderHeader({
   previewMode,
   publicUrl,
   onTitleChange,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   onTogglePreview,
   onSave,
 }: {
@@ -24,6 +28,10 @@ export const BuilderHeader = memo(function BuilderHeader({
   previewMode: boolean;
   publicUrl: string;
   onTitleChange: (value: string) => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
   onTogglePreview: () => void;
   onSave: () => void;
 }) {
@@ -35,7 +43,7 @@ export const BuilderHeader = memo(function BuilderHeader({
       ? "Save failed"
       : dirty
         ? "Unsaved changes"
-        : "Saved live";
+        : "All changes live";
 
   async function copyUrl() {
     await navigator.clipboard.writeText(publicUrl);
@@ -75,6 +83,24 @@ export const BuilderHeader = memo(function BuilderHeader({
         <span className="rounded-md border border-border bg-surface px-2.5 py-1 text-sm text-muted-foreground">
           {statusLabel}
         </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onUndo}
+          disabled={!canUndo}
+          aria-label="Undo (Ctrl+Z)"
+        >
+          <Undo2 size={16} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onRedo}
+          disabled={!canRedo}
+          aria-label="Redo (Ctrl+Shift+Z or Ctrl+Y)"
+        >
+          <Redo2 size={16} />
+        </Button>
         <Button
           variant="secondary"
           onClick={onTogglePreview}

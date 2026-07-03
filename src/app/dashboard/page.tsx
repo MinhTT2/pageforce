@@ -5,6 +5,7 @@ import {
   BadgeDollarSign,
   CircleHelp,
   Edit,
+  GalleryHorizontal,
   Image as ImageIcon,
   Inbox,
   ListChecks,
@@ -15,6 +16,7 @@ import {
   Plus,
   Search,
   Send,
+  ShoppingBag,
   Sparkles,
 } from "lucide-react";
 import { headers } from "next/headers";
@@ -277,6 +279,16 @@ function PreviewBlock({ block }: { block: PageBlock }) {
     );
   }
 
+  if (block.type === "carousel") {
+    return (
+      <MiniPreview
+        icon={GalleryHorizontal}
+        title={block.props.heading || "Image carousel"}
+        detail={`${block.props.items.length} slides`}
+      />
+    );
+  }
+
   if (block.type === "button") {
     return (
       <section className="px-5 py-3 text-center">
@@ -316,6 +328,16 @@ function PreviewBlock({ block }: { block: PageBlock }) {
         icon={BadgeDollarSign}
         title={block.props.heading}
         detail={`${block.props.plans.length} plans`}
+      />
+    );
+  }
+
+  if (block.type === "products") {
+    return (
+      <MiniPreview
+        icon={ShoppingBag}
+        title={block.props.heading}
+        detail={`${block.props.items.length} products`}
       />
     );
   }

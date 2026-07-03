@@ -188,6 +188,49 @@ function buildSalesPromo(): PageSchema {
       buttonUrl: "#",
     }),
     buildBlock("image", { alt: "Featured products" }),
+    buildBlock("products", {
+      eyebrow: "On sale",
+      heading: "This week's deals",
+      description: "Hand-picked offers with the limited-time discount already applied.",
+      items: [
+        {
+          name: "Starter Launch Kit",
+          description: "Everything a new campaign needs to go live with confidence.",
+          price: "$13",
+          originalPrice: "$19",
+          image:
+            "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200&auto=format&fit=crop",
+          imageAlt: "Launch kit workspace",
+          badge: "Sale",
+          ctaLabel: "Buy now",
+          ctaUrl: "#",
+        },
+        {
+          name: "Growth Bundle",
+          description: "More pages, lead-ready sections, and priority launch support.",
+          price: "$34",
+          originalPrice: "$49",
+          image:
+            "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1200&auto=format&fit=crop",
+          imageAlt: "Team planning a campaign",
+          badge: "-30%",
+          ctaLabel: "Buy now",
+          ctaUrl: "#",
+        },
+        {
+          name: "Pro Campaign Pack",
+          description: "A larger toolkit for teams pushing multiple offers at once.",
+          price: "$69",
+          originalPrice: "$99",
+          image:
+            "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1200&auto=format&fit=crop",
+          imageAlt: "Modern office desk",
+          badge: "Sale",
+          ctaLabel: "Buy now",
+          ctaUrl: "#",
+        },
+      ],
+    }),
     buildBlock("features", {
       eyebrow: "Why buy now",
       heading: "Deals worth grabbing",

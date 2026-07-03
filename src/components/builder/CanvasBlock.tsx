@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Copy, GripVertical, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, GripVertical, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { blockLabels } from "@/lib/blocks";
@@ -20,6 +20,9 @@ export function CanvasBlock({
   onSelect,
   onDuplicate,
   onDelete,
+  onMove,
+  index,
+  count,
   children,
 }: {
   block: PageBlock;
@@ -28,6 +31,9 @@ export function CanvasBlock({
   onSelect: (id: string) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
+  onMove: (id: string, delta: number) => void;
+  index: number;
+  count: number;
   children: ReactNode;
 }) {
   const {
@@ -73,6 +79,30 @@ export function CanvasBlock({
         <span className="px-1.5 text-xs font-medium text-muted-foreground">
           {blockLabels[block.type]}
         </span>
+        <button
+          type="button"
+          aria-label={`Move ${blockLabels[block.type]} block up`}
+          disabled={index <= 0}
+          onClick={(event) => {
+            event.stopPropagation();
+            onMove(block.id, -1);
+          }}
+          className="flex size-7 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ArrowUp size={14} />
+        </button>
+        <button
+          type="button"
+          aria-label={`Move ${blockLabels[block.type]} block down`}
+          disabled={index >= count - 1}
+          onClick={(event) => {
+            event.stopPropagation();
+            onMove(block.id, 1);
+          }}
+          className="flex size-7 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ArrowDown size={14} />
+        </button>
         <Tooltip>
           <TooltipTrigger asChild>
             <button

@@ -1,5 +1,5 @@
 import { Copy, Trash2, X } from "lucide-react";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { blockLabels } from "@/lib/blocks";
@@ -35,6 +35,9 @@ export const Inspector = memo(function Inspector({
   onSettingsChange: (patch: Partial<Omit<PageSettings, "tokens">>) => void;
   onTokensChange: (patch: Partial<DesignTokens>) => void;
 }) {
+  const [blockTab, setBlockTab] = useState("content");
+  const [pageTab, setPageTab] = useState("page");
+
   return (
     <aside className="overflow-auto border-l border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -87,7 +90,7 @@ export const Inspector = memo(function Inspector({
               {blockOptions[selectedBlock.type].description}
             </p>
           </div>
-          <Tabs defaultValue="content">
+          <Tabs value={blockTab} onValueChange={setBlockTab}>
             <TabsList className="w-full">
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="style">Style</TabsTrigger>
@@ -106,7 +109,7 @@ export const Inspector = memo(function Inspector({
         </div>
       ) : (
         <div className="mt-4">
-          <Tabs defaultValue="page">
+          <Tabs value={pageTab} onValueChange={setPageTab}>
             <TabsList className="w-full">
               <TabsTrigger value="page">Page</TabsTrigger>
               <TabsTrigger value="design">Design</TabsTrigger>

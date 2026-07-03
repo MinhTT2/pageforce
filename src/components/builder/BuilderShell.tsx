@@ -28,7 +28,12 @@ import { BuilderCanvas, type DropIndicator } from "./BuilderCanvas";
 import { BuilderHeader } from "./BuilderHeader";
 import { blockOptions } from "./block-meta";
 import { Inspector } from "./Inspector";
-import { usePublicOrigin, useSaveShortcut, useUnsavedChangesWarning } from "./hooks";
+import {
+  usePublicOrigin,
+  useSaveShortcut,
+  useUndoRedoShortcuts,
+  useUnsavedChangesWarning,
+} from "./hooks";
 
 type ActiveDrag =
   | { source: "palette"; blockType: BlockType }
@@ -183,9 +188,6 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     }
   }, [page.id]);
 
-  useSaveShortcut(savePage);
-  useUnsavedChangesWarning(state.dirty);
-
   const addBlock = useCallback((type: BlockType, index?: number) => {
     dispatch({ type: "insertBlock", block: createBlock(type), index });
   }, []);
@@ -197,21 +199,38 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   );
   const deleteBlock = useCallback((id: string) => dispatch({ type: "deleteBlock", id }), []);
   const updateBlock = useCallback(
-    (block: PageBlock) => dispatch({ type: "updateBlock", block }),
+    (block: PageBlock) => dispatch({ type: "updateBlock", block, at: Date.now() }),
     [],
   );
   const clearSelection = useCallback(() => dispatch({ type: "selectBlock", id: null }), []);
-  const setTitle = useCallback((value: string) => dispatch({ type: "setTitle", value }), []);
-  const setSlug = useCallback((value: string) => dispatch({ type: "setSlug", value }), []);
+  const setTitle = useCallback((value: string) => dispatch({ type: "setTitle", value, at: Date.now() }), []);
+  const setSlug = useCallback((value: string) => dispatch({ type: "setSlug", value, at: Date.now() }), []);
   const updateSettings = useCallback(
-    (patch: Partial<Omit<PageSettings, "tokens">>) => dispatch({ type: "updateSettings", patch }),
+    (patch: Partial<Omit<PageSettings, "tokens">>) =>
+      dispatch({ type: "updateSettings", patch, at: Date.now() }),
     [],
   );
   const updateTokens = useCallback(
-    (patch: Partial<DesignTokens>) => dispatch({ type: "updateTokens", patch }),
+    (patch: Partial<DesignTokens>) => dispatch({ type: "updateTokens", patch, at: Date.now() }),
     [],
   );
+  const undo = useCallback(() => dispatch({ type: "undo" }), []);
+  const redo = useCallback(() => dispatch({ type: "redo" }), []);
+  const moveBlockBy = useCallback((id: string, delta: number) => {
+    const blocks = stateRef.current.schema.blocks;
+    const from = blocks.findIndex((block) => block.id === id);
+
+    if (from < 0) {
+      return;
+    }
+
+    dispatch({ type: "moveBlock", from, to: from + delta });
+  }, []);
   const togglePreview = useCallback(() => setPreviewMode((current) => !current), []);
+
+  useSaveShortcut(savePage);
+  useUndoRedoShortcuts(undo, redo);
+  useUnsavedChangesWarning(state.dirty);
 
   function handleDragStart(event: DragStartEvent) {
     const data = event.active.data.current as
@@ -308,6 +327,10 @@ export function BuilderShell({ page }: { page: EditablePage }) {
           previewMode={previewMode}
           publicUrl={publicUrl}
           onTitleChange={setTitle}
+          canUndo={state.past.length > 0}
+          canRedo={state.future.length > 0}
+          onUndo={undo}
+          onRedo={redo}
           onTogglePreview={togglePreview}
           onSave={savePage}
         />
@@ -337,6 +360,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
                 onSelectBlock={selectBlock}
                 onDuplicateBlock={duplicateBlock}
                 onDeleteBlock={deleteBlock}
+                onMoveBlock={moveBlockBy}
                 onAddBlock={addBlock}
               />
               <Inspector

@@ -77,6 +77,24 @@ const imageBlockSchema = z.object({
   }),
 });
 
+const carouselBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("carousel"),
+  props: z.object({
+    heading: z.string(),
+    autoplay: z.boolean(),
+    items: z
+      .array(
+        z.object({
+          src: z.string(),
+          alt: z.string(),
+          caption: z.string(),
+        }),
+      )
+      .min(1),
+  }),
+});
+
 const buttonBlockSchema = z.object({
   ...blockBase,
   type: z.literal("button"),
@@ -145,6 +163,31 @@ const pricingBlockSchema = z.object({
   }),
 });
 
+const productsBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("products"),
+  props: z.object({
+    eyebrow: z.string(),
+    heading: z.string(),
+    description: z.string(),
+    items: z
+      .array(
+        z.object({
+          name: z.string(),
+          description: z.string(),
+          price: z.string(),
+          originalPrice: z.string(),
+          image: z.string(),
+          imageAlt: z.string(),
+          badge: z.string(),
+          ctaLabel: z.string(),
+          ctaUrl: z.string(),
+        }),
+      )
+      .min(1),
+  }),
+});
+
 const faqBlockSchema = z.object({
   ...blockBase,
   type: z.literal("faq"),
@@ -207,10 +250,12 @@ const blocksSchema = z.array(
     heroBlockSchema,
     textBlockSchema,
     imageBlockSchema,
+    carouselBlockSchema,
     buttonBlockSchema,
     featuresBlockSchema,
     testimonialsBlockSchema,
     pricingBlockSchema,
+    productsBlockSchema,
     faqBlockSchema,
     ctaBlockSchema,
     leadFormBlockSchema,

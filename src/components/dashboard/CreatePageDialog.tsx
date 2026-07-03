@@ -16,22 +16,22 @@ import {
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/Input";
 
-type CreateSiteDialogProps = {
+type CreatePageDialogProps = {
   defaultOpen?: boolean;
+  label?: string;
 };
 
 type CreatePageResponse = {
-  id?: string;
   error?: string;
 };
 
-export function CreateSiteDialog({ defaultOpen = false }: CreateSiteDialogProps) {
+export function CreatePageDialog({ defaultOpen = false, label = "New page" }: CreatePageDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(defaultOpen);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function createSite(event: FormEvent<HTMLFormElement>) {
+  async function createPage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError("");
@@ -48,34 +48,33 @@ export function CreateSiteDialog({ defaultOpen = false }: CreateSiteDialogProps)
 
     setLoading(false);
 
-    if (!response.ok || !page.id) {
-      setError(page.error || "Could not create your website. Please try again.");
+    if (!response.ok) {
+      setError(page.error || "Could not create this page. Please try again.");
       return;
     }
 
     setOpen(false);
-    router.push(`/builder/${page.id}`);
     router.refresh();
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button size="lg">
           <Plus />
-          Create website
+          {label}
         </Button>
       </DialogTrigger>
-      <DialogContent showCloseButton={false}>
-        <form onSubmit={createSite} className="grid gap-4">
+      <DialogContent>
+        <form onSubmit={createPage} className="grid gap-4">
           <DialogHeader>
-            <DialogTitle>Create your website</DialogTitle>
+            <DialogTitle>Create landing page</DialogTitle>
             <DialogDescription>
-              Name your first landing page. You can edit the title and slug later.
+              Give this page a working name. You can tune the slug from the dashboard or builder.
             </DialogDescription>
           </DialogHeader>
 
-          <Field label="Website name" error={error}>
+          <Field label="Page title" error={error}>
             <Input
               name="title"
               defaultValue="Untitled page"
@@ -88,7 +87,7 @@ export function CreateSiteDialog({ defaultOpen = false }: CreateSiteDialogProps)
           <DialogFooter>
             <Button type="submit" disabled={loading}>
               <Plus />
-              {loading ? "Creating..." : "Create website"}
+              {loading ? "Creating..." : "Create page"}
             </Button>
           </DialogFooter>
         </form>

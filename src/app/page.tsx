@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   ArrowRight,
   Blocks,
@@ -32,7 +33,37 @@ const features = [
   },
 ];
 
-export default function Home() {
+type HomeProps = {
+  searchParams: Promise<{
+    code?: string;
+    error?: string;
+    error_description?: string;
+    next?: string;
+  }>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const params = await searchParams;
+
+  if (params.code || params.error || params.error_description) {
+    const callbackParams = new URLSearchParams();
+
+    if (params.code) {
+      callbackParams.set("code", params.code);
+    }
+
+    if (params.error) {
+      callbackParams.set("error", params.error);
+    }
+
+    if (params.error_description) {
+      callbackParams.set("error_description", params.error_description);
+    }
+
+    callbackParams.set("next", params.next || "/dashboard");
+    redirect(`/auth/callback?${callbackParams.toString()}`);
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader />

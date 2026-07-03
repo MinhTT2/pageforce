@@ -181,7 +181,7 @@ const leadFormBlockSchema = z.object({
     headline: z.string(),
     description: z.string(),
     submitLabel: z.string(),
-    deliveryMode: z.enum(["mailto", "actionUrl"]),
+    deliveryMode: z.enum(["capture", "mailto", "actionUrl"]),
     mailto: z.string(),
     actionUrl: z.string(),
   }),
@@ -245,3 +245,25 @@ export const pagePatchValidator = z
     schema: pageSchemaValidator.optional(),
   })
   .strict();
+
+// Public endpoint payload: strict objects double as an abuse limit — no
+// arbitrary keys or oversized values can reach the stored Json. `website` is a
+// honeypot: it validates as any short string so bots get a normal-looking
+// success response, but the API silently drops non-empty submissions.
+export const leadSubmissionValidator = z
+  .object({
+    blockId: z.string().min(1).max(80),
+    website: z.string().max(200).optional(),
+    data: z
+      .object({
+        name: z.string().trim().max(200).optional().default(""),
+        email: z.string().trim().max(320).optional().default(""),
+        message: z.string().trim().max(5000).optional().default(""),
+      })
+      .strict(),
+  })
+  .strict()
+  .refine((value) => value.data.name || value.data.email || value.data.message, {
+    message: "Empty submission",
+    path: ["data"],
+  });

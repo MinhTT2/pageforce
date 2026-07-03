@@ -166,7 +166,7 @@ export type LeadFormBlock = BlockBase & {
     headline: string;
     description: string;
     submitLabel: string;
-    deliveryMode: "mailto" | "actionUrl";
+    deliveryMode: "capture" | "mailto" | "actionUrl";
     mailto: string;
     actionUrl: string;
   };

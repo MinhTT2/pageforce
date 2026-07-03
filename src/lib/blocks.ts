@@ -233,7 +233,7 @@ export function createBlock(type: BlockType): PageBlock {
         headline: "Talk to us",
         description: "Share a few details and we will follow up with next steps.",
         submitLabel: "Send message",
-        deliveryMode: "mailto",
+        deliveryMode: "capture",
         mailto: "hello@example.com",
         actionUrl: "",
       },

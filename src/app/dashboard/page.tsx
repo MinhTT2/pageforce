@@ -5,14 +5,15 @@ import {
   BadgeDollarSign,
   CircleHelp,
   Edit,
-  ExternalLink,
   Image as ImageIcon,
+  Inbox,
   ListChecks,
   Megaphone,
   MessageSquareQuote,
   MousePointerClick,
   PanelBottom,
   Plus,
+  Search,
   Send,
   Sparkles,
 } from "lucide-react";
@@ -20,54 +21,73 @@ import { headers } from "next/headers";
 import { CreatePageDialog } from "@/components/dashboard/CreatePageDialog";
 import { DeletePageButton } from "@/components/dashboard/DeletePageButton";
 import { EditPageDialog } from "@/components/dashboard/EditPageDialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/card";
+import { Input } from "@/components/ui/Input";
 import { requireUser } from "@/lib/auth";
 import { normalizePageSchema } from "@/lib/blocks";
 import { prisma } from "@/lib/prisma";
 import type { PageBlock, PageSchema } from "@/types/blocks";
 
-export default async function DashboardPage() {
-  const [user, headerStore] = await Promise.all([requireUser("/dashboard"), headers()]);
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const [user, headerStore, params] = await Promise.all([
+    requireUser("/dashboard"),
+    headers(),
+    searchParams,
+  ]);
   const publicOrigin = getRequestOrigin(headerStore);
+  const query = typeof params.q === "string" ? params.q.trim() : "";
   const pages = await prisma.page.findMany({
-    where: { userId: user.id },
+    where: {
+      userId: user.id,
+      ...(query ? { title: { contains: query, mode: "insensitive" as const } } : {}),
+    },
     select: {
       id: true,
       title: true,
       slug: true,
-      updatedAt: true,
       draftSchema: true,
+      _count: { select: { leadSubmissions: true } },
     },
     orderBy: { updatedAt: "desc" },
   });
+  const hasAnyPages = query
+    ? (await prisma.page.count({ where: { userId: user.id } })) > 0
+    : pages.length > 0;
 
   return (
     <main>
-      <section className="mx-auto grid max-w-6xl gap-8 px-6 py-8 sm:py-10">
-        <div className="grid gap-5 overflow-hidden rounded-lg border border-border bg-[linear-gradient(135deg,var(--card)_0%,var(--surface)_100%)] p-5 shadow-xs md:grid-cols-[minmax(0,1fr)_340px] md:items-end">
-          <div className="max-w-2xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-surface-foreground">
-              <Sparkles className="size-3.5" />
-              Landing page workspace
-            </div>
-            <h1 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
-              Dashboard
-            </h1>
+      <section className="mx-auto grid w-full max-w-6xl gap-6 px-6 py-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-normal text-foreground">Pages</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {pages.length} {pages.length === 1 ? "page" : "pages"}
+              {query ? ` matching "${query}"` : " in your workspace"}
+            </p>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <form method="get" role="search" className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                name="q"
+                defaultValue={query}
+                placeholder="Search pages"
+                aria-label="Search pages"
+                className="w-52 pl-8"
+              />
+            </form>
             <CreatePageDialog />
+          </div>
         </div>
 
         <Panel className="overflow-hidden rounded-lg">
-          <div className="flex flex-col gap-3 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div>
-              <h2 className="text-base font-semibold text-panel-foreground">Landing pages</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Create, edit details, delete, or open any page in the builder.
-              </p>
-            </div>
-          </div>
-
           {pages.length ? (
             <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
               {pages.map((page) => {
@@ -96,20 +116,28 @@ export default async function DashboardPage() {
                         </div>
                       </div>
 
-                      <dl className="grid gap-2 text-sm">
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-muted-foreground">Updated</dt>
-                          <dd className="text-right text-foreground">
-                            {formatDateTime(page.updatedAt)}
-                          </dd>
-                        </div>
-                      </dl>
-
-                      <PageActions page={page} publicUrl={publicUrl} />
+                      <PageActions page={page} />
                     </div>
                   </article>
                 );
               })}
+            </div>
+          ) : hasAnyPages ? (
+            <div className="grid min-h-60 place-items-center px-6 py-10 text-center">
+              <div>
+                <div className="mx-auto flex size-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                  <Search className="size-5" />
+                </div>
+                <h2 className="mt-4 text-base font-semibold text-panel-foreground">
+                  No pages match &ldquo;{query}&rdquo;
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Try a different search, or clear it to see every page.
+                </p>
+                <Button asChild variant="outline" size="sm" className="mt-4">
+                  <Link href="/dashboard">Clear search</Link>
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="grid min-h-80 gap-8 px-6 py-10 md:grid-cols-[minmax(0,0.9fr)_minmax(320px,1.1fr)] md:items-center">
@@ -153,23 +181,16 @@ export default async function DashboardPage() {
   );
 }
 
-function DashboardStat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-md border border-border bg-background/70 px-3 py-2">
-      <p className="font-semibold text-foreground">{value}</p>
-      <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
 type DashboardPageItem = {
   id: string;
   title: string;
   slug: string;
-  updatedAt: Date;
   draftSchema: Prisma.JsonValue;
+  _count: { leadSubmissions: number };
 };
 
+// Grayscale on purpose — the preview mimics a user page rendered with its own
+// pf tokens; do not swap these zinc/white values to app brand tokens.
 function DashboardPagePreview({ schema }: { schema: PageSchema }) {
   const previewBlocks = schema.blocks.slice(0, 4);
 
@@ -200,7 +221,7 @@ function DashboardPagePreview({ schema }: { schema: PageSchema }) {
 function PreviewBlock({ block }: { block: PageBlock }) {
   if (block.type === "hero") {
     return (
-      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#eefafe_100%)] px-5 py-6 text-center">
+      <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f4f4f5_100%)] px-5 py-6 text-center">
         <h4 className="mx-auto line-clamp-2 max-w-60 text-base font-semibold leading-tight text-zinc-950">
           {block.props.heading}
         </h4>
@@ -346,19 +367,13 @@ function MiniPreview({
   );
 }
 
-function PageActions({ page, publicUrl }: { page: DashboardPageItem; publicUrl: string }) {
+function PageActions({ page }: { page: DashboardPageItem }) {
   return (
-    <div className="pointer-events-auto relative z-20 grid grid-cols-2 gap-2">
+    <div className="pointer-events-auto relative z-20 grid grid-cols-3 gap-2">
       <Button asChild size="sm" className="w-full">
         <Link href={`/builder/${page.id}`}>
           <Edit />
           Builder
-        </Link>
-      </Button>
-      <Button asChild variant="outline" size="sm" className="w-full">
-        <Link href={publicUrl} target="_blank" rel="noreferrer">
-          <ExternalLink />
-          Public
         </Link>
       </Button>
       <EditPageDialog
@@ -366,16 +381,15 @@ function PageActions({ page, publicUrl }: { page: DashboardPageItem; publicUrl: 
         triggerClassName="w-full"
       />
       <DeletePageButton pageId={page.id} title={page.title} triggerClassName="w-full" />
+      <Button asChild size="sm" variant="outline" className="col-span-3 w-full">
+        <Link href={`/dashboard/pages/${page.id}/leads`}>
+          <Inbox />
+          Leads
+          <Badge variant="secondary">{page._count.leadSubmissions}</Badge>
+        </Link>
+      </Button>
     </div>
   );
-}
-
-function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
 }
 
 function getRequestOrigin(headerStore: Headers) {

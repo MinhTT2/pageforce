@@ -10,7 +10,7 @@ npm run prisma:generate
 npm run dev
 ```
 
-Use root `.env` for local development and point it at the `pageforge-dev` Supabase project. Keep `PAGEFORGE_ENV="development"` locally so Prisma guard scripts can refuse production-unsafe commands.
+Use root `.env` for local development and point it at the `pageforce-dev` Supabase project. Keep `PAGEFORCE_ENV="development"` locally so Prisma guard scripts can refuse production-unsafe commands.
 
 ## Quality Checks
 
@@ -34,19 +34,19 @@ npm run test:e2e
 
 ## Database Environments
 
-- Local development: `pageforge-dev` Supabase project.
+- Local development: `pageforce-dev` Supabase project.
 - Vercel Preview: no dedicated database for now; either leave disabled or point at dev intentionally.
-- Vercel Production: `pageforge-prod` Supabase project.
+- Vercel Production: `pageforce-prod` Supabase project.
 
 Required variables for each environment:
 
-- `PAGEFORGE_ENV`
+- `PAGEFORCE_ENV`
 - `DATABASE_URL`
 - `DIRECT_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-Use `PAGEFORGE_ENV=development` for local/dev, `PAGEFORGE_ENV=preview` for preview if configured, and `PAGEFORGE_ENV=production` only in Vercel Production.
+Use `PAGEFORCE_ENV=development` for local/dev, `PAGEFORCE_ENV=preview` for preview if configured, and `PAGEFORCE_ENV=production` only in Vercel Production.
 
 ## Prisma Migrations
 
@@ -56,7 +56,7 @@ Create and apply local/dev migrations with:
 npm run prisma:migrate
 ```
 
-This command is guarded and will fail if `PAGEFORGE_ENV=production`.
+This command is guarded and will fail if `PAGEFORCE_ENV=production`.
 
 Apply committed migrations to production with:
 
@@ -68,9 +68,9 @@ Do not run `prisma migrate dev` or `npm run prisma:migrate` against production.
 
 ## First Production Setup
 
-- Create a fresh `pageforge-prod` Supabase project.
+- Create a fresh `pageforce-prod` Supabase project.
 - Add the production Supabase values to Vercel Production env.
-- Set `PAGEFORGE_ENV=production` in Vercel Production.
+- Set `PAGEFORCE_ENV=production` in Vercel Production.
 - Run `npm run prisma:deploy` against production during the first deploy.
 - Create a separate production user; do not reuse dev test accounts for smoke tests.
 

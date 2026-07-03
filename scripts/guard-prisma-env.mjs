@@ -17,32 +17,32 @@ const env = {
   ...process.env,
 };
 
-const pageforgeEnv = env.PAGEFORGE_ENV;
+const pageforceEnv = env.PAGEFORCE_ENV;
 
-if (!pageforgeEnv) {
+if (!pageforceEnv) {
   console.error(
-    "PAGEFORGE_ENV is required. Set it to development for local/dev or production for Vercel Production.",
+    "PAGEFORCE_ENV is required. Set it to development for local/dev or production for Vercel Production.",
   );
   process.exit(1);
 }
 
-if (!["development", "preview", "production"].includes(pageforgeEnv)) {
+if (!["development", "preview", "production"].includes(pageforceEnv)) {
   console.error(
-    `PAGEFORGE_ENV must be development, preview, or production. Received: ${pageforgeEnv}`,
+    `PAGEFORCE_ENV must be development, preview, or production. Received: ${pageforceEnv}`,
   );
   process.exit(1);
 }
 
-if (mode === "migrate-dev" && pageforgeEnv === "production") {
+if (mode === "migrate-dev" && pageforceEnv === "production") {
   console.error(
-    "Refusing to run prisma migrate dev with PAGEFORGE_ENV=production. Use npm run prisma:deploy for production.",
+    "Refusing to run prisma migrate dev with PAGEFORCE_ENV=production. Use npm run prisma:deploy for production.",
   );
   process.exit(1);
 }
 
-if (mode === "migrate-deploy" && pageforgeEnv !== "production") {
+if (mode === "migrate-deploy" && pageforceEnv !== "production") {
   console.warn(
-    `Running prisma migrate deploy with PAGEFORGE_ENV=${pageforgeEnv}. This is allowed, but production should use PAGEFORGE_ENV=production.`,
+    `Running prisma migrate deploy with PAGEFORCE_ENV=${pageforceEnv}. This is allowed, but production should use PAGEFORCE_ENV=production.`,
   );
 }
 

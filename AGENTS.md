@@ -27,13 +27,13 @@ Each Supabase Auth user owns at most one `Page` record for the MVP.
 
 ## Environments
 
-- Local/dev uses the `pageforge-dev` Supabase project.
-- Vercel Production uses the `pageforge-prod` Supabase project.
-- Keep local `.env` pointed at `pageforge-dev` and set `PAGEFORGE_ENV="development"`.
-- Vercel Production must set `PAGEFORGE_ENV="production"` and use `pageforge-prod` database/auth values.
+- Local/dev uses the `pageforce-dev` Supabase project.
+- Vercel Production uses the `pageforce-prod` Supabase project.
+- Keep local `.env` pointed at `pageforce-dev` and set `PAGEFORCE_ENV="development"`.
+- Vercel Production must set `PAGEFORCE_ENV="production"` and use `pageforce-prod` database/auth values.
 - Do not point local `.env`, local Prisma commands, or local browser testing at the production Supabase project.
 - Required environment variables:
-  - `PAGEFORGE_ENV`
+  - `PAGEFORCE_ENV`
   - `DATABASE_URL`
   - `DIRECT_URL`
   - `NEXT_PUBLIC_SUPABASE_URL`

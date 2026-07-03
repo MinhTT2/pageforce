@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import {
   Popover,
+  PopoverAnchor,
   PopoverContent,
   PopoverDescription,
   PopoverHeader,
   PopoverTitle,
-  PopoverTrigger,
 } from "@/components/ui/popover";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
@@ -208,12 +208,12 @@ export function BuilderShell({ page }: BuilderShellProps) {
             {status === "PUBLISHED" ? "Public preview" : "Draft"}
           </Button>
           <Popover open={publishedPopoverOpen} onOpenChange={setPublishedPopoverOpen}>
-            <PopoverTrigger asChild>
+            <PopoverAnchor asChild>
               <Button variant="secondary" onClick={publishPage} disabled={publishing}>
                 <Rocket size={16} />
                 {publishing ? "Publishing..." : "Publish"}
               </Button>
-            </PopoverTrigger>
+            </PopoverAnchor>
             <PopoverContent align="end" className="w-96 gap-3 p-3">
               <PopoverHeader>
                 <PopoverTitle>Page published</PopoverTitle>

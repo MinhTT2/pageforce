@@ -1,0 +1,98 @@
+import Link from "next/link";
+import { ArrowLeft, Check, Copy, Eye, Pencil, Save } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/Input";
+import type { SaveStatus } from "@/lib/builder-state";
+import { cn } from "@/lib/utils";
+
+export function BuilderHeader({
+  title,
+  dirty,
+  saveStatus,
+  notice,
+  previewMode,
+  publicUrl,
+  onTitleChange,
+  onTogglePreview,
+  onSave,
+}: {
+  title: string;
+  dirty: boolean;
+  saveStatus: SaveStatus;
+  notice: string | null;
+  previewMode: boolean;
+  publicUrl: string;
+  onTitleChange: (value: string) => void;
+  onTogglePreview: () => void;
+  onSave: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const saving = saveStatus === "saving";
+  const statusLabel = saving
+    ? "Saving..."
+    : saveStatus === "error"
+      ? "Save failed"
+      : dirty
+        ? "Unsaved changes"
+        : "Saved live";
+
+  async function copyUrl() {
+    await navigator.clipboard.writeText(publicUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-5 py-3">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/dashboard">
+            <ArrowLeft />
+            Dashboard
+          </Link>
+        </Button>
+        <div className="min-w-64 max-w-md flex-1">
+          <Input
+            value={title}
+            onChange={(event) => onTitleChange(event.target.value)}
+            className="h-9 font-medium"
+            aria-label="Page title"
+          />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {notice ? (
+          <span
+            className={cn(
+              "max-w-xs truncate text-sm",
+              saveStatus === "error" ? "text-destructive" : "text-warning",
+            )}
+          >
+            {notice}
+          </span>
+        ) : null}
+        <span className="rounded-md border border-border bg-surface px-2.5 py-1 text-sm text-muted-foreground">
+          {statusLabel}
+        </span>
+        <Button
+          variant="secondary"
+          onClick={onTogglePreview}
+          aria-pressed={previewMode}
+          aria-label={previewMode ? "Back to editing" : "Preview as visitor"}
+        >
+          {previewMode ? <Pencil size={16} /> : <Eye size={16} />}
+          {previewMode ? "Edit" : "Preview"}
+        </Button>
+        <Button variant="secondary" onClick={copyUrl} aria-label="Copy public URL">
+          {copied ? <Check size={16} /> : <Copy size={16} />}
+          {copied ? "Copied" : "Copy URL"}
+        </Button>
+        <Button onClick={onSave} disabled={saving || !dirty}>
+          <Save size={16} />
+          {saving ? "Publishing..." : "Publish"}
+        </Button>
+      </div>
+    </header>
+  );
+}

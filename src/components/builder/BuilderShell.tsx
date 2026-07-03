@@ -1,373 +1,386 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowDown, ArrowUp, ExternalLink, Eye, Save, Trash2 } from "lucide-react";
-import type { ReactNode } from "react";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  pointerWithin,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  type KeyboardCoordinateGetter,
+} from "@dnd-kit/core";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/Textarea";
-import { blockLabels, createBlock } from "@/lib/blocks";
-import { slugify } from "@/lib/slug";
-import type { BlockType, PageBlock, PageSchema } from "@/types/blocks";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { blockLabels, createBlock, defaultPageSettings } from "@/lib/blocks";
+import {
+  builderReducer,
+  initialBuilderState,
+  type BuilderState,
+} from "@/lib/builder-state";
+import type { BlockType, PageBlock } from "@/types/blocks";
 import type { EditablePage } from "@/types/page";
+import { BlockPalette, PaletteDragPreview } from "./BlockPalette";
+import { BuilderCanvas, type DropIndicator } from "./BuilderCanvas";
+import { BuilderHeader } from "./BuilderHeader";
+import { blockOptions } from "./block-meta";
+import { Inspector } from "./Inspector";
+import { usePublicOrigin, useSaveShortcut, useUnsavedChangesWarning } from "./hooks";
 
-type BuilderShellProps = {
-  page: EditablePage;
+type ActiveDrag =
+  | { source: "palette"; blockType: BlockType }
+  | { source: "canvas"; block: PageBlock }
+  | null;
+
+type SaveResponse = EditablePage & { error?: string };
+
+// Pointer drags only drop where the pointer actually is (drag out = cancel);
+// keyboard drags have no pointer, so they fall back to closest-center. Block
+// hits outrank the canvas-root droppable, which contains everything.
+const collisionDetection: CollisionDetection = (args) => {
+  if (!args.pointerCoordinates) {
+    return closestCenter(args);
+  }
+
+  const collisions = pointerWithin(args);
+
+  return collisions.sort((a, b) => Number(a.id === "canvas") - Number(b.id === "canvas"));
 };
 
-const blockTypes: BlockType[] = ["hero", "text", "image", "button"];
+export function BuilderShell({ page }: { page: EditablePage }) {
+  const [state, dispatch] = useReducer(builderReducer, page, initialBuilderState);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [activeDrag, setActiveDrag] = useState<ActiveDrag>(null);
+  const [dropIndicator, setDropIndicator] = useState<DropIndicator>(null);
+  const publicOrigin = usePublicOrigin();
 
-type EditablePageResponse = Partial<EditablePage> & {
-  error?: string;
-};
-
-export function BuilderShell({ page }: BuilderShellProps) {
-  const [title, setTitle] = useState(page.title);
-  const [slug, setSlug] = useState(page.slug);
-  const [schema, setSchema] = useState<PageSchema>(page.schema);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
-    page.schema.blocks[0]?.id ?? null,
-  );
-  const [saving, setSaving] = useState(false);
-  const publicOrigin = useBrowserOrigin();
-  const [message, setMessage] = useState("");
-
-  const selectedBlock = useMemo(
-    () => schema.blocks.find((block) => block.id === selectedBlockId) ?? null,
-    [schema.blocks, selectedBlockId],
-  );
+  const settings = state.schema.settings ?? defaultPageSettings;
+  const saving = state.saveStatus === "saving";
   const publicUrl = useMemo(
-    () => (publicOrigin ? `${publicOrigin}/p/${slug}` : `/p/${slug}`),
-    [publicOrigin, slug],
+    () => (publicOrigin ? `${publicOrigin}/p/${state.slug}` : `/p/${state.slug}`),
+    [publicOrigin, state.slug],
+  );
+  const selectedBlock = useMemo(
+    () => state.schema.blocks.find((block) => block.id === state.selectedBlockId) ?? null,
+    [state.schema.blocks, state.selectedBlockId],
   );
 
-  function addBlock(type: BlockType) {
-    const block = createBlock(type);
-    setSchema((current) => ({ ...current, blocks: [...current.blocks, block] }));
-    setSelectedBlockId(block.id);
-  }
+  const blockIdsRef = useRef<string[]>([]);
 
-  function updateBlock(block: PageBlock) {
-    setSchema((current) => ({
-      ...current,
-      blocks: current.blocks.map((item) => (item.id === block.id ? block : item)),
-    }));
-  }
+  useEffect(() => {
+    blockIdsRef.current = state.schema.blocks.map((block) => block.id);
+  }, [state.schema.blocks]);
 
-  function deleteBlock(id: string) {
-    setSchema((current) => {
-      const blocks = current.blocks.filter((block) => block.id !== id);
-      setSelectedBlockId(blocks[0]?.id ?? null);
-      return { ...current, blocks };
-    });
-  }
-
-  function moveBlock(id: string, direction: -1 | 1) {
-    setSchema((current) => {
-      const index = current.blocks.findIndex((block) => block.id === id);
-      const nextIndex = index + direction;
-
-      if (index < 0 || nextIndex < 0 || nextIndex >= current.blocks.length) {
-        return current;
+  // Step exactly one list position per arrow press; the stock sortable getter
+  // jumps to the nearest rect, which skips items when section heights differ.
+  const keyboardCoordinates = useCallback<KeyboardCoordinateGetter>(
+    (event, { context: { active, droppableRects, collisionRect } }) => {
+      if (!active || !collisionRect) {
+        return undefined;
       }
 
-      const blocks = [...current.blocks];
-      const [block] = blocks.splice(index, 1);
-      blocks.splice(nextIndex, 0, block);
-      return { ...current, blocks };
-    });
-  }
+      if (event.code !== "ArrowUp" && event.code !== "ArrowDown") {
+        return undefined;
+      }
 
-  function previewPage() {
-    window.open(publicUrl, "_blank", "noopener,noreferrer");
-  }
+      const ids = blockIdsRef.current;
+
+      if (!ids.includes(String(active.id))) {
+        return undefined;
+      }
+
+      // Current virtual position = the block whose rect center is nearest to
+      // the dragged rect (collisionRect moves with every keyboard step).
+      const centerY = collisionRect.top + collisionRect.height / 2;
+      let currentIndex = -1;
+      let bestDistance = Infinity;
+
+      ids.forEach((id, index) => {
+        const rect = droppableRects.get(id);
+
+        if (!rect) {
+          return;
+        }
+
+        const distance = Math.abs(rect.top + rect.height / 2 - centerY);
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          currentIndex = index;
+        }
+      });
+
+      if (currentIndex < 0) {
+        return undefined;
+      }
+
+      const nextIndex = event.code === "ArrowUp" ? currentIndex - 1 : currentIndex + 1;
+      const rect = droppableRects.get(ids[nextIndex]);
+
+      if (!rect) {
+        return undefined;
+      }
+
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    },
+    [],
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinates }),
+  );
 
   async function savePage() {
-    setSaving(true);
-    setMessage("");
-
-    const { ok, payload } = await saveDraft();
-
-    setSaving(false);
-    if (ok && payload) {
-      syncPageState(payload);
+    if (!state.dirty || saving) {
+      return;
     }
-    setMessage(ok ? "Saved live" : payload?.error ?? "Could not save page");
+
+    const requestedSlug = state.slug;
+    dispatch({ type: "saveStarted" });
+
+    try {
+      const response = await fetch(`/api/pages/${page.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: state.title, slug: state.slug, schema: state.schema }),
+      });
+      const payload = (await response.json().catch(() => null)) as SaveResponse | null;
+
+      if (response.ok && payload) {
+        dispatch({ type: "saveSucceeded", page: payload, requestedSlug });
+      } else {
+        dispatch({ type: "saveFailed", message: payload?.error ?? "Could not save page" });
+      }
+    } catch {
+      dispatch({ type: "saveFailed", message: "Could not save page" });
+    }
   }
 
-  async function saveDraft() {
-    const response = await fetch(`/api/pages/${page.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, slug, schema }),
+  useSaveShortcut(savePage);
+  useUnsavedChangesWarning(state.dirty);
+
+  function addBlock(type: BlockType, index?: number) {
+    dispatch({
+      type: "insertBlock",
+      block: createBlock(type),
+      index: index ?? state.schema.blocks.length,
     });
-    const payload = (await response.json().catch(() => null)) as
-      | EditablePageResponse
-      | null;
-
-    return { ok: response.ok, payload };
   }
 
-  function syncPageState(payload: EditablePageResponse) {
-    if (payload.title) {
-      setTitle(payload.title);
+  function handleDragStart(event: DragStartEvent) {
+    const data = event.active.data.current as
+      | { source: "palette"; blockType: BlockType }
+      | { source: "canvas" }
+      | undefined;
+
+    if (data?.source === "palette") {
+      setActiveDrag({ source: "palette", blockType: data.blockType });
+      return;
     }
 
-    if (payload.slug) {
-      setSlug(payload.slug);
-    }
+    const block = state.schema.blocks.find((item) => item.id === event.active.id);
 
+    if (block) {
+      setActiveDrag({ source: "canvas", block });
+    }
   }
+
+  function handleDragOver(event: DragOverEvent) {
+    if (activeDrag?.source !== "palette") {
+      return;
+    }
+
+    const over = event.over;
+
+    if (!over) {
+      setDropIndicator(null);
+      return;
+    }
+
+    if (over.id === "canvas") {
+      setDropIndicator("canvas-end");
+      return;
+    }
+
+    const translated = event.active.rect.current.translated;
+    const activeCenter = translated ? translated.top + translated.height / 2 : null;
+    const edge =
+      activeCenter !== null && activeCenter > over.rect.top + over.rect.height / 2
+        ? "bottom"
+        : "top";
+
+    setDropIndicator({ blockId: String(over.id), edge });
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    if (activeDrag?.source === "palette" && dropIndicator) {
+      let index = state.schema.blocks.length;
+
+      if (dropIndicator !== "canvas-end") {
+        const overIndex = state.schema.blocks.findIndex(
+          (block) => block.id === dropIndicator.blockId,
+        );
+
+        if (overIndex >= 0) {
+          index = overIndex + (dropIndicator.edge === "bottom" ? 1 : 0);
+        }
+      }
+
+      addBlock(activeDrag.blockType, index);
+    }
+
+    if (activeDrag?.source === "canvas" && event.over && event.active.id !== event.over.id) {
+      const from = state.schema.blocks.findIndex((block) => block.id === event.active.id);
+      const to = state.schema.blocks.findIndex((block) => block.id === event.over?.id);
+
+      if (from >= 0 && to >= 0) {
+        dispatch({ type: "moveBlock", from, to });
+      }
+    }
+
+    setActiveDrag(null);
+    setDropIndicator(null);
+  }
+
+  function handleDragCancel() {
+    setActiveDrag(null);
+    setDropIndicator(null);
+  }
+
+  const announcements = useMemo(() => buildAnnouncements(state), [state]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-100">
-      <header className="flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-5">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm font-medium text-zinc-600 hover:text-zinc-950">
-            Dashboard
-          </Link>
-          <div>
-            <Input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className="h-9 w-64 font-medium"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {message ? <span className="text-sm text-zinc-500">{message}</span> : null}
-          <Button variant="secondary" onClick={previewPage}>
-            <Eye size={16} />
-            Open page
-          </Button>
-          <Button asChild variant="secondary">
-            <a href={publicUrl} target="_blank" rel="noreferrer">
-              <ExternalLink size={16} />
-              URL
-            </a>
-          </Button>
-          <Button onClick={savePage} disabled={saving}>
-            <Save size={16} />
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        </div>
-      </header>
-      <main className="grid flex-1 grid-cols-[260px_minmax(0,1fr)_320px] overflow-hidden">
-        <aside className="border-r border-zinc-200 bg-white p-4">
-          <h2 className="text-sm font-semibold text-zinc-950">Blocks</h2>
-          <div className="mt-3 grid gap-2">
-            {blockTypes.map((type) => (
-              <Button key={type} variant="secondary" onClick={() => addBlock(type)}>
-                Add {blockLabels[type]}
-              </Button>
-            ))}
-          </div>
-          <div className="mt-8 space-y-3">
-            <label className="text-sm font-medium text-zinc-700">Slug</label>
-            <Input value={slug} onChange={(event) => setSlug(slugify(event.target.value))} />
-            <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Public URL</p>
-              <p className="mt-1 truncate font-mono text-xs">{publicUrl}</p>
+    <TooltipProvider>
+      <div className="flex h-screen flex-col overflow-hidden bg-canvas text-canvas-foreground">
+        <BuilderHeader
+          title={state.title}
+          dirty={state.dirty}
+          saveStatus={state.saveStatus}
+          notice={state.notice}
+          previewMode={previewMode}
+          publicUrl={publicUrl}
+          onTitleChange={(value) => dispatch({ type: "setTitle", value })}
+          onTogglePreview={() => setPreviewMode((current) => !current)}
+          onSave={savePage}
+        />
+        {previewMode ? (
+          <main className="min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle_at_top,var(--surface)_0%,var(--canvas)_55%)] p-6">
+            <div className="mx-auto max-w-5xl overflow-hidden rounded-lg border border-border bg-white shadow-lg shadow-primary/5">
+              <BlockRenderer schema={state.schema} />
             </div>
-          </div>
-        </aside>
-        <section className="overflow-auto p-6">
-          <div className="mx-auto max-w-5xl overflow-hidden border border-zinc-200 bg-white shadow-sm">
-            <BlockRenderer
-              schema={schema}
-              editable
-              selectedBlockId={selectedBlockId}
-              onSelectBlock={setSelectedBlockId}
-            />
-          </div>
-        </section>
-        <aside className="overflow-auto border-l border-zinc-200 bg-white p-4">
-          <h2 className="text-sm font-semibold text-zinc-950">Properties</h2>
-          {selectedBlock ? (
-            <div className="mt-4 space-y-4">
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => moveBlock(selectedBlock.id, -1)}>
-                  <ArrowUp size={16} />
-                </Button>
-                <Button variant="secondary" onClick={() => moveBlock(selectedBlock.id, 1)}>
-                  <ArrowDown size={16} />
-                </Button>
-                <Button variant="destructive" onClick={() => deleteBlock(selectedBlock.id)}>
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-              <BlockEditor block={selectedBlock} onChange={updateBlock} />
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-zinc-500">Select a block to edit its content.</p>
-          )}
-        </aside>
-      </main>
+          </main>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={collisionDetection}
+            accessibility={{ announcements }}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <main className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_340px] overflow-hidden">
+              <BlockPalette onAdd={(type) => addBlock(type)} />
+              <BuilderCanvas
+                schema={state.schema}
+                selectedBlockId={state.selectedBlockId}
+                dropIndicator={dropIndicator}
+                isPaletteDragging={activeDrag?.source === "palette"}
+                publicUrl={publicUrl}
+                onSelectBlock={(id) => dispatch({ type: "selectBlock", id })}
+                onDuplicateBlock={(id) =>
+                  dispatch({ type: "duplicateBlock", id, newId: crypto.randomUUID() })
+                }
+                onDeleteBlock={(id) => dispatch({ type: "deleteBlock", id })}
+                onAddBlock={(type) => addBlock(type)}
+              />
+              <Inspector
+                selectedBlock={selectedBlock}
+                settings={settings}
+                slug={state.slug}
+                publicUrl={publicUrl}
+                onUpdateBlock={(block) => dispatch({ type: "updateBlock", block })}
+                onDuplicateBlock={(id) =>
+                  dispatch({ type: "duplicateBlock", id, newId: crypto.randomUUID() })
+                }
+                onDeleteBlock={(id) => dispatch({ type: "deleteBlock", id })}
+                onClearSelection={() => dispatch({ type: "selectBlock", id: null })}
+                onSlugChange={(value) => dispatch({ type: "setSlug", value })}
+                onSettingsChange={(patch) => dispatch({ type: "updateSettings", patch })}
+                onTokensChange={(patch) => dispatch({ type: "updateTokens", patch })}
+              />
+            </main>
+            <DragOverlay>
+              {activeDrag?.source === "palette" ? (
+                <PaletteDragPreview type={activeDrag.blockType} />
+              ) : activeDrag?.source === "canvas" ? (
+                <CanvasDragPreview block={activeDrag.block} />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        )}
+      </div>
+    </TooltipProvider>
+  );
+}
+
+function CanvasDragPreview({ block }: { block: PageBlock }) {
+  const Icon = blockOptions[block.type].icon;
+
+  return (
+    <div className="flex w-fit items-center gap-2 rounded-lg border border-primary/40 bg-card px-3 py-2 text-sm font-semibold text-card-foreground shadow-lg">
+      <span className="flex size-7 items-center justify-center rounded-md bg-background text-primary">
+        <Icon className="size-4" />
+      </span>
+      {blockLabels[block.type]}
     </div>
   );
 }
 
-function BlockEditor({
-  block,
-  onChange,
-}: {
-  block: PageBlock;
-  onChange: (block: PageBlock) => void;
-}) {
-  if (block.type === "hero") {
-    return (
-      <>
-        <Field label="Heading">
-          <Input
-            value={block.props.heading}
-            onChange={(event) =>
-              onChange({ ...block, props: { ...block.props, heading: event.target.value } })
-            }
-          />
-        </Field>
-        <Field label="Subheading">
-          <Textarea
-            value={block.props.subheading}
-            onChange={(event) =>
-              onChange({ ...block, props: { ...block.props, subheading: event.target.value } })
-            }
-          />
-        </Field>
-        <Field label="Button text">
-          <Input
-            value={block.props.buttonText}
-            onChange={(event) =>
-              onChange({ ...block, props: { ...block.props, buttonText: event.target.value } })
-            }
-          />
-        </Field>
-        <Field label="Button URL">
-          <Input
-            value={block.props.buttonUrl}
-            onChange={(event) =>
-              onChange({ ...block, props: { ...block.props, buttonUrl: event.target.value } })
-            }
-          />
-        </Field>
-      </>
-    );
+function buildAnnouncements(state: BuilderState): Announcements {
+  function describe(id: string | number) {
+    if (String(id).startsWith("palette:")) {
+      const type = String(id).replace("palette:", "") as BlockType;
+      return `new ${blockLabels[type]} block`;
+    }
+
+    const index = state.schema.blocks.findIndex((block) => block.id === id);
+
+    if (index < 0) {
+      return "block";
+    }
+
+    return `${blockLabels[state.schema.blocks[index].type]} block, position ${index + 1} of ${state.schema.blocks.length}`;
   }
 
-  if (block.type === "text") {
-    return (
-      <>
-        <Field label="Content">
-          <Textarea
-            value={block.props.content}
-            onChange={(event) =>
-              onChange({ ...block, props: { ...block.props, content: event.target.value } })
-            }
-          />
-        </Field>
-        <Field label="Alignment">
-          <Select
-            value={block.props.align}
-            onChange={(event) =>
-              onChange({
-                ...block,
-                props: { ...block.props, align: event.target.value as "left" | "center" | "right" },
-              })
-            }
-          >
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </Select>
-        </Field>
-      </>
-    );
-  }
+  return {
+    onDragStart({ active }) {
+      return `Picked up ${describe(active.id)}.`;
+    },
+    onDragOver({ active, over }) {
+      if (over) {
+        return `${describe(active.id)} is over ${describe(over.id)}.`;
+      }
 
-  if (block.type === "image") {
-    return (
-      <>
-        <Field label="Image URL">
-          <Input
-            value={block.props.src}
-            onChange={(event) =>
-              onChange({ ...block, props: { ...block.props, src: event.target.value } })
-            }
-          />
-        </Field>
-        <Field label="Alt text">
-          <Input
-            value={block.props.alt}
-            onChange={(event) =>
-              onChange({ ...block, props: { ...block.props, alt: event.target.value } })
-            }
-          />
-        </Field>
-      </>
-    );
-  }
+      return `${describe(active.id)} is no longer over a drop area.`;
+    },
+    onDragEnd({ active, over }) {
+      if (over) {
+        return `Dropped ${describe(active.id)} over ${describe(over.id)}.`;
+      }
 
-  return (
-    <>
-      <Field label="Label">
-        <Input
-          value={block.props.label}
-          onChange={(event) =>
-            onChange({ ...block, props: { ...block.props, label: event.target.value } })
-          }
-        />
-      </Field>
-      <Field label="URL">
-        <Input
-          value={block.props.url}
-          onChange={(event) =>
-            onChange({ ...block, props: { ...block.props, url: event.target.value } })
-          }
-        />
-      </Field>
-      <Field label="Variant">
-        <Select
-          value={block.props.variant}
-          onChange={(event) =>
-            onChange({
-              ...block,
-              props: { ...block.props, variant: event.target.value as "primary" | "secondary" },
-            })
-          }
-        >
-          <option value="primary">Primary</option>
-          <option value="secondary">Secondary</option>
-        </Select>
-      </Field>
-    </>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-sm font-medium text-zinc-700">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function useBrowserOrigin() {
-  return useSyncExternalStore(subscribeToOrigin, getBrowserOrigin, getServerOrigin);
-}
-
-function subscribeToOrigin(onStoreChange: () => void) {
-  const timeoutId = window.setTimeout(onStoreChange, 0);
-
-  return () => window.clearTimeout(timeoutId);
-}
-
-function getBrowserOrigin() {
-  return window.location.origin;
-}
-
-function getServerOrigin() {
-  return "";
+      return `Dropped ${describe(active.id)}.`;
+    },
+    onDragCancel({ active }) {
+      return `Dragging ${describe(active.id)} was cancelled.`;
+    },
+  };
 }

@@ -17,6 +17,7 @@ import {
 import { Fragment, memo, type CSSProperties, type ReactNode } from "react";
 import type { BlockAlign, BlockWidth, PageBlock, PageSchema } from "@/types/blocks";
 import { defaultTokens } from "@/lib/blocks";
+import { LeadCaptureForm } from "@/components/blocks/LeadCaptureForm";
 import { BLOCK_PADDING_Y, BLOCK_WIDTH, blockStyleCssVars, tokenCssVars } from "@/lib/design";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,9 @@ type BlockRendererProps = {
   schema: PageSchema;
   renderBlockWrapper?: (block: PageBlock, children: ReactNode) => ReactNode;
   emptyActions?: ReactNode;
+  // Only /p/[slug] passes this; its presence is what lets lead forms submit
+  // for real instead of rendering the builder's inert preview form.
+  pageId?: string;
 };
 
 const iconMap: Record<string, LucideIcon> = {
@@ -65,6 +69,7 @@ export const BlockRenderer = memo(function BlockRenderer({
   schema,
   renderBlockWrapper,
   emptyActions,
+  pageId,
 }: BlockRendererProps) {
   const tokens = schema.settings?.tokens ?? defaultTokens;
 
@@ -88,7 +93,7 @@ export const BlockRenderer = memo(function BlockRenderer({
   return (
     <div className="pf-root transition-colors" style={tokenCssVars(tokens)}>
       {schema.blocks.map((block) => {
-        const rendered = <RenderedBlock block={block} />;
+        const rendered = <RenderedBlock block={block} pageId={pageId} />;
 
         return (
           <Fragment key={block.id}>
@@ -101,9 +106,16 @@ export const BlockRenderer = memo(function BlockRenderer({
 });
 
 // Blocks keep their object identity in the reducer unless edited, and page
-// tokens reach blocks via --pf-* CSS variables on the pf-root wrapper, so the
-// single `block` prop is this component's complete dependency set.
-const RenderedBlock = memo(function RenderedBlock({ block }: { block: PageBlock }) {
+// tokens reach blocks via --pf-* CSS variables on the pf-root wrapper.
+// `pageId` is constant per render context, so `block` remains the only prop
+// that can invalidate the memo.
+const RenderedBlock = memo(function RenderedBlock({
+  block,
+  pageId,
+}: {
+  block: PageBlock;
+  pageId?: string;
+}) {
   if (block.type === "hero") {
     const { paddingClass, widthClass, align, sectionStyle } = resolveSection(block, {
       paddingY: "py-[calc(var(--pf-section-y)*1.2)]",
@@ -440,10 +452,6 @@ const RenderedBlock = memo(function RenderedBlock({ block }: { block: PageBlock 
       paddingY: "py-(--pf-section-y)",
       width: "wide",
     });
-    const action =
-      block.props.deliveryMode === "mailto"
-        ? `mailto:${block.props.mailto || ""}`
-        : block.props.actionUrl || "#";
 
     return (
       <section className={cn("pf-soft px-6", paddingClass)} style={sectionStyle}>
@@ -460,41 +468,7 @@ const RenderedBlock = memo(function RenderedBlock({ block }: { block: PageBlock 
             </h2>
             <p className="pf-muted mt-4 text-base leading-7">{block.props.description}</p>
           </div>
-          <form action={action} method="post" className="grid gap-4">
-            <label className="grid gap-2 text-sm font-medium">
-              Name
-              <input
-                name="name"
-                type="text"
-                className="pf-border h-11 rounded-(--pf-radius) border bg-transparent px-3 text-sm outline-none focus:border-(--pf-primary)"
-                placeholder="Your name"
-              />
-            </label>
-            <label className="grid gap-2 text-sm font-medium">
-              Email
-              <input
-                name="email"
-                type="email"
-                className="pf-border h-11 rounded-(--pf-radius) border bg-transparent px-3 text-sm outline-none focus:border-(--pf-primary)"
-                placeholder="you@example.com"
-              />
-            </label>
-            <label className="grid gap-2 text-sm font-medium">
-              Message
-              <textarea
-                name="message"
-                className="pf-border min-h-28 rounded-(--pf-radius) border bg-transparent px-3 py-2 text-sm outline-none focus:border-(--pf-primary)"
-                placeholder="What are you building?"
-              />
-            </label>
-            <button
-              type="submit"
-              className="pf-btn-primary inline-flex h-11 items-center justify-center gap-2 rounded-(--pf-radius) px-5 text-sm font-medium transition hover:opacity-90"
-            >
-              {block.props.submitLabel}
-              <Send className="size-4" />
-            </button>
-          </form>
+          <LeadCaptureForm blockId={block.id} props={block.props} pageId={pageId} />
         </div>
       </section>
     );

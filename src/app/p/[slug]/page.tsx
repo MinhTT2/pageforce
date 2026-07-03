@@ -51,7 +51,7 @@ export default async function PublicPage({ params }: PublicPageProps) {
 
   return (
     <main className="min-h-screen" style={{ backgroundColor }}>
-      <BlockRenderer schema={schema} />
+      <BlockRenderer schema={schema} pageId={page.id} />
     </main>
   );
 }

@@ -23,13 +23,14 @@ type EditPageDialogProps = {
     title: string;
     slug: string;
   };
+  triggerClassName?: string;
 };
 
 type EditPageResponse = {
   error?: string;
 };
 
-export function EditPageDialog({ page }: EditPageDialogProps) {
+export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(page.title);
@@ -66,7 +67,7 @@ export function EditPageDialog({ page }: EditPageDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className={triggerClassName}>
           <Pencil />
           Details
         </Button>

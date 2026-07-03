@@ -14,7 +14,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export function DeletePageButton({ pageId, title }: { pageId: string; title: string }) {
+export function DeletePageButton({
+  pageId,
+  title,
+  triggerClassName,
+}: {
+  pageId: string;
+  title: string;
+  triggerClassName?: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,7 +48,7 @@ export function DeletePageButton({ pageId, title }: { pageId: string; title: str
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="destructive" size="sm">
+        <Button variant="destructive" size="sm" className={triggerClassName}>
           <Trash2 />
           Delete
         </Button>

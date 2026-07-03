@@ -123,7 +123,6 @@ export function AuthShowcase() {
               <Benefit>Quản lý nhiều landing page trong dashboard</Benefit>
               <Benefit>Chỉnh hero, CTA, pricing, FAQ và lead form bằng block</Benefit>
               <Benefit>Lưu live và chia sẻ public URL ngay lập tức</Benefit>
-              <Benefit>Thiết kế nhất quán theo design system Pageforce</Benefit>
             </div>
           </div>
         </div>

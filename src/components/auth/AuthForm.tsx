@@ -43,15 +43,6 @@ export function AuthForm(_props: AuthFormProps) {
 
   return (
     <div className="flex min-h-screen w-full max-w-[560px] flex-col px-6 py-8 sm:px-10 lg:px-12">
-      <div className="flex justify-end">
-        <button
-          type="button"
-          className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-surface px-2.5 text-xs font-semibold text-muted-foreground shadow-xs"
-          aria-label="Vietnamese language"
-        >
-          VI
-        </button>
-      </div>
 
       <div className="mt-20 lg:mt-24">
         <h1 className="text-3xl font-semibold tracking-normal text-foreground">

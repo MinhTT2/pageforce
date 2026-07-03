@@ -14,6 +14,7 @@ import {
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Button } from "@/components/ui/button";
+import { getCurrentUser } from "@/lib/auth";
 
 const features = [
   {
@@ -46,6 +47,12 @@ export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
 
   if (params.code || params.error || params.error_description) {
+    const user = await getCurrentUser();
+
+    if (user) {
+      redirect("/");
+    }
+
     const callbackParams = new URLSearchParams();
 
     if (params.code) {

@@ -59,6 +59,16 @@ describe("block mutations", () => {
     expect(next.schema.blocks.at(-1)?.id).toBe(block.id);
   });
 
+  it("appends and selects the block when no index is given", () => {
+    const state = makeState();
+    const block = createBlock("cta");
+    const next = builderReducer(state, { type: "insertBlock", block });
+
+    expect(next.schema.blocks).toHaveLength(4);
+    expect(next.schema.blocks.at(-1)?.id).toBe(block.id);
+    expect(next.selectedBlockId).toBe(block.id);
+  });
+
   it("moves blocks between positions", () => {
     const state = makeState();
     const [first, second, third] = state.schema.blocks;
@@ -107,6 +117,18 @@ describe("block mutations", () => {
 
     expect(next.selectedBlockId).toBe(state.selectedBlockId);
   });
+
+  // The builder memoizes rendered blocks by object identity, so updateBlock
+  // must only replace the edited block.
+  it("keeps untouched block references identical on updateBlock", () => {
+    const state = makeState();
+    const edited = { ...state.schema.blocks[1] };
+    const next = builderReducer(state, { type: "updateBlock", block: edited });
+
+    expect(next.schema.blocks[0]).toBe(state.schema.blocks[0]);
+    expect(next.schema.blocks[1]).toBe(edited);
+    expect(next.schema.blocks[2]).toBe(state.schema.blocks[2]);
+  });
 });
 
 describe("settings and tokens", () => {
@@ -130,6 +152,16 @@ describe("settings and tokens", () => {
     });
 
     expect(next.schema.settings?.tokens).toEqual({ ...defaultTokens, primaryColor: "#ff0000" });
+  });
+
+  it("keeps the blocks array reference on token edits", () => {
+    const state = makeState();
+    const next = builderReducer(state, {
+      type: "updateTokens",
+      patch: { primaryColor: "#ff0000" },
+    });
+
+    expect(next.schema.blocks).toBe(state.schema.blocks);
   });
 });
 

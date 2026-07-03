@@ -23,7 +23,7 @@ export type BuilderState = {
 export type BuilderAction =
   | { type: "setTitle"; value: string }
   | { type: "setSlug"; value: string }
-  | { type: "insertBlock"; block: PageBlock; index: number }
+  | { type: "insertBlock"; block: PageBlock; index?: number }
   | { type: "moveBlock"; from: number; to: number }
   | { type: "updateBlock"; block: PageBlock }
   | { type: "duplicateBlock"; id: string; newId: string }
@@ -69,7 +69,10 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
   }
 
   if (action.type === "insertBlock") {
-    const index = Math.max(0, Math.min(action.index, state.schema.blocks.length));
+    const index = Math.max(
+      0,
+      Math.min(action.index ?? state.schema.blocks.length, state.schema.blocks.length),
+    );
     const blocks = [...state.schema.blocks];
     blocks.splice(index, 0, action.block);
 

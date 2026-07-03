@@ -15,6 +15,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
+import { getSafeNextPath } from "@/lib/auth-routes";
 
 const features = [
   {
@@ -45,12 +46,11 @@ type HomeProps = {
 
 export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
+  const user = await getCurrentUser();
 
   if (params.code || params.error || params.error_description) {
-    const user = await getCurrentUser();
-
     if (user) {
-      redirect("/");
+      redirect(getSafeNextPath(params.next));
     }
 
     const callbackParams = new URLSearchParams();
@@ -69,6 +69,10 @@ export default async function Home({ searchParams }: HomeProps) {
 
     callbackParams.set("next", params.next || "/dashboard");
     redirect(`/auth/callback?${callbackParams.toString()}`);
+  }
+
+  if (user) {
+    redirect("/dashboard");
   }
 
   return (

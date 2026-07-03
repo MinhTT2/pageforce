@@ -10,9 +10,9 @@ This file is the source of truth for agents working in this repository. Read it 
 
 ## Project Overview
 
-Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, get one landing page, compose it from JSON-backed blocks, publish it, and view the published page at `/p/[slug]`.
+Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, create landing pages, compose them from JSON-backed blocks, publish them, and view published pages at `/p/[slug]`.
 
-Each Supabase Auth user owns at most one `Page` record for the MVP.
+Each Supabase Auth user can own multiple `Page` records.
 
 ## Stack
 
@@ -44,7 +44,7 @@ Each Supabase Auth user owns at most one `Page` record for the MVP.
 - Supabase Auth is the user source of truth. Users live in Supabase `auth.users`.
 - Do not create a Prisma `User` model for the MVP.
 - App data lives in Prisma models, currently `Page`.
-- `Page.userId` stores the Supabase Auth user id and is unique for the MVP.
+- `Page.userId` stores the Supabase Auth user id and is indexed for ownership lookups.
 - `Page.draftSchema` stores the builder draft.
 - `Page.publishedSchema` stores the public snapshot.
 - Publishing copies `draftSchema` to `publishedSchema`, sets `status = PUBLISHED`, and stamps `publishedAt`.
@@ -61,7 +61,8 @@ Each Supabase Auth user owns at most one `Page` record for the MVP.
 
 ## Page API Rules
 
-- `POST /api/pages` must reuse the current user's existing page if one exists.
+- `GET /api/pages` lists all pages owned by the current user.
+- `POST /api/pages` creates a new page for the current user.
 - `PATCH /api/pages/[pageId]` saves draft metadata/content only: title, slug, and `draftSchema`.
 - `PATCH /api/pages/[pageId]` must not publish and must not trust client-sent status changes.
 - `POST /api/pages/[pageId]/publish` is the only publish path.
@@ -86,7 +87,7 @@ Each Supabase Auth user owns at most one `Page` record for the MVP.
 - Prefer shadcn/ui components from `src/components/ui`.
 - If a needed shadcn component is missing, add it with the shadcn CLI instead of hand-rolling a different design system.
 - Use lucide-react icons for icon buttons and common actions.
-- Keep the builder workflow-first: dashboard, single landing page management, editor, and publish flow matter more than marketing sections.
+- Keep the builder workflow-first: dashboard, landing page management, editor, and publish flow matter more than marketing sections.
 - Builder is desktop-first for the MVP. Mobile should not be badly broken, but breakpoint editing is out of scope.
 - Design system primitives live in `src/components/ui`; prefer semantic tokens from `src/app/globals.css` over hard-coded color scales for shared UI.
 
@@ -150,5 +151,5 @@ Lower-priority MCPs:
 - Do not commit `.env` or credentials.
 - Do not commit service-role keys, access tokens, personal MCP config, or production project secrets.
 - Do not add a Prisma `User` model for the MVP.
-- Do not add multi-page sites, teams, billing, analytics, custom domains, subdomains, drag-and-drop, uploads, templates, SEO settings, undo/redo, or breakpoint editing unless explicitly requested.
+- Do not add teams, billing, analytics, custom domains, subdomains, drag-and-drop, uploads, templates, SEO settings, undo/redo, or breakpoint editing unless explicitly requested.
 - Do not replace the chosen stack without a new architecture decision.

@@ -7,6 +7,7 @@ Mini Web Builder SaaS MVP built with Next.js, TypeScript, TailwindCSS, Supabase 
 - Supabase Auth stores users in `auth.users`.
 - App data lives in Supabase Postgres tables managed by Prisma.
 - `Page.userId` stores the Supabase Auth user id.
+- Each user can own multiple landing pages.
 - Builder saves landing pages as JSON block schemas.
 - Public pages render at `/p/[slug]` only when `status = PUBLISHED`.
 - Agent and MCP setup lives in `AGENTS.md` and `docs/mcp-agent-setup.md`.
@@ -68,7 +69,7 @@ Open http://localhost:3000.
 
 - Register, login, logout, guarded dashboard and builder.
 - Google sign-in through Supabase Auth.
-- Page create, list, edit title/slug/status, delete.
+- Multi-page dashboard with create, list, edit title/slug, and delete.
 - Builder with sidebar, canvas preview, properties panel.
 - Four block types: Hero, Text, Image, Button.
 - Add, edit, delete, reorder blocks with buttons.

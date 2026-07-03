@@ -38,28 +38,19 @@ export function toEditablePage(page: {
   };
 }
 
-export async function getPageForUser(userId: string) {
-  return prisma.page.findUnique({
+export async function listPagesForUser(userId: string) {
+  return prisma.page.findMany({
     where: { userId },
+    orderBy: { updatedAt: "desc" },
   });
 }
 
-export async function getOrCreatePageForUser(userId: string, title = "Untitled page") {
-  const existingPage = await prisma.page.findUnique({
-    where: { userId },
-  });
-
-  if (existingPage) {
-    return { page: existingPage, created: false };
-  }
-
+export async function createPageForUser(userId: string, title = "Untitled page") {
   const slug = await createUniqueSlug(fallbackSlug(title));
 
-  const page = await prisma.page.create({
+  return prisma.page.create({
     data: { userId, title, slug, draftSchema: emptyPageSchema },
   });
-
-  return { page, created: true };
 }
 
 export async function createUniqueSlug(base: string, currentPageId?: string) {

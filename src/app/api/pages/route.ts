@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getOrCreatePageForUser, getPageForUser, toPageSummary } from "@/lib/pages";
+import { createPageForUser, listPagesForUser, toPageSummary } from "@/lib/pages";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -9,9 +9,9 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const page = await getPageForUser(user.id);
+  const pages = await listPagesForUser(user.id);
 
-  return NextResponse.json(page ? [toPageSummary(page)] : []);
+  return NextResponse.json(pages.map(toPageSummary));
 }
 
 export async function POST(request: Request) {
@@ -22,7 +22,9 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const { page, created } = await getOrCreatePageForUser(user.id, body.title);
+  const title =
+    typeof body.title === "string" && body.title.trim() ? body.title.trim() : "Untitled page";
+  const page = await createPageForUser(user.id, title);
 
-  return NextResponse.json(toPageSummary(page), { status: created ? 201 : 200 });
+  return NextResponse.json(toPageSummary(page), { status: 201 });
 }

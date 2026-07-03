@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createBlock, defaultPageSettings } from "./blocks";
 import {
+  leadSubmissionValidator,
   legacyPageSchemaV1Validator,
   pagePatchValidator,
   pageSchemaValidator,
@@ -131,5 +132,86 @@ describe("pagePatchValidator", () => {
     const result = pagePatchValidator.safeParse({ status: "PUBLISHED" });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("leadForm delivery modes", () => {
+  function leadFormWithMode(deliveryMode: string) {
+    const block = createBlock("leadForm");
+    return {
+      version: 2,
+      blocks: [{ ...block, props: { ...block.props, deliveryMode } }],
+    };
+  }
+
+  it("accepts the capture mode", () => {
+    expect(pageSchemaValidator.safeParse(leadFormWithMode("capture")).success).toBe(true);
+  });
+
+  it("still accepts legacy mailto and actionUrl modes", () => {
+    expect(pageSchemaValidator.safeParse(leadFormWithMode("mailto")).success).toBe(true);
+    expect(pageSchemaValidator.safeParse(leadFormWithMode("actionUrl")).success).toBe(true);
+  });
+
+  it("rejects unknown delivery modes", () => {
+    expect(pageSchemaValidator.safeParse(leadFormWithMode("webhook")).success).toBe(false);
+  });
+});
+
+describe("leadSubmissionValidator", () => {
+  it("accepts a full submission", () => {
+    const result = leadSubmissionValidator.safeParse({
+      blockId: "block-1",
+      website: "",
+      data: { name: "Minh", email: "minh@example.com", message: "Hello" },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a partial submission with only an email", () => {
+    const result = leadSubmissionValidator.safeParse({
+      blockId: "block-1",
+      data: { email: "minh@example.com" },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an all-empty submission", () => {
+    const result = leadSubmissionValidator.safeParse({
+      blockId: "block-1",
+      data: {},
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects extra keys in data to keep stored Json bounded", () => {
+    const result = leadSubmissionValidator.safeParse({
+      blockId: "block-1",
+      data: { email: "minh@example.com", phone: "123" },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an oversized message", () => {
+    const result = leadSubmissionValidator.safeParse({
+      blockId: "block-1",
+      data: { message: "x".repeat(5001) },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a filled honeypot so the API can silently drop it", () => {
+    const result = leadSubmissionValidator.safeParse({
+      blockId: "block-1",
+      website: "https://spam.example.com",
+      data: { email: "bot@example.com" },
+    });
+
+    expect(result.success).toBe(true);
   });
 });

@@ -31,7 +31,7 @@ Fill `.env` with the `pageforce-dev` Supabase values before running migrations. 
 
 ## Google Login
 
-Google sign-in uses Supabase Auth OAuth. The app already renders a `Continue with Google` button on `/login` and `/register`, and Supabase redirects back through `/auth/callback`.
+Google sign-in uses Supabase Auth OAuth. The app renders a unified `Continue with Google` auth screen at `/login`, and Supabase redirects back through `/auth/callback`.
 
 1. In Google Cloud Console, open your OAuth Client and add this authorized redirect URI:
 

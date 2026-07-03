@@ -29,7 +29,7 @@ const swatches = [
   ["Success", "bg-success text-success-foreground"],
   ["Warning", "bg-warning text-warning-foreground"],
   ["Info", "bg-info text-info-foreground"],
-  ["Destructive", "bg-destructive text-white"],
+  ["Destructive", "bg-destructive text-destructive-foreground"],
 ];
 
 export default function DesignSystemPage() {

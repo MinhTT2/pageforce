@@ -58,26 +58,39 @@ function BrandMark({ className, ...props }: ComponentPropsWithoutRef<"svg">) {
       className={className}
       {...props}
     >
-      <rect width="40" height="40" rx="10" fill="var(--primary)" />
+      <defs>
+        <linearGradient
+          id="pf-mark-bg"
+          x1="0"
+          y1="0"
+          x2="40"
+          y2="40"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#4E56D3" />
+          <stop offset="0.55" stopColor="#6D4FE0" />
+          <stop offset="1" stopColor="#9333EA" />
+        </linearGradient>
+        <linearGradient
+          id="pf-mark-shine"
+          x1="20"
+          y1="0"
+          x2="20"
+          y2="25"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#FFFFFF" stopOpacity="0.22" />
+          <stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <rect width="40" height="40" rx="10" fill="url(#pf-mark-bg)" />
+      <rect width="40" height="40" rx="10" fill="url(#pf-mark-shine)" />
       <path
-        d="M12 10.5C12 9.67 12.67 9 13.5 9h11.1L31 15.4v14.1c0 .83-.67 1.5-1.5 1.5h-16c-.83 0-1.5-.67-1.5-1.5v-19Z"
-        fill="var(--primary-foreground)"
-        opacity="0.95"
-      />
-      <path
-        d="M24.5 9v5.25c0 .69.56 1.25 1.25 1.25H31"
-        fill="var(--accent)"
-      />
-      <path
-        d="M21.1 15.2 16 22h4.05l-1.15 5.8 5.25-7.2h-4.02l.97-5.4Z"
-        fill="var(--primary)"
-      />
-      <path
-        d="M15.5 13h5.75M15.5 28h7"
-        stroke="var(--primary)"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-        opacity="0.35"
+        d="M21.95 6 7.45 23.4h13.05L19.05 35l14.5-17.4H20.5L21.95 6Z"
+        fill="#FFFFFF"
+        stroke="#FFFFFF"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
       />
     </svg>
   );

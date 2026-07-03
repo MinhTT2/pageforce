@@ -1,7 +1,22 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="16" fill="#0F6FA8"/>
-  <path d="M19 15.5C19 14.12 20.12 13 21.5 13H39.2L49 22.8V47.5C49 48.88 47.88 50 46.5 50H21.5C20.12 50 19 48.88 19 47.5V15.5Z" fill="#F7FBFF"/>
-  <path d="M39 13V21.75C39 22.99 40.01 24 41.25 24H49" fill="#BCEBFF"/>
-  <path d="M32.4 23.2L24 34H30.4L28.6 43.2L37 31.8H30.75L32.4 23.2Z" fill="#0F6FA8"/>
-  <path d="M24 20.5H32M24 46H35" stroke="#0F6FA8" stroke-width="3" stroke-linecap="round" opacity="0.3"/>
+  <defs>
+    <linearGradient id="pf-icon-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4E56D3"/>
+      <stop offset="0.55" stop-color="#6D4FE0"/>
+      <stop offset="1" stop-color="#9333EA"/>
+    </linearGradient>
+    <linearGradient id="pf-icon-shine" x1="32" y1="0" x2="32" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#pf-icon-bg)"/>
+  <rect width="64" height="64" rx="14" fill="url(#pf-icon-shine)"/>
+  <path
+    d="M34.9 9.6 11.9 37.2h20.7l-2.3 18.4 23-27.6H32.6l2.3-18.4Z"
+    fill="#FFFFFF"
+    stroke="#FFFFFF"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
 </svg>

@@ -6,6 +6,7 @@ import { BrandLogo } from "@/components/layout/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { getAuthIntentPath } from "@/lib/auth-routes";
 import { getCurrentUser } from "@/lib/auth";
+import { getUserInitial, getUserLabel } from "@/lib/user-label";
 
 export async function SiteHeader() {
   const [user, headerStore] = await Promise.all([getCurrentUser(), headers()]);
@@ -16,7 +17,7 @@ export async function SiteHeader() {
   const userInitial = getUserInitial(userLabel);
 
   return (
-    <header className="border-b border-border/80 bg-background/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur">
       <div className="mx-auto flex min-h-18 max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
         <BrandLogo tagline="Landing builder" />
 
@@ -68,19 +69,3 @@ export async function SiteHeader() {
   );
 }
 
-type HeaderUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
-
-function getUserLabel(user: HeaderUser) {
-  const fullName = getMetadataString(user.user_metadata.full_name);
-  const name = getMetadataString(user.user_metadata.name);
-
-  return fullName || name || user.email || "Account";
-}
-
-function getMetadataString(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function getUserInitial(label: string) {
-  return label.trim().charAt(0).toUpperCase() || "U";
-}

@@ -97,7 +97,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-md space-y-5 rounded-lg border border-border bg-card p-6 shadow-sm"
+      className="w-full max-w-md space-y-5 rounded-lg border border-border bg-card p-6 shadow-md shadow-primary/5"
     >
       <div>
         <h1 className="text-2xl font-semibold text-card-foreground">
@@ -194,7 +194,7 @@ export function AuthShowcase() {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0.9))]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-card/20 to-card/90" />
         <div className="absolute inset-x-5 bottom-5 rounded-lg border border-border bg-card/95 p-4 shadow-lg backdrop-blur">
           <div className="flex items-center justify-between gap-3">
             <div>

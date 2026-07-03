@@ -1,6 +1,6 @@
 # Pageforce
 
-Mini Web Builder SaaS MVP built with Next.js, TypeScript, TailwindCSS, Supabase Auth, Supabase Postgres, and Prisma.
+Mini Landing Page Builder SaaS MVP built with Next.js App Router, TypeScript, Tailwind CSS v4, Supabase Auth, Supabase Postgres, and Prisma.
 
 ## Core Flow
 
@@ -9,7 +9,8 @@ Mini Web Builder SaaS MVP built with Next.js, TypeScript, TailwindCSS, Supabase 
 - `Page.userId` stores the Supabase Auth user id.
 - Each user can own multiple landing pages.
 - Builder saves landing pages as JSON block schemas.
-- Public pages render at `/p/[slug]` as soon as a page exists.
+- Saves are live: the builder updates the current schema and public pages render the latest saved version at `/p/[slug]`.
+- Lead Form blocks can capture submissions into the `LeadSubmission` table or use `mailto`/external action URLs.
 - Agent and MCP setup lives in `AGENTS.md` and `docs/mcp-agent-setup.md`.
 
 ## Setup
@@ -69,14 +70,15 @@ Open http://localhost:3000.
 
 - Register, login, logout, guarded dashboard and builder.
 - Google sign-in through Supabase Auth.
-- Multi-page dashboard with create, list, edit title/slug, and delete.
+- Multi-page dashboard with create, list, edit title/slug, delete, and per-page lead views.
 - Builder with draggable block palette, live canvas, and tabbed inspector (Content/Style per block, Page/Design for the page).
-- Eleven block types: Hero, Text, Image, Button, Features, Testimonials, Pricing, FAQ, CTA, Lead Form, Footer.
+- Thirteen block types: Hero, Text, Image, Carousel, Button, Features, Testimonials, Pricing, Products, FAQ, CTA, Lead Form, Footer.
 - Drag blocks from the palette onto the canvas, reorder with drag-and-drop (keyboard accessible), duplicate and delete per block.
 - Per-block style overrides (background, text, accent color, alignment, padding, width) on top of page-wide design tokens (brand color, fonts, radius, spacing) with three starter presets.
 - Page settings for meta title/description and slug; public pages render SEO metadata.
 - Save JSON schema to Postgres and update the public page immediately.
 - Public render for every page URL.
+- Built-in lead capture endpoint for public pages, with a dashboard table for the latest submissions.
 
 ## Deploy
 

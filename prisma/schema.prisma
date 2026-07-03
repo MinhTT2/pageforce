@@ -24,7 +24,19 @@ model Page {
   publishedAt     DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
+  leadSubmissions LeadSubmission[]
 
   @@index([userId])
   @@index([status, slug])
+}
+
+model LeadSubmission {
+  id        String   @id @default(cuid())
+  pageId    String
+  blockId   String
+  data      Json
+  createdAt DateTime @default(now())
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, createdAt])
 }

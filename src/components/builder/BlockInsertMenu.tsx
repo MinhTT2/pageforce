@@ -18,6 +18,16 @@ import { blockGroups, blockOptions } from "./block-meta";
 const allBlocks = blockGroups.flatMap((group) => group.blocks);
 const allTab = "all";
 
+function blockMatchesQuery(type: BlockType, query: string) {
+  const option = blockOptions[type];
+
+  return (
+    !query ||
+    blockLabels[type].toLowerCase().includes(query) ||
+    option.description.toLowerCase().includes(query)
+  );
+}
+
 export function BlockInsertMenu({
   label = "Add block",
   onAdd,
@@ -29,22 +39,17 @@ export function BlockInsertMenu({
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState(allTab);
   const normalizedQuery = query.trim().toLowerCase();
-  const visibleBlocks = useMemo(() => {
-    const source =
-      activeTab === allTab
-        ? allBlocks
-        : blockGroups.find((group) => group.label === activeTab)?.blocks ?? [];
+  const visibleBlocks = useMemo(
+    () => {
+      const source =
+        activeTab === allTab
+          ? allBlocks
+          : blockGroups.find((group) => group.label === activeTab)?.blocks ?? [];
 
-    return source.filter((type) => {
-      const option = blockOptions[type];
-
-      return (
-        !normalizedQuery ||
-        blockLabels[type].toLowerCase().includes(normalizedQuery) ||
-        option.description.toLowerCase().includes(normalizedQuery)
-      );
-    });
-  }, [activeTab, normalizedQuery]);
+      return source.filter((type) => blockMatchesQuery(type, normalizedQuery));
+    },
+    [activeTab, normalizedQuery],
+  );
   const hasMatches = visibleBlocks.length > 0;
 
   function add(type: BlockType) {
@@ -60,8 +65,8 @@ export function BlockInsertMenu({
           {label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 max-w-[calc(100vw-2rem)]" align="center">
-        <PopoverHeader>
+      <PopoverContent className="w-[26rem] max-w-[calc(100vw-2rem)]" align="center">
+        <PopoverHeader className="pb-1">
           <PopoverTitle>Add a block</PopoverTitle>
         </PopoverHeader>
         <div className="grid gap-3">
@@ -76,28 +81,35 @@ export function BlockInsertMenu({
               className="pl-8"
             />
           </div>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full justify-start overflow-x-auto">
-              <TabsTrigger value={allTab} className="flex-none px-2 text-xs">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-2">
+            <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+              <TabsTrigger value={allTab} className="h-7 flex-none px-2 text-xs">
                 All
               </TabsTrigger>
               {blockGroups.map((group) => (
-                <TabsTrigger key={group.label} value={group.label} className="flex-none px-2 text-xs">
+                <TabsTrigger
+                  key={group.label}
+                  value={group.label}
+                  className="h-7 flex-none px-2 text-xs"
+                >
                   {group.label}
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsContent value={activeTab} className="mt-2">
+            <TabsContent value={activeTab} className="max-h-80 overflow-auto pr-1">
               {hasMatches ? (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid gap-1.5">
                   {visibleBlocks.map((type) => (
                     <InsertMenuItem key={type} type={type} onAdd={add} />
                   ))}
                 </div>
               ) : (
-                <p className="rounded-md border border-dashed border-border bg-surface px-3 py-4 text-center text-sm text-muted-foreground">
-                  No blocks match
-                </p>
+                <div className="rounded-lg border border-dashed border-border bg-surface px-3 py-6 text-center">
+                  <p className="text-sm font-medium text-surface-foreground">No blocks found</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Try another category or keyword.
+                  </p>
+                </div>
               )}
             </TabsContent>
           </Tabs>
@@ -118,14 +130,20 @@ function InsertMenuItem({ type, onAdd }: { type: BlockType; onAdd: (type: BlockT
           type="button"
           onClick={() => onAdd(type)}
           aria-label={`Add ${blockLabels[type]} block. ${option.description}`}
-          className="grid h-20 place-items-center gap-1.5 rounded-md border border-border bg-surface p-2 text-center transition hover:border-primary/40 hover:bg-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="group flex h-12 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-left transition hover:border-primary/35 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <span className="flex size-8 items-center justify-center rounded-md bg-background text-primary">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-background text-primary ring-1 ring-border/60">
             <Icon className="size-4" />
           </span>
-          <span className="w-full truncate text-xs font-medium text-surface-foreground">
-            {blockLabels[type]}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-surface-foreground">
+              {blockLabels[type]}
+            </span>
+            <span className="mt-0.5 block truncate text-[11px] leading-none text-muted-foreground">
+              {option.description}
+            </span>
           </span>
+          <Plus className="size-3.5 shrink-0 text-muted-foreground/60 transition group-hover:text-primary" />
         </button>
       </TooltipTrigger>
       <TooltipContent side="top" sideOffset={8}>

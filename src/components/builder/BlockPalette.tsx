@@ -1,5 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
-import { Search } from "lucide-react";
+import { GripVertical, Search } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,8 +9,17 @@ import type { BlockType } from "@/types/blocks";
 import { cn } from "@/lib/utils";
 import { blockGroups, blockOptions } from "./block-meta";
 
-const allBlocks = blockGroups.flatMap((group) => group.blocks);
 const allTab = "all";
+
+function blockMatchesQuery(type: BlockType, query: string) {
+  const option = blockOptions[type];
+
+  return (
+    !query ||
+    blockLabels[type].toLowerCase().includes(query) ||
+    option.description.toLowerCase().includes(query)
+  );
+}
 
 export const BlockPalette = memo(function BlockPalette({
   onAdd,
@@ -20,34 +29,38 @@ export const BlockPalette = memo(function BlockPalette({
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState(allTab);
   const normalizedQuery = query.trim().toLowerCase();
-  const visibleBlocks = useMemo(
+  const visibleGroups = useMemo(
     () => {
-      const source =
+      const groups =
         activeTab === allTab
-          ? allBlocks
-          : blockGroups.find((group) => group.label === activeTab)?.blocks ?? [];
+          ? blockGroups
+          : blockGroups.filter((group) => group.label === activeTab);
 
-      return source.filter((type) => {
-        const option = blockOptions[type];
-
-        return (
-          !normalizedQuery ||
-          blockLabels[type].toLowerCase().includes(normalizedQuery) ||
-          option.description.toLowerCase().includes(normalizedQuery)
-        );
-      });
+      return groups
+        .map((group) => ({
+          ...group,
+          blocks: group.blocks.filter((type) => blockMatchesQuery(type, normalizedQuery)),
+        }))
+        .filter((group) => group.blocks.length > 0);
     },
     [activeTab, normalizedQuery],
   );
-  const hasMatches = visibleBlocks.length > 0;
+  const hasMatches = visibleGroups.length > 0;
 
   return (
-    <aside className="flex min-h-0 flex-col overflow-hidden border-r border-border bg-card">
-      <div className="border-b border-border p-4">
-        <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
-          Compose
-        </p>
-        <h2 className="mt-1 text-base font-semibold text-card-foreground">Block catalog</h2>
+    <aside className="flex min-h-0 flex-col overflow-hidden border-r border-border bg-card/95">
+      <div className="border-b border-border bg-card px-3.5 py-3">
+        <div className="flex items-end justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-normal text-muted-foreground">
+              Add elements
+            </p>
+            <h2 className="mt-0.5 text-base font-semibold text-card-foreground">Blocks</h2>
+          </div>
+          <span className="rounded-md bg-surface px-2 py-1 text-[11px] font-medium text-muted-foreground">
+            Drag / Click
+          </span>
+        </div>
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -61,29 +74,48 @@ export const BlockPalette = memo(function BlockPalette({
         </div>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-0 flex-1 gap-0">
-        <div className="border-b border-border px-3 py-2">
-          <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value={allTab} className="flex-none px-2 text-xs">
+        <div className="border-b border-border bg-card px-3 py-2">
+          <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value={allTab} className="h-7 flex-none px-2 text-xs">
               All
             </TabsTrigger>
             {blockGroups.map((group) => (
-              <TabsTrigger key={group.label} value={group.label} className="flex-none px-2 text-xs">
+              <TabsTrigger
+                key={group.label}
+                value={group.label}
+                className="h-7 flex-none px-2 text-xs"
+              >
                 {group.label}
               </TabsTrigger>
             ))}
           </TabsList>
         </div>
-        <TabsContent value={activeTab} className="min-h-0 overflow-auto p-3">
+        <TabsContent value={activeTab} className="min-h-0 overflow-auto px-3 py-3">
           {hasMatches ? (
-            <div className="grid grid-cols-2 gap-2">
-              {visibleBlocks.map((type) => (
-                <PaletteItem key={type} type={type} onAdd={onAdd} />
+            <div className="grid gap-4">
+              {visibleGroups.map((group) => (
+                <section key={group.label}>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <h3 className="text-[11px] font-semibold uppercase tracking-normal text-muted-foreground">
+                      {group.label}
+                    </h3>
+                    <span className="text-[11px] text-muted-foreground">
+                      {group.blocks.length}
+                    </span>
+                  </div>
+                  <div className="grid gap-1.5">
+                    {group.blocks.map((type) => (
+                      <PaletteItem key={type} type={type} onAdd={onAdd} />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           ) : (
-            <p className="rounded-md border border-dashed border-border bg-surface px-3 py-4 text-center text-sm text-muted-foreground">
-              No blocks match
-            </p>
+            <div className="rounded-lg border border-dashed border-border bg-surface px-3 py-6 text-center">
+              <p className="text-sm font-medium text-surface-foreground">No blocks found</p>
+              <p className="mt-1 text-xs text-muted-foreground">Try another category or keyword.</p>
+            </div>
           )}
         </TabsContent>
       </Tabs>
@@ -114,16 +146,22 @@ function PaletteItem({ type, onAdd }: { type: BlockType; onAdd: (type: BlockType
           onClick={() => onAdd(type)}
           aria-label={`Add ${blockLabels[type]} block. ${option.description}`}
           className={cn(
-            "grid h-24 cursor-grab touch-none place-items-center gap-2 rounded-lg border border-border bg-surface p-2 text-center transition hover:border-primary/40 hover:bg-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing",
+            "group flex h-14 cursor-grab touch-none items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-left shadow-sm shadow-primary/0 transition hover:-translate-y-px hover:border-primary/35 hover:bg-accent/40 hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing",
             isDragging && "opacity-50",
           )}
         >
-          <span className="flex size-9 items-center justify-center rounded-md bg-background text-primary">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-background text-primary ring-1 ring-border/60">
             <Icon className="size-4" />
           </span>
-          <span className="w-full truncate text-xs font-semibold text-surface-foreground">
-            {blockLabels[type]}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-surface-foreground">
+              {blockLabels[type]}
+            </span>
+            <span className="mt-0.5 block truncate text-[11px] leading-none text-muted-foreground">
+              {option.description}
+            </span>
           </span>
+          <GripVertical className="size-4 shrink-0 text-muted-foreground/55 opacity-70 transition group-hover:text-primary" />
         </button>
       </TooltipTrigger>
       <TooltipContent side="right" sideOffset={8}>

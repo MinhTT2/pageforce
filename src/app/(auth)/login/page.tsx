@@ -1,9 +1,23 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { getCurrentUser } from "@/lib/auth";
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{
+    next?: string;
+  }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const [user, params] = await Promise.all([getCurrentUser(), searchParams]);
+
+  if (user) {
+    redirect(getSafeNextPath(params.next));
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader />
@@ -15,4 +29,12 @@ export default function LoginPage() {
       <SiteFooter />
     </div>
   );
+}
+
+function getSafeNextPath(next: string | undefined) {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return next;
 }

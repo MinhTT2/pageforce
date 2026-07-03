@@ -27,24 +27,38 @@ export function AuthForm({ mode }: AuthFormProps) {
     setNotice("");
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email"));
+    const email = String(formData.get("email")).trim();
     const password = String(formData.get("password"));
+    const confirmPassword = String(formData.get("confirmPassword") || "");
     const supabase = createClient();
+    const origin = window.location.origin;
+
+    if (mode === "register" && password !== confirmPassword) {
+      setLoading(false);
+      setError("Passwords do not match.");
+      return;
+    }
 
     const result =
       mode === "login"
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        : await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+            },
+          });
 
     setLoading(false);
 
     if (result.error) {
-      setError(result.error.message);
+      setError(getAuthErrorMessage(result.error.message, mode));
       return;
     }
 
     if (mode === "register" && !result.data.session) {
-      setNotice("Check your email to confirm your account, then log in to continue.");
+      setNotice("Check your email to confirm your account, then continue from the email link.");
       return;
     }
 
@@ -67,7 +81,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     });
 
     if (oauthError) {
-      setError(oauthError.message);
+      setError(getAuthErrorMessage(oauthError.message, mode));
       setGoogleLoading(false);
     }
   }
@@ -108,15 +122,43 @@ export function AuthForm({ mode }: AuthFormProps) {
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <Input name="email" type="email" placeholder="Email" required disabled={googleLoading} />
-        <Input
-          name="password"
-          type="password"
-          placeholder="Password"
-          required
-          minLength={6}
-          disabled={googleLoading}
-        />
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium text-card-foreground">Email</span>
+          <Input
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+            disabled={googleLoading}
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium text-card-foreground">Password</span>
+          <Input
+            name="password"
+            type="password"
+            placeholder="Minimum 6 characters"
+            autoComplete={isLogin ? "current-password" : "new-password"}
+            required
+            minLength={6}
+            disabled={googleLoading}
+          />
+        </label>
+        {!isLogin ? (
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-card-foreground">Confirm password</span>
+            <Input
+              name="confirmPassword"
+              type="password"
+              placeholder="Repeat your password"
+              autoComplete="new-password"
+              required
+              minLength={6}
+              disabled={googleLoading}
+            />
+          </label>
+        ) : null}
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {notice ? <p className="text-sm text-success">{notice}</p> : null}
@@ -142,6 +184,34 @@ function getSafeNextPath(next: string | null) {
   }
 
   return next;
+}
+
+function getAuthErrorMessage(message: string, mode: AuthFormProps["mode"]) {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("invalid login credentials")) {
+    return "Email or password is incorrect.";
+  }
+
+  if (normalized.includes("email not confirmed")) {
+    return "Please confirm your email before logging in.";
+  }
+
+  if (normalized.includes("email rate limit exceeded") || normalized.includes("rate limit")) {
+    return "Too many confirmation emails were requested. Try logging in, or wait a minute before registering again.";
+  }
+
+  if (normalized.includes("user already registered") || normalized.includes("already been registered")) {
+    return "This email already has an account. Log in instead.";
+  }
+
+  if (normalized.includes("password")) {
+    return mode === "register"
+      ? "Use a stronger password with at least 6 characters."
+      : "Please check your password and try again.";
+  }
+
+  return message || "Something went wrong. Please try again.";
 }
 
 function GoogleIcon() {

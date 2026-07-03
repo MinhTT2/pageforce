@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const oauthError = requestUrl.searchParams.get("error_description");
   const next = getSafeNextPath(requestUrl.searchParams.get("next"));
 
   if (code) {
@@ -16,7 +17,10 @@ export async function GET(request: NextRequest) {
   }
 
   const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("error", "Could not sign in with Google. Please try again.");
+  loginUrl.searchParams.set(
+    "error",
+    oauthError || "Could not sign in with Google. Please try again.",
+  );
   return NextResponse.redirect(loginUrl);
 }
 

@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Eye, Rocket, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Copy, ExternalLink, Eye, Rocket, Save, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { blockLabels, createBlock } from "@/lib/blocks";
@@ -20,21 +28,33 @@ type BuilderShellProps = {
 
 const blockTypes: BlockType[] = ["hero", "text", "image", "button"];
 
+type EditablePageResponse = Partial<EditablePage> & {
+  error?: string;
+};
+
 export function BuilderShell({ page }: BuilderShellProps) {
   const [title, setTitle] = useState(page.title);
   const [slug, setSlug] = useState(page.slug);
   const [status, setStatus] = useState(page.status);
+  const [publishedAt, setPublishedAt] = useState(page.publishedAt);
   const [schema, setSchema] = useState<PageSchema>(page.draftSchema);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
     page.draftSchema.blocks[0]?.id ?? null,
   );
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const publicOrigin = useBrowserOrigin();
+  const [publishedPopoverOpen, setPublishedPopoverOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState("");
 
   const selectedBlock = useMemo(
     () => schema.blocks.find((block) => block.id === selectedBlockId) ?? null,
     [schema.blocks, selectedBlockId],
+  );
+  const publicUrl = useMemo(
+    () => (publicOrigin ? `${publicOrigin}/p/${slug}` : `/p/${slug}`),
+    [publicOrigin, slug],
   );
 
   function addBlock(type: BlockType) {
@@ -80,7 +100,7 @@ export function BuilderShell({ page }: BuilderShellProps) {
       return;
     }
 
-    window.open(`/p/${slug}`, "_blank");
+    window.open(publicUrl, "_blank", "noopener,noreferrer");
   }
 
   async function savePage() {
@@ -90,8 +110,8 @@ export function BuilderShell({ page }: BuilderShellProps) {
     const { ok, payload } = await saveDraft();
 
     setSaving(false);
-    if (ok && payload?.status) {
-      setStatus(payload.status);
+    if (ok && payload) {
+      syncPageState(payload);
     }
     setMessage(ok ? "Saved" : payload?.error ?? "Could not save page");
   }
@@ -112,12 +132,14 @@ export function BuilderShell({ page }: BuilderShellProps) {
       method: "POST",
     });
     const payload = (await response.json().catch(() => null)) as
-      | { error?: string; status?: typeof status }
+      | EditablePageResponse
       | null;
 
     setPublishing(false);
-    if (response.ok && payload?.status) {
-      setStatus(payload.status);
+    if (response.ok && payload) {
+      syncPageState(payload);
+      setCopied(false);
+      setPublishedPopoverOpen(true);
     }
     setMessage(response.ok ? "Published" : payload?.error ?? "Could not publish page");
   }
@@ -129,10 +151,39 @@ export function BuilderShell({ page }: BuilderShellProps) {
       body: JSON.stringify({ title, slug, draftSchema: schema }),
     });
     const payload = (await response.json().catch(() => null)) as
-      | { error?: string; status?: typeof status }
+      | EditablePageResponse
       | null;
 
     return { ok: response.ok, payload };
+  }
+
+  function syncPageState(payload: EditablePageResponse) {
+    if (payload.title) {
+      setTitle(payload.title);
+    }
+
+    if (payload.slug) {
+      setSlug(payload.slug);
+    }
+
+    if (payload.status) {
+      setStatus(payload.status);
+    }
+
+    if ("publishedAt" in payload) {
+      setPublishedAt(payload.publishedAt ?? null);
+    }
+  }
+
+  async function copyPublicUrl() {
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      setMessage("Copied public URL");
+    } catch {
+      setCopied(false);
+      setMessage("Could not copy public URL");
+    }
   }
 
   return (
@@ -156,10 +207,35 @@ export function BuilderShell({ page }: BuilderShellProps) {
             <Eye size={16} />
             {status === "PUBLISHED" ? "Public preview" : "Draft"}
           </Button>
-          <Button variant="secondary" onClick={publishPage} disabled={publishing}>
-            <Rocket size={16} />
-            {publishing ? "Publishing..." : "Publish"}
-          </Button>
+          <Popover open={publishedPopoverOpen} onOpenChange={setPublishedPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="secondary" onClick={publishPage} disabled={publishing}>
+                <Rocket size={16} />
+                {publishing ? "Publishing..." : "Publish"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-96 gap-3 p-3">
+              <PopoverHeader>
+                <PopoverTitle>Page published</PopoverTitle>
+                <PopoverDescription>Share this public URL.</PopoverDescription>
+              </PopoverHeader>
+              <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
+                <p className="truncate font-mono text-xs">{publicUrl}</p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={copyPublicUrl}>
+                  {copied ? <Check size={16} /> : <Copy size={16} />}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+                <Button asChild size="sm">
+                  <a href={publicUrl} target="_blank" rel="noreferrer">
+                    <ExternalLink size={16} />
+                    Open
+                  </a>
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button onClick={savePage} disabled={saving}>
             <Save size={16} />
             {saving ? "Saving..." : "Save"}
@@ -182,6 +258,12 @@ export function BuilderShell({ page }: BuilderShellProps) {
             <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
               Status: {status.toLowerCase()}
             </div>
+            {publishedAt ? (
+              <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Public URL</p>
+                <p className="mt-1 truncate font-mono text-xs">{publicUrl}</p>
+              </div>
+            ) : null}
           </div>
         </aside>
         <section className="overflow-auto p-6">
@@ -362,4 +444,22 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {children}
     </label>
   );
+}
+
+function useBrowserOrigin() {
+  return useSyncExternalStore(subscribeToOrigin, getBrowserOrigin, getServerOrigin);
+}
+
+function subscribeToOrigin(onStoreChange: () => void) {
+  const timeoutId = window.setTimeout(onStoreChange, 0);
+
+  return () => window.clearTimeout(timeoutId);
+}
+
+function getBrowserOrigin() {
+  return window.location.origin;
+}
+
+function getServerOrigin() {
+  return "";
 }

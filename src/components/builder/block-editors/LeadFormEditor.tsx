@@ -45,31 +45,41 @@ export function LeadFormEditor({
               ...block,
               props: {
                 ...block.props,
-                deliveryMode: event.target.value as "mailto" | "actionUrl",
+                deliveryMode: event.target.value as "capture" | "mailto" | "actionUrl",
               },
             })
           }
         >
+          <option value="capture">Built-in lead capture</option>
           <option value="mailto">Mailto</option>
           <option value="actionUrl">Action URL</option>
         </Select>
       </Field>
-      <Field label="Mailto email">
-        <Input
-          value={block.props.mailto}
-          onChange={(event) =>
-            onChange({ ...block, props: { ...block.props, mailto: event.target.value } })
-          }
-        />
-      </Field>
-      <Field label="Action URL">
-        <Input
-          value={block.props.actionUrl}
-          onChange={(event) =>
-            onChange({ ...block, props: { ...block.props, actionUrl: event.target.value } })
-          }
-        />
-      </Field>
+      {block.props.deliveryMode === "capture" ? (
+        <p className="text-xs text-muted-foreground">
+          Submissions appear in your dashboard under Leads.
+        </p>
+      ) : null}
+      {block.props.deliveryMode === "mailto" ? (
+        <Field label="Mailto email">
+          <Input
+            value={block.props.mailto}
+            onChange={(event) =>
+              onChange({ ...block, props: { ...block.props, mailto: event.target.value } })
+            }
+          />
+        </Field>
+      ) : null}
+      {block.props.deliveryMode === "actionUrl" ? (
+        <Field label="Action URL">
+          <Input
+            value={block.props.actionUrl}
+            onChange={(event) =>
+              onChange({ ...block, props: { ...block.props, actionUrl: event.target.value } })
+            }
+          />
+        </Field>
+      ) : null}
     </Panel>
   );
 }

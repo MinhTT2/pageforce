@@ -1,10 +1,15 @@
 import { useDraggable } from "@dnd-kit/core";
+import { memo } from "react";
 import { blockLabels } from "@/lib/blocks";
 import type { BlockType } from "@/types/blocks";
 import { cn } from "@/lib/utils";
 import { blockGroups, blockOptions } from "./block-meta";
 
-export function BlockPalette({ onAdd }: { onAdd: (type: BlockType) => void }) {
+export const BlockPalette = memo(function BlockPalette({
+  onAdd,
+}: {
+  onAdd: (type: BlockType) => void;
+}) {
   return (
     <aside className="overflow-auto border-r border-border bg-card p-4">
       <div>
@@ -32,7 +37,7 @@ export function BlockPalette({ onAdd }: { onAdd: (type: BlockType) => void }) {
       </div>
     </aside>
   );
-}
+});
 
 function PaletteItem({ type, onAdd }: { type: BlockType; onAdd: (type: BlockType) => void }) {
   const option = blockOptions[type];

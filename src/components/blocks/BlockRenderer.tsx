@@ -14,7 +14,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import { Fragment, type CSSProperties, type ReactNode } from "react";
+import { Fragment, memo, type CSSProperties, type ReactNode } from "react";
 import type { BlockAlign, BlockWidth, PageBlock, PageSchema } from "@/types/blocks";
 import { defaultTokens } from "@/lib/blocks";
 import { BLOCK_PADDING_Y, BLOCK_WIDTH, blockStyleCssVars, tokenCssVars } from "@/lib/design";
@@ -59,7 +59,13 @@ function resolveSection(block: PageBlock, defaults: SectionDefaults) {
   };
 }
 
-export function BlockRenderer({ schema, renderBlockWrapper, emptyActions }: BlockRendererProps) {
+// memo keeps builder keystrokes from re-rendering the whole preview; it is a
+// no-op when this renders on the server for /p/[slug].
+export const BlockRenderer = memo(function BlockRenderer({
+  schema,
+  renderBlockWrapper,
+  emptyActions,
+}: BlockRendererProps) {
   const tokens = schema.settings?.tokens ?? defaultTokens;
 
   if (schema.blocks.length === 0) {
@@ -92,9 +98,12 @@ export function BlockRenderer({ schema, renderBlockWrapper, emptyActions }: Bloc
       })}
     </div>
   );
-}
+});
 
-function RenderedBlock({ block }: { block: PageBlock }) {
+// Blocks keep their object identity in the reducer unless edited, and page
+// tokens reach blocks via --pf-* CSS variables on the pf-root wrapper, so the
+// single `block` prop is this component's complete dependency set.
+const RenderedBlock = memo(function RenderedBlock({ block }: { block: PageBlock }) {
   if (block.type === "hero") {
     const { paddingClass, widthClass, align, sectionStyle } = resolveSection(block, {
       paddingY: "py-[calc(var(--pf-section-y)*1.2)]",
@@ -525,7 +534,7 @@ function RenderedBlock({ block }: { block: PageBlock }) {
       </div>
     </footer>
   );
-}
+});
 
 function SectionHeader({
   eyebrow,

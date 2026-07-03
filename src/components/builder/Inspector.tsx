@@ -1,4 +1,5 @@
 import { Copy, Trash2, X } from "lucide-react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { blockLabels } from "@/lib/blocks";
@@ -9,7 +10,7 @@ import { DesignPanel } from "./DesignPanel";
 import { PageSettingsPanel } from "./PageSettingsPanel";
 import { StyleEditor } from "./StyleEditor";
 
-export function Inspector({
+export const Inspector = memo(function Inspector({
   selectedBlock,
   settings,
   slug,
@@ -127,4 +128,4 @@ export function Inspector({
       )}
     </aside>
   );
-}
+});

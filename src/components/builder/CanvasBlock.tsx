@@ -9,6 +9,10 @@ import { cn } from "@/lib/utils";
 
 export type DropEdge = "top" | "bottom" | null;
 
+// Deliberately not memo()'d: `children` is a fresh element whenever
+// BlockRenderer renders, so a shallow compare would never bail. That's fine —
+// re-rendering this thin wrapper is cheap, and memo(RenderedBlock) skips the
+// heavy block content when its `block` prop is unchanged.
 export function CanvasBlock({
   block,
   selected,

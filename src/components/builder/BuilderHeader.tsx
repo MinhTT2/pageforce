@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, Eye, Pencil, Save } from "lucide-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import type { SaveStatus } from "@/lib/builder-state";
 import { cn } from "@/lib/utils";
 
-export function BuilderHeader({
+export const BuilderHeader = memo(function BuilderHeader({
   title,
   dirty,
   saveStatus,
@@ -95,4 +95,4 @@ export function BuilderHeader({
       </div>
     </header>
   );
-}
+});

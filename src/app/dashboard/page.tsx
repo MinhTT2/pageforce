@@ -54,29 +54,8 @@ export default async function DashboardPage() {
             <h1 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
               Dashboard
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Manage every landing page, open public URLs, and jump into the builder from one place.
-            </p>
-            <div className="mt-5 grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
-              <DashboardStat value={pages.length.toString()} label="Pages" />
-              <DashboardStat value="Live" label="Save model" />
-              <DashboardStat value="/p/slug" label="Public URLs" />
-            </div>
           </div>
-          <div className="grid gap-3 rounded-lg border border-border bg-card p-4">
-            <div className="relative aspect-[16/9] overflow-hidden rounded-md bg-muted">
-              <Image
-                src="https://images.unsplash.com/photo-1556761175-4b46a572b786?q=80&w=1200&auto=format&fit=crop"
-                alt=""
-                fill
-                unoptimized
-                sizes="340px"
-                className="object-cover"
-                priority
-              />
-            </div>
             <CreatePageDialog />
-          </div>
         </div>
 
         <Panel className="overflow-hidden rounded-lg">
@@ -108,7 +87,7 @@ export default async function DashboardPage() {
                     />
                     <DashboardPagePreview schema={normalizePageSchema(page.draftSchema)} />
                     <div className="pointer-events-none relative z-10 grid gap-4 p-4">
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start justify-between gap-3">
                         <div className="min-w-0">
                           <h3 className="truncate font-medium text-foreground">{page.title}</h3>
                           <p className="mt-1 truncate text-sm font-medium text-primary">
@@ -369,7 +348,7 @@ function MiniPreview({
 
 function PageActions({ page, publicUrl }: { page: DashboardPageItem; publicUrl: string }) {
   return (
-    <div className="pointer-events-auto relative z-20 grid grid-cols-2 gap-2 min-[1120px]:grid-cols-4">
+    <div className="pointer-events-auto relative z-20 grid grid-cols-2 gap-2">
       <Button asChild size="sm" className="w-full">
         <Link href={`/builder/${page.id}`}>
           <Edit />

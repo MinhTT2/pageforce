@@ -3,8 +3,7 @@ import type { ReactNode } from "react";
 import { BrandLogo } from "@/components/layout/BrandLogo";
 
 const productLinks = [
-  { href: "/login", label: "Log in" },
-  { href: "/register", label: "Register" },
+  { href: "/login", label: "Log in / Sign up" },
 ];
 
 const websiteInfo = ["Mini landing page builder", "Live page saving", "Public page sharing"];

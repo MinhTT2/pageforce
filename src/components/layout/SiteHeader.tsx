@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, LogIn, UserPlus } from "lucide-react";
+import { LayoutDashboard, LogIn } from "lucide-react";
 import { headers } from "next/headers";
 import { LogoutButton } from "@/components/dashboard/LogoutButton";
 import { BrandLogo } from "@/components/layout/BrandLogo";
@@ -11,8 +11,7 @@ import { getUserInitial, getUserLabel } from "@/lib/user-label";
 export async function SiteHeader() {
   const [user, headerStore] = await Promise.all([getCurrentUser(), headers()]);
   const authIntentPath = getAuthIntentPath(headerStore.get("x-pageforce-current-path"));
-  const loginHref = `/login?next=${encodeURIComponent(authIntentPath)}`;
-  const registerHref = `/register?next=${encodeURIComponent(authIntentPath)}`;
+  const authHref = `/login?next=${encodeURIComponent(authIntentPath)}`;
   const userLabel = user ? getUserLabel(user) : "";
   const userInitial = getUserInitial(userLabel);
 
@@ -50,16 +49,10 @@ export async function SiteHeader() {
             className="flex flex-wrap items-center justify-end gap-2"
             aria-label="Main navigation"
           >
-            <Button asChild variant="ghost">
-              <Link href={loginHref}>
-                <LogIn />
-                Log in
-              </Link>
-            </Button>
             <Button asChild>
-              <Link href={registerHref}>
-                <UserPlus />
-                Register
+              <Link href={authHref}>
+                <LogIn />
+                Log in / Sign up
               </Link>
             </Button>
           </nav>
@@ -68,4 +61,3 @@ export async function SiteHeader() {
     </header>
   );
 }
-

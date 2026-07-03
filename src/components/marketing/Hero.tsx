@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, LogIn } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { ProductPreview } from "@/components/marketing/ProductPreview";
 import { Button } from "@/components/ui/button";
 
@@ -23,15 +23,9 @@ export function Hero() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <Link href="/register">
-                Start free
-                <ArrowRight />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
               <Link href="/login">
-                <LogIn />
-                Log in
+                Log in / Sign up
+                <ArrowRight />
               </Link>
             </Button>
           </div>

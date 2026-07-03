@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowDown, ArrowUp, Copy, GripVertical, Trash2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { blockLabels } from "@/lib/blocks";
 import type { PageBlock } from "@/types/blocks";
@@ -36,6 +36,7 @@ export function CanvasBlock({
   count: number;
   children: ReactNode;
 }) {
+  const blockRef = useRef<HTMLDivElement | null>(null);
   const {
     attributes,
     listeners,
@@ -46,9 +47,20 @@ export function CanvasBlock({
     isDragging,
   } = useSortable({ id: block.id, data: { source: "canvas" } });
 
+  useEffect(() => {
+    if (!selected) {
+      return;
+    }
+
+    blockRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selected]);
+
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        blockRef.current = node;
+      }}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn("group/canvas-block relative", isDragging && "z-10 opacity-40")}
     >
@@ -64,8 +76,8 @@ export function CanvasBlock({
           }
         }}
         className={cn(
-          "block w-full cursor-pointer text-left outline-offset-[-2px] hover:outline hover:outline-2 hover:outline-primary/30 [&_a]:pointer-events-none [&_button]:pointer-events-none [&_input]:pointer-events-none [&_textarea]:pointer-events-none",
-          selected && "outline outline-2 outline-primary",
+          "block w-full cursor-pointer text-left outline-offset-[-2px] transition hover:outline hover:outline-2 hover:outline-primary/30 [&_a]:pointer-events-none [&_button]:pointer-events-none [&_input]:pointer-events-none [&_textarea]:pointer-events-none",
+          selected && "outline outline-3 outline-primary ring-4 ring-primary/15",
         )}
       >
         {children}

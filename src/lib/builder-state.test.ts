@@ -69,6 +69,25 @@ describe("block mutations", () => {
     expect(next.selectedBlockId).toBe(block.id);
   });
 
+  it("replaces the schema from a starter template and selects the first block", () => {
+    const state = makeState(0);
+    const hero = createBlock("hero");
+    const cta = createBlock("cta");
+    const next = builderReducer(state, {
+      type: "replaceSchema",
+      schema: {
+        version: 2,
+        blocks: [hero, cta],
+        settings: { ...defaultPageSettings, metaTitle: "Template" },
+      },
+    });
+
+    expect(next.schema.blocks.map((block) => block.id)).toEqual([hero.id, cta.id]);
+    expect(next.schema.settings?.metaTitle).toBe("Template");
+    expect(next.selectedBlockId).toBe(hero.id);
+    expect(next.dirty).toBe(true);
+  });
+
   it("moves blocks between positions", () => {
     const state = makeState();
     const [first, second, third] = state.schema.blocks;

@@ -34,6 +34,7 @@ export type BuilderAction =
   | { type: "setTitle"; value: string; at: number }
   | { type: "setSlug"; value: string; at: number }
   | { type: "insertBlock"; block: PageBlock; index?: number }
+  | { type: "replaceSchema"; schema: PageSchema }
   | { type: "moveBlock"; from: number; to: number }
   | { type: "updateBlock"; block: PageBlock; at: number }
   | { type: "duplicateBlock"; id: string; newId: string }
@@ -54,6 +55,7 @@ const UNDOABLE = new Set<BuilderAction["type"]>([
   "setTitle",
   "setSlug",
   "insertBlock",
+  "replaceSchema",
   "moveBlock",
   "updateBlock",
   "duplicateBlock",
@@ -203,6 +205,13 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
     return edited(state, {
       schema: { ...state.schema, blocks },
       selectedBlockId: action.block.id,
+    });
+  }
+
+  if (action.type === "replaceSchema") {
+    return edited(state, {
+      schema: { ...action.schema, settings: normalizeSettings(action.schema) },
+      selectedBlockId: action.schema.blocks[0]?.id ?? null,
     });
   }
 

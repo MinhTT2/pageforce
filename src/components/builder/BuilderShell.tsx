@@ -21,6 +21,7 @@ import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { blockLabels, createBlock, defaultPageSettings } from "@/lib/blocks";
 import { builderReducer, initialBuilderState } from "@/lib/builder-state";
+import { getPageTemplate, pageTemplates, type PageTemplateKey } from "@/lib/templates";
 import type { BlockType, DesignTokens, PageBlock, PageSettings } from "@/types/blocks";
 import type { EditablePage } from "@/types/page";
 import { BlockPalette, PaletteDragPreview } from "./BlockPalette";
@@ -82,6 +83,10 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   const selectedBlock = useMemo(
     () => state.schema.blocks.find((block) => block.id === state.selectedBlockId) ?? null,
     [state.schema.blocks, state.selectedBlockId],
+  );
+  const starterTemplates = useMemo(
+    () => pageTemplates.filter((template) => template.key !== "blank"),
+    [],
   );
 
   const blockIdsRef = useRef<string[]>([]);
@@ -189,7 +194,22 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   }, [page.id]);
 
   const addBlock = useCallback((type: BlockType, index?: number) => {
-    dispatch({ type: "insertBlock", block: createBlock(type), index });
+    const blocks = stateRef.current.schema.blocks;
+    const selectedId = stateRef.current.selectedBlockId;
+    const selectedIndex = blocks.findIndex((block) => block.id === selectedId);
+    const resolvedIndex =
+      typeof index === "number" ? index : selectedIndex >= 0 ? selectedIndex + 1 : blocks.length;
+
+    dispatch({ type: "insertBlock", block: createBlock(type), index: resolvedIndex });
+  }, []);
+  const applyTemplate = useCallback((key: PageTemplateKey) => {
+    const template = getPageTemplate(key);
+
+    if (!template) {
+      return;
+    }
+
+    dispatch({ type: "replaceSchema", schema: template.build() });
   }, []);
 
   const selectBlock = useCallback((id: string) => dispatch({ type: "selectBlock", id }), []);
@@ -336,6 +356,14 @@ export function BuilderShell({ page }: { page: EditablePage }) {
         />
         {previewMode ? (
           <main className="min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle_at_top,var(--surface)_0%,var(--canvas)_55%)] p-6">
+            <div className="mx-auto mb-3 flex max-w-5xl items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+              <span>
+                Preview mode shows the unsaved canvas. Open the public URL to view the live page.
+              </span>
+              <span className="rounded-md bg-surface px-2 py-1 font-medium text-surface-foreground">
+                Preview
+              </span>
+            </div>
             <div className="mx-auto max-w-5xl overflow-hidden rounded-lg border border-border bg-white shadow-lg shadow-primary/5">
               <BlockRenderer schema={state.schema} />
             </div>
@@ -350,18 +378,20 @@ export function BuilderShell({ page }: { page: EditablePage }) {
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
           >
-            <main className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_340px] overflow-hidden">
+            <main className="grid min-h-0 flex-1 grid-cols-1 overflow-auto lg:grid-cols-[280px_minmax(0,1fr)_340px] lg:overflow-hidden">
               <BlockPalette onAdd={addBlock} />
               <BuilderCanvas
                 schema={state.schema}
                 selectedBlockId={state.selectedBlockId}
                 dropIndicator={dropIndicator}
                 isPaletteDragging={activeDrag?.source === "palette"}
+                templates={starterTemplates}
                 onSelectBlock={selectBlock}
                 onDuplicateBlock={duplicateBlock}
                 onDeleteBlock={deleteBlock}
                 onMoveBlock={moveBlockBy}
                 onAddBlock={addBlock}
+                onApplyTemplate={applyTemplate}
               />
               <Inspector
                 selectedBlock={selectedBlock}

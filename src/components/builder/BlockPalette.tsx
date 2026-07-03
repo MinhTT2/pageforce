@@ -41,7 +41,7 @@ export const BlockPalette = memo(function BlockPalette({
         </p>
         <h2 className="mt-1 text-base font-semibold text-card-foreground">Blocks</h2>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Drag onto the canvas, or click to add at the end.
+          Drag onto the canvas, or click to add after the selected block.
         </p>
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

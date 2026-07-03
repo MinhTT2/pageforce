@@ -1,7 +1,65 @@
-export type BlockType = "hero" | "text" | "image" | "button";
+export type BlockType =
+  | "hero"
+  | "text"
+  | "image"
+  | "button"
+  | "features"
+  | "testimonials"
+  | "pricing"
+  | "faq"
+  | "cta"
+  | "leadForm"
+  | "footer";
 
-export type HeroBlock = {
+export type PageTheme = "clean" | "bold" | "warm";
+
+export type FontKey =
+  | "geist"
+  | "inter"
+  | "space-grotesk"
+  | "playfair"
+  | "lora"
+  | "system"
+  | "serif";
+
+export type RadiusKey = "none" | "sm" | "md" | "lg" | "full";
+export type SpacingKey = "compact" | "normal" | "relaxed";
+
+export type DesignTokens = {
+  primaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  headingFont: FontKey;
+  bodyFont: FontKey;
+  radius: RadiusKey;
+  spacing: SpacingKey;
+};
+
+export type BlockAlign = "left" | "center" | "right";
+export type BlockPaddingY = "none" | "sm" | "md" | "lg" | "xl";
+export type BlockWidth = "narrow" | "normal" | "wide" | "full";
+
+export type BlockStyle = {
+  backgroundColor?: string;
+  textColor?: string;
+  accentColor?: string;
+  align?: BlockAlign;
+  paddingY?: BlockPaddingY;
+  width?: BlockWidth;
+};
+
+export type PageSettings = {
+  metaTitle: string;
+  metaDescription: string;
+  tokens: DesignTokens;
+};
+
+type BlockBase = {
   id: string;
+  style?: BlockStyle;
+};
+
+export type HeroBlock = BlockBase & {
   type: "hero";
   props: {
     heading: string;
@@ -11,8 +69,7 @@ export type HeroBlock = {
   };
 };
 
-export type TextBlock = {
-  id: string;
+export type TextBlock = BlockBase & {
   type: "text";
   props: {
     content: string;
@@ -20,8 +77,7 @@ export type TextBlock = {
   };
 };
 
-export type ImageBlock = {
-  id: string;
+export type ImageBlock = BlockBase & {
   type: "image";
   props: {
     src: string;
@@ -29,8 +85,7 @@ export type ImageBlock = {
   };
 };
 
-export type ButtonBlock = {
-  id: string;
+export type ButtonBlock = BlockBase & {
   type: "button";
   props: {
     label: string;
@@ -39,9 +94,111 @@ export type ButtonBlock = {
   };
 };
 
-export type PageBlock = HeroBlock | TextBlock | ImageBlock | ButtonBlock;
+export type FeaturesBlock = BlockBase & {
+  type: "features";
+  props: {
+    eyebrow: string;
+    heading: string;
+    description: string;
+    items: Array<{
+      title: string;
+      description: string;
+      icon: string;
+    }>;
+  };
+};
+
+export type TestimonialsBlock = BlockBase & {
+  type: "testimonials";
+  props: {
+    heading: string;
+    items: Array<{
+      quote: string;
+      author: string;
+      role: string;
+    }>;
+  };
+};
+
+export type PricingBlock = BlockBase & {
+  type: "pricing";
+  props: {
+    heading: string;
+    description: string;
+    plans: Array<{
+      name: string;
+      price: string;
+      billingText: string;
+      features: string[];
+      ctaLabel: string;
+      ctaUrl: string;
+      highlighted: boolean;
+    }>;
+  };
+};
+
+export type FaqBlock = BlockBase & {
+  type: "faq";
+  props: {
+    heading: string;
+    items: Array<{
+      question: string;
+      answer: string;
+    }>;
+  };
+};
+
+export type CtaBlock = BlockBase & {
+  type: "cta";
+  props: {
+    headline: string;
+    supportingText: string;
+    primaryLabel: string;
+    primaryUrl: string;
+    secondaryLabel: string;
+    secondaryUrl: string;
+  };
+};
+
+export type LeadFormBlock = BlockBase & {
+  type: "leadForm";
+  props: {
+    headline: string;
+    description: string;
+    submitLabel: string;
+    deliveryMode: "mailto" | "actionUrl";
+    mailto: string;
+    actionUrl: string;
+  };
+};
+
+export type FooterBlock = BlockBase & {
+  type: "footer";
+  props: {
+    brandText: string;
+    copyright: string;
+    links: Array<{
+      label: string;
+      url: string;
+    }>;
+  };
+};
+
+export type PageBlock =
+  | HeroBlock
+  | TextBlock
+  | ImageBlock
+  | ButtonBlock
+  | FeaturesBlock
+  | TestimonialsBlock
+  | PricingBlock
+  | FaqBlock
+  | CtaBlock
+  | LeadFormBlock
+  | FooterBlock;
 
 export type PageSchema = {
-  version: 1;
+  version: 2;
   blocks: PageBlock[];
+  settings?: PageSettings;
 };

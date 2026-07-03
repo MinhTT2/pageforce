@@ -10,7 +10,7 @@ This file is the source of truth for agents working in this repository. Read it 
 
 ## Project Overview
 
-Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, create landing pages, compose them from JSON-backed blocks, save changes live, and view public pages at `/p/[slug]`.
+Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, create landing pages, compose them from JSON-backed blocks, save changes live, capture leads, and view public pages at `/p/[slug]`.
 
 Each Supabase Auth user can own multiple `Page` records.
 
@@ -43,12 +43,13 @@ Each Supabase Auth user can own multiple `Page` records.
 
 - Supabase Auth is the user source of truth. Users live in Supabase `auth.users`.
 - Do not create a Prisma `User` model for the MVP.
-- App data lives in Prisma models, currently `Page`.
+- App data lives in Prisma models, currently `Page` and `LeadSubmission`.
 - `Page.userId` stores the Supabase Auth user id and is indexed for ownership lookups.
 - `Page.draftSchema` currently stores the live builder schema. The column name is legacy.
 - `Page.publishedSchema` is kept in sync for compatibility, but there is no separate publish step in the MVP.
 - Saving updates the live schema and the public page immediately.
 - Public pages render from the current live schema.
+- Lead Form blocks can store public submissions in `LeadSubmission` or use mailto/external action delivery.
 - Keep shared block rendering logic reusable between builder preview and public render.
 
 ## Auth Rules
@@ -67,6 +68,12 @@ Each Supabase Auth user can own multiple `Page` records.
 - `PATCH /api/pages/[pageId]` must not trust client-sent status changes.
 - There is no separate publish endpoint in the MVP.
 - Delete, update, and get operations must enforce `Page.userId = current Supabase user id`.
+
+## Lead API Rules
+
+- `POST /api/pages/[pageId]/leads` is public because visitors submit forms from `/p/[slug]`.
+- Public lead submission must validate payloads, cap body size, and preserve the honeypot guard.
+- Dashboard lead views must get the current Supabase user and enforce ownership through `Page.userId`.
 
 ## Builder Rules
 

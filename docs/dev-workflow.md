@@ -82,8 +82,20 @@ When adding or changing a block type, update these together:
 - Defaults and labels in `src/lib/blocks.ts`
 - Validation in `src/lib/validators.ts`
 - Rendering in `src/components/blocks/BlockRenderer.tsx`
-- Editing controls in `src/components/builder/BuilderShell.tsx`
+- Editing controls in the matching file under `src/components/builder/block-editors/`
 - Unit tests for schema/default behavior
+
+The current public block contract is `PageSchema` version 2. Builder saves write the live schema to `Page.draftSchema` and keep `Page.publishedSchema` in sync for compatibility; there is no separate publish step in the MVP.
+
+## Leads
+
+Lead Form blocks support three delivery modes:
+
+- `capture`: public pages post to `POST /api/pages/[pageId]/leads` and store rows in `LeadSubmission`.
+- `mailto`: the live form submits to a mailto action.
+- `actionUrl`: the live form submits to an external URL.
+
+Private lead views live at `/dashboard/pages/[pageId]/leads` and must enforce page ownership through the current Supabase Auth user. Public lead submission is intentionally unauthenticated because visitors submit forms from `/p/[slug]`; keep payload validation, body-size limits, and the honeypot guard in place when changing it.
 
 ## Release Flow
 
@@ -97,5 +109,5 @@ When adding or changing a block type, update these together:
 - Create a page.
 - Add, edit, reorder, and delete blocks.
 - Save the builder.
-- Publish the page.
-- Open `/p/[slug]` and confirm the public page renders.
+- Open `/p/[slug]` and confirm the latest saved page renders.
+- Submit a Lead Form in capture mode and confirm it appears in the page's dashboard leads view.

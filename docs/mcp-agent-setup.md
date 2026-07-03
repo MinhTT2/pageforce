@@ -9,7 +9,7 @@ Use this document when preparing a local agent environment for Pageforce. Keep s
    - Required secret handling: configure project tokens in the local MCP config only.
 
 2. Playwright MCP
-   - Purpose: browser-test the full MVP flow: register, login, create page, edit builder blocks, save, publish, and open `/p/[slug]`.
+   - Purpose: browser-test the full MVP flow: register, login, create page, edit builder blocks, save, open `/p/[slug]`, and verify lead capture when relevant.
    - No app secrets should be committed.
 
 3. Context7 or Docs MCP

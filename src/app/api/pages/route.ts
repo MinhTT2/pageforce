@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createPageForUser, listPagesForUser, toPageSummary } from "@/lib/pages";
+import { resolveTemplateSchema } from "@/lib/templates";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -24,7 +25,8 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const title =
     typeof body.title === "string" && body.title.trim() ? body.title.trim() : "Untitled page";
-  const page = await createPageForUser(user.id, title);
+  const schema = resolveTemplateSchema(body.template);
+  const page = await createPageForUser(user.id, title, schema);
 
   return NextResponse.json(toPageSummary(page), { status: 201 });
 }

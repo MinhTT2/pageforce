@@ -45,7 +45,11 @@ export async function listPagesForUser(userId: string) {
   });
 }
 
-export async function createPageForUser(userId: string, title = "Untitled page") {
+export async function createPageForUser(
+  userId: string,
+  title = "Untitled page",
+  schema: PageSchema = emptyPageSchema,
+) {
   const slug = await createUniqueSlug(fallbackSlug(title));
   const now = new Date();
 
@@ -55,8 +59,8 @@ export async function createPageForUser(userId: string, title = "Untitled page")
       title,
       slug,
       status: "PUBLISHED",
-      draftSchema: emptyPageSchema,
-      publishedSchema: emptyPageSchema,
+      draftSchema: schemaToJson(schema),
+      publishedSchema: schemaToJson(schema),
       publishedAt: now,
     },
   });

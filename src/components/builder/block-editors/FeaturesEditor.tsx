@@ -13,64 +13,68 @@ export function FeaturesEditor({
   onChange: (block: PageBlock) => void;
 }) {
   return (
-    <Panel title="Features">
-      <Field label="Eyebrow">
-        <Input
-          value={block.props.eyebrow}
-          onChange={(event) =>
-            onChange({ ...block, props: { ...block.props, eyebrow: event.target.value } })
-          }
+    <div className="grid gap-3">
+      <Panel title="Content" description="Frame the benefits before listing them.">
+        <Field label="Eyebrow">
+          <Input
+            value={block.props.eyebrow}
+            onChange={(event) =>
+              onChange({ ...block, props: { ...block.props, eyebrow: event.target.value } })
+            }
+          />
+        </Field>
+        <Field label="Heading">
+          <Input
+            value={block.props.heading}
+            onChange={(event) =>
+              onChange({ ...block, props: { ...block.props, heading: event.target.value } })
+            }
+          />
+        </Field>
+        <Field label="Description">
+          <Textarea
+            value={block.props.description}
+            onChange={(event) =>
+              onChange({ ...block, props: { ...block.props, description: event.target.value } })
+            }
+          />
+        </Field>
+      </Panel>
+      <Panel title="Items" description="Keep each feature focused on one customer benefit.">
+        <ArrayItemEditor
+          label="Feature"
+          items={block.props.items}
+          createItem={() => ({
+            title: "New feature",
+            description: "Describe the benefit.",
+            icon: "Sparkles",
+          })}
+          onChange={(items) => onChange({ ...block, props: { ...block.props, items } })}
+          renderItem={(item, update) => (
+            <>
+              <Field label="Title">
+                <Input value={item.title} onChange={(event) => update({ title: event.target.value })} />
+              </Field>
+              <Field label="Description">
+                <Textarea
+                  value={item.description}
+                  onChange={(event) => update({ description: event.target.value })}
+                />
+              </Field>
+              <Field label="Icon">
+                <Select value={item.icon} onChange={(event) => update({ icon: event.target.value })}>
+                  <option value="Sparkles">Sparkles</option>
+                  <option value="Zap">Zap</option>
+                  <option value="BadgeCheck">BadgeCheck</option>
+                  <option value="Globe">Globe</option>
+                  <option value="MessageCircle">MessageCircle</option>
+                  <option value="Star">Star</option>
+                </Select>
+              </Field>
+            </>
+          )}
         />
-      </Field>
-      <Field label="Heading">
-        <Input
-          value={block.props.heading}
-          onChange={(event) =>
-            onChange({ ...block, props: { ...block.props, heading: event.target.value } })
-          }
-        />
-      </Field>
-      <Field label="Description">
-        <Textarea
-          value={block.props.description}
-          onChange={(event) =>
-            onChange({ ...block, props: { ...block.props, description: event.target.value } })
-          }
-        />
-      </Field>
-      <ArrayItemEditor
-        label="Feature"
-        items={block.props.items}
-        createItem={() => ({
-          title: "New feature",
-          description: "Describe the benefit.",
-          icon: "Sparkles",
-        })}
-        onChange={(items) => onChange({ ...block, props: { ...block.props, items } })}
-        renderItem={(item, update) => (
-          <>
-            <Field label="Title">
-              <Input value={item.title} onChange={(event) => update({ title: event.target.value })} />
-            </Field>
-            <Field label="Description">
-              <Textarea
-                value={item.description}
-                onChange={(event) => update({ description: event.target.value })}
-              />
-            </Field>
-            <Field label="Icon">
-              <Select value={item.icon} onChange={(event) => update({ icon: event.target.value })}>
-                <option value="Sparkles">Sparkles</option>
-                <option value="Zap">Zap</option>
-                <option value="BadgeCheck">BadgeCheck</option>
-                <option value="Globe">Globe</option>
-                <option value="MessageCircle">MessageCircle</option>
-                <option value="Star">Star</option>
-              </Select>
-            </Field>
-          </>
-        )}
-      />
-    </Panel>
+      </Panel>
+    </div>
   );
 }

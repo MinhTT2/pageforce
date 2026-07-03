@@ -16,7 +16,7 @@ export function ImageUrlField({
   const showFallback = value && failedSrc === value;
 
   return (
-    <Field label={label}>
+    <Field label={label} description="Paste a direct image URL. Uploads are not part of this builder yet.">
       <Input value={value} onChange={(event) => onChange(event.target.value)} />
       {value ? (
         <div className="mt-2 aspect-video overflow-hidden rounded-md border border-border bg-surface">

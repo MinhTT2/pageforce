@@ -12,7 +12,7 @@ export function FaqEditor({
   onChange: (block: PageBlock) => void;
 }) {
   return (
-    <Panel title="FAQ">
+    <Panel title="FAQ" description="Answer objections that would otherwise stop the click.">
       <Field label="Heading">
         <Input
           value={block.props.heading}
@@ -35,7 +35,10 @@ export function FaqEditor({
               />
             </Field>
             <Field label="Answer">
-              <Textarea value={item.answer} onChange={(event) => update({ answer: event.target.value })} />
+              <Textarea
+                value={item.answer}
+                onChange={(event) => update({ answer: event.target.value })}
+              />
             </Field>
           </>
         )}

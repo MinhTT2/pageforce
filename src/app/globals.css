@@ -61,7 +61,7 @@
 }
 
 :root {
-  --background: oklch(0.986 0.008 220);
+  --background: oklch(0.992 0.004 210);
   --foreground: oklch(0.18 0.026 230);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.18 0.026 230);
@@ -69,21 +69,21 @@
   --popover-foreground: oklch(0.18 0.026 230);
   --primary: oklch(0.48 0.145 215);
   --primary-foreground: oklch(0.985 0.008 220);
-  --secondary: oklch(0.948 0.018 210);
+  --secondary: oklch(0.952 0.012 225);
   --secondary-foreground: oklch(0.24 0.04 225);
-  --muted: oklch(0.954 0.012 220);
+  --muted: oklch(0.955 0.008 230);
   --muted-foreground: oklch(0.51 0.034 230);
-  --accent: oklch(0.92 0.055 200);
-  --accent-foreground: oklch(0.28 0.075 215);
+  --accent: oklch(0.925 0.06 172);
+  --accent-foreground: oklch(0.255 0.075 180);
   --destructive: oklch(0.58 0.205 25);
   --border: oklch(0.885 0.018 220);
   --input: oklch(0.885 0.018 220);
   --ring: oklch(0.58 0.13 210);
-  --surface: oklch(0.966 0.012 215);
+  --surface: oklch(0.972 0.008 205);
   --surface-foreground: oklch(0.24 0.04 225);
   --panel: oklch(0.996 0.004 220);
   --panel-foreground: oklch(0.18 0.026 230);
-  --canvas: oklch(0.952 0.016 220);
+  --canvas: oklch(0.956 0.011 215);
   --canvas-foreground: oklch(0.18 0.026 230);
   --success: oklch(0.61 0.14 153);
   --success-foreground: oklch(0.985 0.012 150);
@@ -162,5 +162,57 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Public page rendering: everything derives from the page's design tokens
+   (--pf-*), set inline by BlockRenderer. color-mix keeps muted text, borders,
+   and soft surfaces readable against any user-picked background. */
+@layer components {
+  .pf-root {
+    background-color: var(--pf-bg);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+  .pf-heading {
+    font-family: var(--pf-font-heading);
+  }
+  .pf-muted {
+    color: color-mix(in oklab, var(--pf-text) 62%, var(--pf-bg));
+  }
+  .pf-border {
+    border-color: color-mix(in oklab, var(--pf-text) 14%, transparent);
+  }
+  .pf-soft {
+    background-color: color-mix(in oklab, var(--pf-text) 5%, var(--pf-bg));
+  }
+  .pf-accent {
+    color: var(--pf-primary);
+  }
+  .pf-btn-primary {
+    background-color: var(--pf-primary);
+    color: var(--pf-primary-fg);
+  }
+  .pf-btn-secondary {
+    border: 1px solid color-mix(in oklab, var(--pf-text) 18%, transparent);
+    background-color: var(--pf-bg);
+    color: var(--pf-text);
+  }
+  .pf-panel-primary {
+    --pf-bg: var(--pf-primary);
+    --pf-text: var(--pf-primary-fg);
+    background-color: var(--pf-bg);
+    color: var(--pf-text);
+  }
+  .pf-btn-inverse {
+    background-color: var(--pf-text);
+    color: var(--pf-bg);
+  }
+  .pf-hero-gradient {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--pf-primary) 10%, var(--pf-bg)) 0%,
+      var(--pf-bg) 85%
+    );
   }
 }

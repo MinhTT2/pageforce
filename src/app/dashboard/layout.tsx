@@ -1,5 +1,5 @@
-import { SiteFooter } from "@/components/layout/SiteFooter";
-import { SiteHeader } from "@/components/layout/SiteHeader";
+import { DashboardMobileBar } from "@/components/dashboard/DashboardMobileBar";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 
 export default function DashboardLayout({
   children,
@@ -7,10 +7,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <SiteHeader />
-      <div className="flex-1">{children}</div>
-      <SiteFooter />
+    <div className="flex min-h-screen bg-surface">
+      <DashboardSidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <DashboardMobileBar />
+        {children}
+      </div>
     </div>
   );
 }

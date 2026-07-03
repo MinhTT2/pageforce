@@ -25,21 +25,30 @@ export function BlockRenderer({
 
   return (
     <div className="bg-white">
-      {schema.blocks.map((block) => (
-        <button
-          key={block.id}
-          type="button"
-          disabled={!editable}
-          onClick={() => onSelectBlock?.(block.id)}
-          className={cn(
-            "block w-full text-left",
-            editable && "outline-offset-[-2px] hover:outline hover:outline-2 hover:outline-zinc-300",
-            editable && selectedBlockId === block.id && "outline outline-2 outline-zinc-950",
-          )}
-        >
-          <RenderedBlock block={block} />
-        </button>
-      ))}
+      {schema.blocks.map((block) =>
+        editable ? (
+          <div
+            key={block.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelectBlock?.(block.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelectBlock?.(block.id);
+              }
+            }}
+            className={cn(
+              "block w-full cursor-pointer text-left outline-offset-[-2px] hover:outline hover:outline-2 hover:outline-zinc-300 [&_a]:pointer-events-none",
+              selectedBlockId === block.id && "outline outline-2 outline-zinc-950",
+            )}
+          >
+            <RenderedBlock block={block} />
+          </div>
+        ) : (
+          <RenderedBlock key={block.id} block={block} />
+        ),
+      )}
     </div>
   );
 }

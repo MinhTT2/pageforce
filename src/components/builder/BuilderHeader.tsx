@@ -90,7 +90,7 @@ export const BuilderHeader = memo(function BuilderHeader({
         </Button>
         <Button onClick={onSave} disabled={saving || !dirty}>
           <Save size={16} />
-          {saving ? "Publishing..." : "Publish"}
+          {saving ? "Saving..." : "Save"}
         </Button>
       </div>
     </header>

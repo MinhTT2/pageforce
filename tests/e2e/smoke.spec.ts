@@ -6,18 +6,13 @@ test("home page links to auth routes", async ({ page }) => {
   const mainNavigation = page.getByLabel("Main navigation");
 
   await expect(page.getByRole("heading", { name: "Pageforce" })).toBeVisible();
-  await expect(mainNavigation.getByRole("link", { name: "Log in" })).toHaveAttribute(
+  await expect(mainNavigation.getByRole("link", { name: "Log in / Sign up" })).toHaveAttribute(
     "href",
     "/login?next=%2F",
   );
-  await expect(mainNavigation.getByRole("link", { name: "Register" })).toHaveAttribute(
-    "href",
-    "/register?next=%2F",
-  );
-  await expect(page.getByRole("link", { name: "Start free" })).toHaveAttribute(
-    "href",
-    "/register",
-  );
+  await expect(
+    page.getByRole("main").getByRole("link", { name: "Log in / Sign up" }).first(),
+  ).toHaveAttribute("href", "/login");
 });
 
 test("auth pages render", async ({ page }) => {

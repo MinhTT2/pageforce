@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Check, Copy, Eye, Pencil, Redo2, Save, Undo2 } from "lucide-react";
+import { ArrowLeft, Check, Copy, ExternalLink, Eye, Pencil, Redo2, Save, Undo2 } from "lucide-react";
 import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
@@ -37,18 +37,17 @@ export const BuilderHeader = memo(function BuilderHeader({
 }) {
   const [copied, setCopied] = useState(false);
   const saving = saveStatus === "saving";
-  const statusLabel = saving
-    ? "Saving..."
-    : saveStatus === "error"
-      ? "Save failed"
-      : dirty
-        ? "Unsaved changes"
-        : "All changes live";
+  const statusLabel = saving ? "Saving..." : saveStatus === "error" ? "Save failed" : dirty ? "Unsaved" : "Saved";
+  const isLive = !dirty && saveStatus !== "error";
 
   async function copyUrl() {
-    await navigator.clipboard.writeText(publicUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
   }
 
   return (
@@ -80,8 +79,27 @@ export const BuilderHeader = memo(function BuilderHeader({
             {notice}
           </span>
         ) : null}
-        <span className="rounded-md border border-border bg-surface px-2.5 py-1 text-sm text-muted-foreground">
+        <span
+          className={cn(
+            "rounded-md border px-2.5 py-1 text-sm",
+            saveStatus === "error"
+              ? "border-destructive/30 bg-destructive/10 text-destructive"
+              : dirty
+                ? "border-warning/30 bg-warning/10 text-warning"
+                : "border-border bg-surface text-muted-foreground",
+          )}
+        >
           {statusLabel}
+        </span>
+        <span
+          className={cn(
+            "rounded-md border px-2.5 py-1 text-sm",
+            isLive
+              ? "border-primary/20 bg-primary/10 text-primary"
+              : "border-border bg-surface text-muted-foreground",
+          )}
+        >
+          {isLive ? "Live" : "Not live yet"}
         </span>
         <Button
           variant="ghost"
@@ -113,6 +131,12 @@ export const BuilderHeader = memo(function BuilderHeader({
         <Button variant="secondary" onClick={copyUrl} aria-label="Copy public URL">
           {copied ? <Check size={16} /> : <Copy size={16} />}
           {copied ? "Copied" : "Copy URL"}
+        </Button>
+        <Button asChild variant="secondary" aria-label="Open public page">
+          <a href={publicUrl} target="_blank" rel="noreferrer">
+            <ExternalLink size={16} />
+            Open
+          </a>
         </Button>
         <Button onClick={onSave} disabled={saving || !dirty}>
           <Save size={16} />

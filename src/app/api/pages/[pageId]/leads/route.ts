@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizePageSchema } from "@/lib/blocks";
 import { createLeadSubmission, parseLeadBody } from "@/lib/leads";
 import { prisma } from "@/lib/prisma";
 
@@ -25,8 +26,8 @@ export async function POST(
   }
 
   const page = await prisma.page.findFirst({
-    where: { id: pageId },
-    select: { id: true },
+    where: { id: pageId, status: "PUBLISHED" },
+    select: { id: true, draftSchema: true },
   });
 
   if (!page) {
@@ -36,6 +37,15 @@ export async function POST(
   // Honeypot tripped: pretend success without storing anything.
   if (parsed.value.website) {
     return NextResponse.json({ ok: true });
+  }
+
+  const schema = normalizePageSchema(page.draftSchema);
+  const acceptsLeads = schema.blocks.some(
+    (block) => block.type === "leadForm" && block.id === parsed.value.blockId,
+  );
+
+  if (!acceptsLeads) {
+    return NextResponse.json({ error: "Lead form not found" }, { status: 404 });
   }
 
   await createLeadSubmission(pageId, parsed.value.blockId, parsed.value.data);

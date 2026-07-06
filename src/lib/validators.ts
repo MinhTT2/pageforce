@@ -288,6 +288,7 @@ export const pagePatchValidator = z
     title: z.string().min(1).max(120).optional(),
     slug: z.string().min(1).max(80).optional(),
     schema: pageSchemaValidator.optional(),
+    lastKnownUpdatedAt: z.string().min(1).max(40).optional(),
   })
   .strict();
 

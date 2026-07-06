@@ -36,10 +36,12 @@ export default async function DashboardPage({
       id: true,
       title: true,
       slug: true,
+      status: true,
       draftSchema: true,
       _count: { select: { leadSubmissions: true } },
     },
     orderBy: { updatedAt: "desc" },
+    take: 50,
   });
   const hasAnyPages = query
     ? (await prisma.page.count({ where: { userId: user.id } })) > 0
@@ -77,6 +79,9 @@ export default async function DashboardPage({
             <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
               {pages.map((page) => {
                 const publicUrl = `${publicOrigin}/p/${page.slug}`;
+                const schema = normalizePageSchema(page.draftSchema);
+                const isLive = page.status === "PUBLISHED" && schema.blocks.length > 0;
+                const cardHref = isLive ? publicUrl : `/builder/${page.id}`;
 
                 return (
                   <article
@@ -84,21 +89,27 @@ export default async function DashboardPage({
                     className="relative overflow-hidden rounded-lg border border-border bg-card shadow-xs transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                   >
                     <Link
-                      href={publicUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                      href={cardHref}
+                      {...(isLive ? { target: "_blank", rel: "noreferrer" } : {})}
                       aria-label={`Open ${page.title}`}
                       className="absolute inset-0 z-0"
                     />
-                    <PageSchemaThumbnail schema={normalizePageSchema(page.draftSchema)} />
+                    <PageSchemaThumbnail schema={schema} />
                     <div className="pointer-events-none relative z-10 grid gap-4 p-4">
                       <div className="flex min-w-0 items-start justify-between gap-3">
                         <div className="min-w-0">
                           <h3 className="truncate font-medium text-foreground">{page.title}</h3>
-                          <p className="mt-1 truncate text-sm font-medium text-primary">
+                          <p
+                            className={`mt-1 truncate text-sm font-medium ${
+                              isLive ? "text-primary" : "text-muted-foreground"
+                            }`}
+                          >
                             {publicUrl}
                           </p>
                         </div>
+                        <Badge variant={isLive ? "success" : "warning"}>
+                          {isLive ? "Live" : "Draft"}
+                        </Badge>
                       </div>
 
                       <PageActions page={page} />
@@ -170,6 +181,7 @@ type DashboardPageItem = {
   id: string;
   title: string;
   slug: string;
+  status: "DRAFT" | "PUBLISHED";
   draftSchema: Prisma.JsonValue;
   _count: { leadSubmissions: number };
 };

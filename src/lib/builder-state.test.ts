@@ -335,7 +335,24 @@ describe("save lifecycle", () => {
     expect(next.dirty).toBe(false);
     expect(next.saveStatus).toBe("saved");
     expect(next.title).toBe(page.title);
+    expect(next.updatedAt).toBe(page.updatedAt);
     expect(next.notice).toBeNull();
+  });
+
+  it("syncs publication status from the server on success", () => {
+    const page = {
+      ...makePage(0),
+      status: "DRAFT" as const,
+      publishedAt: null,
+    };
+    const next = builderReducer(makeState(), {
+      type: "saveSucceeded",
+      page,
+      requestedSlug: page.slug,
+    });
+
+    expect(next.status).toBe("DRAFT");
+    expect(next.publishedAt).toBeNull();
   });
 
   it("keeps a cleared selection after save", () => {

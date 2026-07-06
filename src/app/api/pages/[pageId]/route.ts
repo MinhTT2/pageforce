@@ -1,8 +1,16 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { normalizePageSchema } from "@/lib/blocks";
-import { createUniqueSlug, schemaToJson, toEditablePage } from "@/lib/pages";
+import {
+  MAX_PAGE_BODY_BYTES,
+  pagePublicationData,
+  schemaToJson,
+  toEditablePage,
+  updatePageWithUniqueSlug,
+} from "@/lib/pages";
 import { prisma } from "@/lib/prisma";
+import { readJsonBody } from "@/lib/request-body";
 import { pagePatchValidator } from "@/lib/validators";
 
 export async function GET(
@@ -38,8 +46,13 @@ export async function PATCH(
   }
 
   const { pageId } = await params;
-  const body = await request.json().catch(() => ({}));
-  const parsed = pagePatchValidator.safeParse(body);
+  const json = await readJsonBody(request, MAX_PAGE_BODY_BYTES);
+
+  if (!json.ok) {
+    return NextResponse.json({ error: json.error }, { status: json.status });
+  }
+
+  const parsed = pagePatchValidator.safeParse(json.value);
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -56,7 +69,7 @@ export async function PATCH(
 
   const page = await prisma.page.findFirst({
     where: { id: pageId, userId: user.id },
-    select: { id: true },
+    select: { id: true, slug: true, updatedAt: true },
   });
 
   if (!page) {
@@ -64,17 +77,42 @@ export async function PATCH(
   }
 
   const data = parsed.data;
-  const schema = data.schema ? schemaToJson(normalizePageSchema(data.schema)) : null;
-  const updated = await prisma.page.update({
-    where: { id: pageId },
-    data: {
-      ...(data.title ? { title: data.title } : {}),
-      ...(data.slug ? { slug: await createUniqueSlug(data.slug, pageId) } : {}),
-      ...(schema ? { draftSchema: schema, publishedSchema: schema } : {}),
-      status: "PUBLISHED",
-      publishedAt: new Date(),
-    },
-  });
+
+  if (data.lastKnownUpdatedAt && data.lastKnownUpdatedAt !== page.updatedAt.toISOString()) {
+    return NextResponse.json(
+      { error: "This page changed in another tab. Reload before saving again." },
+      { status: 409 },
+    );
+  }
+
+  const normalizedSchema = data.schema ? normalizePageSchema(data.schema) : null;
+  const schema = normalizedSchema ? schemaToJson(normalizedSchema) : null;
+  const publication = normalizedSchema ? pagePublicationData(normalizedSchema) : null;
+  const updateData = {
+    ...(data.title ? { title: data.title } : {}),
+    ...(schema ? { draftSchema: schema } : {}),
+    ...(publication
+      ? {
+          status: publication.status,
+          publishedSchema: publication.publishedSchema,
+          publishedAt: publication.publishedAt,
+        }
+      : {}),
+  };
+  const updated = data.slug
+    ? await updatePageWithUniqueSlug(data.slug, pageId, (slug) =>
+        prisma.page.update({
+          where: { id: pageId },
+          data: { ...updateData, slug },
+        }),
+      )
+    : await prisma.page.update({
+        where: { id: pageId },
+        data: updateData,
+      });
+
+  revalidatePath(`/p/${page.slug}`);
+  revalidatePath(`/p/${updated.slug}`);
 
   return NextResponse.json(toEditablePage(updated));
 }
@@ -92,7 +130,7 @@ export async function DELETE(
   const { pageId } = await params;
   const page = await prisma.page.findFirst({
     where: { id: pageId, userId: user.id },
-    select: { id: true },
+    select: { id: true, slug: true },
   });
 
   if (!page) {
@@ -100,6 +138,7 @@ export async function DELETE(
   }
 
   await prisma.page.delete({ where: { id: pageId } });
+  revalidatePath(`/p/${page.slug}`);
 
   return NextResponse.json({ ok: true });
 }

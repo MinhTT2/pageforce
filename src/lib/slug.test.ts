@@ -13,9 +13,11 @@ describe("slug helpers", () => {
   it("falls back to a timestamped page slug when input has no slug characters", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-02T08:00:00.000Z"));
+    vi.spyOn(Math, "random").mockReturnValue(0.123456);
 
-    expect(fallbackSlug("!!!")).toBe("page-1782979200000");
+    expect(fallbackSlug("!!!")).toBe("page-1782979200000-4fzyo8");
 
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 });

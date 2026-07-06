@@ -13,6 +13,7 @@ export const BuilderHeader = memo(function BuilderHeader({
   notice,
   previewMode,
   publicUrl,
+  isLive,
   onTitleChange,
   canUndo,
   canRedo,
@@ -27,6 +28,7 @@ export const BuilderHeader = memo(function BuilderHeader({
   notice: string | null;
   previewMode: boolean;
   publicUrl: string;
+  isLive: boolean;
   onTitleChange: (value: string) => void;
   canUndo: boolean;
   canRedo: boolean;
@@ -38,9 +40,12 @@ export const BuilderHeader = memo(function BuilderHeader({
   const [copied, setCopied] = useState(false);
   const saving = saveStatus === "saving";
   const statusLabel = saving ? "Saving..." : saveStatus === "error" ? "Save failed" : dirty ? "Unsaved" : "Saved";
-  const isLive = !dirty && saveStatus !== "error";
 
   async function copyUrl() {
+    if (!isLive) {
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(publicUrl);
       setCopied(true);
@@ -99,7 +104,7 @@ export const BuilderHeader = memo(function BuilderHeader({
               : "border-border bg-surface text-muted-foreground",
           )}
         >
-          {isLive ? "Live" : "Not live yet"}
+          {isLive ? "Live" : "Draft"}
         </span>
         <Button
           variant="ghost"
@@ -128,16 +133,23 @@ export const BuilderHeader = memo(function BuilderHeader({
           {previewMode ? <Pencil size={16} /> : <Eye size={16} />}
           {previewMode ? "Edit" : "Preview"}
         </Button>
-        <Button variant="secondary" onClick={copyUrl} aria-label="Copy public URL">
+        <Button variant="secondary" onClick={copyUrl} disabled={!isLive} aria-label="Copy public URL">
           {copied ? <Check size={16} /> : <Copy size={16} />}
           {copied ? "Copied" : "Copy URL"}
         </Button>
-        <Button asChild variant="secondary" aria-label="Open public page">
-          <a href={publicUrl} target="_blank" rel="noreferrer">
+        {isLive ? (
+          <Button asChild variant="secondary" aria-label="Open public page">
+            <a href={publicUrl} target="_blank" rel="noreferrer">
+              <ExternalLink size={16} />
+              Open
+            </a>
+          </Button>
+        ) : (
+          <Button variant="secondary" disabled aria-label="Open public page">
             <ExternalLink size={16} />
             Open
-          </a>
-        </Button>
+          </Button>
+        )}
         <Button onClick={onSave} disabled={saving || !dirty}>
           <Save size={16} />
           {saving ? "Saving..." : "Save"}

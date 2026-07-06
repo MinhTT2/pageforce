@@ -4,7 +4,7 @@ import type {
   PageSchema,
   PageSettings,
 } from "@/types/blocks";
-import type { EditablePage } from "@/types/page";
+import type { EditablePage, PageStatus } from "@/types/page";
 import { defaultPageSettings, defaultTokens } from "@/lib/blocks";
 import { slugify } from "@/lib/slug";
 
@@ -20,6 +20,9 @@ export type BuilderSnapshot = {
 export type BuilderState = {
   title: string;
   slug: string;
+  status: PageStatus;
+  publishedAt: string | null;
+  updatedAt: string;
   schema: PageSchema;
   selectedBlockId: string | null;
   dirty: boolean;
@@ -96,6 +99,9 @@ export function initialBuilderState(page: EditablePage): BuilderState {
   return {
     title: page.title,
     slug: page.slug,
+    status: page.status,
+    publishedAt: page.publishedAt,
+    updatedAt: page.updatedAt,
     schema: { ...page.schema, settings: normalizeSettings(page.schema) },
     selectedBlockId: page.schema.blocks[0]?.id ?? null,
     dirty: false,
@@ -325,6 +331,9 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
       ...state,
       title: action.page.title,
       slug: action.page.slug,
+      status: action.page.status,
+      publishedAt: action.page.publishedAt,
+      updatedAt: action.page.updatedAt,
       schema,
       selectedBlockId: selectedStillExists
         ? state.selectedBlockId

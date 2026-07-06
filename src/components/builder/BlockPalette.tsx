@@ -2,7 +2,6 @@ import { useDraggable } from "@dnd-kit/core";
 import { GripVertical, Search } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { Input } from "@/components/ui/Input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { blockLabels } from "@/lib/blocks";
 import type { BlockType } from "@/types/blocks";
@@ -29,6 +28,28 @@ export const BlockPalette = memo(function BlockPalette({
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState(allTab);
   const normalizedQuery = query.trim().toLowerCase();
+  const categoryFilters = useMemo(
+    () => {
+      const groups = blockGroups.map((group) => ({
+        label: group.label,
+        count: group.blocks.filter((type) => blockMatchesQuery(type, normalizedQuery)).length,
+      }));
+
+      return [
+        {
+          label: allTab,
+          display: "All",
+          count: groups.reduce((total, group) => total + group.count, 0),
+        },
+        ...groups.map((group) => ({
+          label: group.label,
+          display: group.label,
+          count: group.count,
+        })),
+      ];
+    },
+    [normalizedQuery],
+  );
   const visibleGroups = useMemo(
     () => {
       const groups =
@@ -48,17 +69,17 @@ export const BlockPalette = memo(function BlockPalette({
   const hasMatches = visibleGroups.length > 0;
 
   return (
-    <aside className="flex min-h-0 flex-col overflow-hidden border-r border-border bg-card/95">
-      <div className="border-b border-border bg-card px-3.5 py-3">
-        <div className="flex items-end justify-between gap-2">
-          <div>
+    <aside className="flex min-h-0 flex-col overflow-hidden border-r border-border bg-card">
+      <div className="border-b border-border bg-card px-3.5 py-3.5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-normal text-muted-foreground">
               Add elements
             </p>
-            <h2 className="mt-0.5 text-base font-semibold text-card-foreground">Blocks</h2>
+            <h2 className="mt-0.5 text-lg font-semibold leading-6 text-card-foreground">Blocks</h2>
           </div>
-          <span className="rounded-md bg-surface px-2 py-1 text-[11px] font-medium text-muted-foreground">
-            Drag / Click
+          <span className="rounded-md border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            Drag or click
           </span>
         </div>
         <div className="relative mt-3">
@@ -69,56 +90,77 @@ export const BlockPalette = memo(function BlockPalette({
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search blocks"
             aria-label="Search blocks"
-            className="pl-8"
+            className="h-9 bg-surface pl-8 shadow-none"
           />
         </div>
       </div>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-0 flex-1 gap-0">
-        <div className="border-b border-border bg-card px-3 py-2">
-          <TabsList variant="line" className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value={allTab} className="h-7 flex-none px-2 text-xs">
-              All
-            </TabsTrigger>
-            {blockGroups.map((group) => (
-              <TabsTrigger
-                key={group.label}
-                value={group.label}
-                className="h-7 flex-none px-2 text-xs"
+      <div className="border-b border-border bg-card px-3 py-2.5">
+        <div className="grid gap-1" aria-label="Block categories" role="group">
+          {categoryFilters.map((filter) => {
+            const active = activeTab === filter.label;
+
+            return (
+              <button
+                key={filter.label}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setActiveTab(filter.label)}
+                className={cn(
+                  "flex h-8 w-full items-center justify-between rounded-md px-2.5 text-left text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  active
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-surface hover:text-surface-foreground",
+                )}
               >
-                {group.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+                <span className="truncate">{filter.display}</span>
+                <span
+                  className={cn(
+                    "ml-2 min-w-5 rounded px-1.5 py-0.5 text-center text-[10px] leading-none",
+                    active
+                      ? "bg-primary-foreground/15 text-primary-foreground"
+                      : "bg-surface text-muted-foreground",
+                  )}
+                >
+                  {filter.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <TabsContent value={activeTab} className="min-h-0 overflow-auto px-3 py-3">
-          {hasMatches ? (
-            <div className="grid gap-4">
-              {visibleGroups.map((group) => (
-                <section key={group.label}>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <h3 className="text-[11px] font-semibold uppercase tracking-normal text-muted-foreground">
-                      {group.label}
-                    </h3>
-                    <span className="text-[11px] text-muted-foreground">
-                      {group.blocks.length}
-                    </span>
-                  </div>
-                  <div className="grid gap-1.5">
-                    {group.blocks.map((type) => (
-                      <PaletteItem key={type} type={type} onAdd={onAdd} />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed border-border bg-surface px-3 py-6 text-center">
-              <p className="text-sm font-medium text-surface-foreground">No blocks found</p>
-              <p className="mt-1 text-xs text-muted-foreground">Try another category or keyword.</p>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-3">
+        {hasMatches ? (
+          <div className="grid gap-4">
+            {visibleGroups.map((group) => (
+              <section key={group.label} aria-labelledby={`palette-${group.label}`}>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h3
+                    id={`palette-${group.label}`}
+                    className="text-[11px] font-semibold uppercase tracking-normal text-muted-foreground"
+                  >
+                    {group.label}
+                  </h3>
+                  <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
+                    {group.blocks.length}
+                  </span>
+                </div>
+                <div className="grid gap-1.5">
+                  {group.blocks.map((type) => (
+                    <PaletteItem key={type} type={type} onAdd={onAdd} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed border-border bg-surface px-3 py-6 text-center">
+            <p className="text-sm font-medium text-surface-foreground">No blocks found</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Try another category or keyword.
+            </p>
+          </div>
+        )}
+      </div>
     </aside>
   );
 });
@@ -146,22 +188,22 @@ function PaletteItem({ type, onAdd }: { type: BlockType; onAdd: (type: BlockType
           onClick={() => onAdd(type)}
           aria-label={`Add ${blockLabels[type]} block. ${option.description}`}
           className={cn(
-            "group flex h-14 cursor-grab touch-none items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-left shadow-sm shadow-primary/0 transition hover:-translate-y-px hover:border-primary/35 hover:bg-accent/40 hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing",
+            "group flex min-h-14 w-full cursor-grab touch-none items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-2 text-left shadow-sm shadow-primary/0 transition hover:-translate-y-px hover:border-primary/35 hover:bg-accent/35 hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing",
             isDragging && "opacity-50",
           )}
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-background text-primary ring-1 ring-border/60">
-            <Icon className="size-4" />
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-background text-primary ring-1 ring-border/70 transition group-hover:ring-primary/25">
+            <Icon className="size-3.5" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-surface-foreground">
+            <span className="block truncate text-sm font-semibold leading-5 text-surface-foreground">
               {blockLabels[type]}
             </span>
-            <span className="mt-0.5 block truncate text-[11px] leading-none text-muted-foreground">
+            <span className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
               {option.description}
             </span>
           </span>
-          <GripVertical className="size-4 shrink-0 text-muted-foreground/55 opacity-70 transition group-hover:text-primary" />
+          <GripVertical className="size-4 shrink-0 text-muted-foreground/45 opacity-0 transition group-hover:text-primary group-hover:opacity-100 group-focus-visible:text-primary group-focus-visible:opacity-100" />
         </button>
       </TooltipTrigger>
       <TooltipContent side="right" sideOffset={8}>

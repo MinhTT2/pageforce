@@ -9,12 +9,14 @@ import { Field } from "./fields/Field";
 export function PageSettingsPanel({
   slug,
   publicUrl,
+  isLive,
   settings,
   onSlugChange,
   onSettingsChange,
 }: {
   slug: string;
   publicUrl: string;
+  isLive: boolean;
   settings: PageSettings;
   onSlugChange: (value: string) => void;
   onSettingsChange: (patch: Partial<Omit<PageSettings, "tokens">>) => void;
@@ -22,6 +24,10 @@ export function PageSettingsPanel({
   const [copied, setCopied] = useState(false);
 
   async function copyUrl() {
+    if (!isLive) {
+      return;
+    }
+
     await navigator.clipboard.writeText(publicUrl);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
@@ -40,17 +46,27 @@ export function PageSettingsPanel({
           Public URL
         </p>
         <p className="mt-1 truncate font-mono text-xs">{publicUrl}</p>
+        <p className="mt-2 text-xs">
+          {isLive ? "This URL is live." : "Add at least one block and save to make this URL live."}
+        </p>
         <div className="mt-2 flex gap-2">
-          <Button size="sm" variant="secondary" onClick={copyUrl}>
+          <Button size="sm" variant="secondary" onClick={copyUrl} disabled={!isLive}>
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? "Copied" : "Copy"}
           </Button>
-          <Button asChild size="sm" variant="ghost">
-            <a href={publicUrl} target="_blank" rel="noreferrer">
+          {isLive ? (
+            <Button asChild size="sm" variant="ghost">
+              <a href={publicUrl} target="_blank" rel="noreferrer">
+                <ExternalLink size={14} />
+                Open
+              </a>
+            </Button>
+          ) : (
+            <Button size="sm" variant="ghost" disabled>
               <ExternalLink size={14} />
               Open
-            </a>
-          </Button>
+            </Button>
+          )}
         </div>
       </div>
       <Field label="Meta title">

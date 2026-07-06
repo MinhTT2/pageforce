@@ -46,9 +46,9 @@ Each Supabase Auth user can own multiple `Page` records.
 - App data lives in Prisma models, currently `Page` and `LeadSubmission`.
 - `Page.userId` stores the Supabase Auth user id and is indexed for ownership lookups.
 - `Page.draftSchema` currently stores the live builder schema. The column name is legacy.
-- `Page.publishedSchema` is kept in sync for compatibility, but there is no separate publish step in the MVP.
-- Saving updates the live schema and the public page immediately.
-- Public pages render from the current live schema.
+- `Page.publishedSchema` is kept in sync for compatibility when a page is live, but there is no separate publish step in the MVP.
+- Saving updates the live schema and the public page immediately once the schema has at least one block.
+- Blank pages remain `DRAFT`; public pages render only `PUBLISHED` pages with content.
 - Lead Form blocks can store public submissions in `LeadSubmission` or use mailto/external action delivery.
 - Keep shared block rendering logic reusable between builder preview and public render.
 
@@ -57,7 +57,7 @@ Each Supabase Auth user can own multiple `Page` records.
 - Use Supabase SSR helpers from `src/lib/supabase`.
 - Guard `/dashboard` and `/builder` routes.
 - Public route `/p/[slug]` must not require auth.
-- Public route `/p/[slug]` renders any existing page by slug.
+- Public route `/p/[slug]` renders only `PUBLISHED` pages with at least one block.
 - API routes that mutate or read private data must get the current Supabase user and enforce ownership with `userId`.
 
 ## Page API Rules
@@ -85,7 +85,7 @@ Each Supabase Auth user can own multiple `Page` records.
   - rendering support in `src/components/blocks/BlockRenderer.tsx`;
   - editing controls in the builder UI.
 - Builder edits the live page schema.
-- Public render uses the live page schema.
+- Public render uses the live page schema for `PUBLISHED` pages with content.
 - Blocks are added by dragging from the palette onto the canvas (with a drop-position indicator) or by clicking a palette item.
 - Reordering uses drag-and-drop (dnd-kit) via a per-block drag handle; the handle is keyboard accessible (Space/Enter to lift, arrow keys to move, Space to drop, Esc to cancel).
 - Page-wide design tokens (`settings.tokens`: colors, fonts, radius, spacing) drive rendering through `--pf-*` CSS variables; per-block `style` overrides re-scope those variables. Colors are validated hex-only — do not relax this (style-attribute injection guard).

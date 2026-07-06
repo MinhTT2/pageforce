@@ -16,6 +16,7 @@ export const Inspector = memo(function Inspector({
   settings,
   slug,
   publicUrl,
+  isLive,
   onUpdateBlock,
   onDuplicateBlock,
   onDeleteBlock,
@@ -29,6 +30,7 @@ export const Inspector = memo(function Inspector({
   settings: PageSettings;
   slug: string;
   publicUrl: string;
+  isLive: boolean;
   onUpdateBlock: (block: PageBlock) => void;
   onDuplicateBlock: (id: string) => void;
   onDeleteBlock: (id: string) => void;
@@ -120,6 +122,7 @@ export const Inspector = memo(function Inspector({
               <PageSettingsPanel
                 slug={slug}
                 publicUrl={publicUrl}
+                isLive={isLive}
                 settings={settings}
                 onSlugChange={onSlugChange}
                 onSettingsChange={onSettingsChange}

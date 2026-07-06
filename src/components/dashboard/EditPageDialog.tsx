@@ -28,6 +28,7 @@ type EditPageDialogProps = {
 
 type EditPageResponse = {
   error?: string;
+  slug?: string;
 };
 
 export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) {
@@ -37,18 +38,21 @@ export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) 
   const [slug, setSlug] = useState(page.slug);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   async function savePage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError("");
+    setNotice("");
+    const requestedSlug = slug.trim();
 
     const response = await fetch(`/api/pages/${page.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: title.trim(),
-        slug: slug.trim(),
+        slug: requestedSlug,
       }),
     });
     const payload = (await response.json().catch(() => ({}))) as EditPageResponse;
@@ -57,6 +61,13 @@ export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) 
 
     if (!response.ok) {
       setError(payload.error || "Could not update this page. Please try again.");
+      return;
+    }
+
+    if (payload.slug && payload.slug !== requestedSlug) {
+      setSlug(payload.slug);
+      setNotice(`That slug was taken. This page is now published at /p/${payload.slug}.`);
+      router.refresh();
       return;
     }
 
@@ -100,6 +111,11 @@ export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) 
               disabled={loading}
             />
           </Field>
+          {notice ? (
+            <p className="text-xs leading-5 text-warning" role="status">
+              {notice}
+            </p>
+          ) : null}
 
           <DialogFooter>
             <Button type="submit" disabled={loading}>

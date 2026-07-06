@@ -1,3 +1,5 @@
+const FALLBACK_RANDOM_LENGTH = 6;
+
 export function slugify(input: string) {
   return input
     .toLowerCase()
@@ -10,5 +12,7 @@ export function slugify(input: string) {
 
 export function fallbackSlug(input: string) {
   const slug = slugify(input);
-  return slug || `page-${Date.now()}`;
+  const random = Math.random().toString(36).slice(2, 2 + FALLBACK_RANDOM_LENGTH) || "random";
+
+  return slug || `page-${Date.now()}-${random}`;
 }

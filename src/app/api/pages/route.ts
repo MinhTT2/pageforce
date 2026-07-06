@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { createPageForUser, listPagesForUser, toPageSummary } from "@/lib/pages";
+import { createPageForUser, listPagesForUser, MAX_PAGE_BODY_BYTES, toPageSummary } from "@/lib/pages";
+import { readJsonBody } from "@/lib/request-body";
 import { resolveTemplateSchema } from "@/lib/templates";
 
 export async function GET() {
@@ -22,7 +23,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => ({}));
+  const json = await readJsonBody(request, MAX_PAGE_BODY_BYTES);
+
+  if (!json.ok) {
+    return NextResponse.json({ error: json.error }, { status: json.status });
+  }
+
+  const body = json.value as Record<string, unknown>;
   const title =
     typeof body.title === "string" && body.title.trim() ? body.title.trim() : "Untitled page";
   const schema = resolveTemplateSchema(body.template);

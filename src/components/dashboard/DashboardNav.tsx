@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Palette, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -18,12 +18,6 @@ const navItems: NavItem[] = [
     href: "/dashboard",
     icon: LayoutDashboard,
     isActive: (pathname) => pathname === "/dashboard" || pathname.startsWith("/dashboard/pages"),
-  },
-  {
-    label: "Design system",
-    href: "/design-system",
-    icon: Palette,
-    isActive: (pathname) => pathname.startsWith("/design-system"),
   },
 ];
 

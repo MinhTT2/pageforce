@@ -9,9 +9,11 @@ type PublicPageProps = {
   params: Promise<{ slug: string }>;
 };
 
+export const dynamic = "force-dynamic";
+
 const getPublicPage = cache(async (slug: string) => {
   return prisma.page.findFirst({
-    where: { slug },
+    where: { slug, status: "PUBLISHED" },
   });
 });
 
@@ -24,6 +26,10 @@ export async function generateMetadata({ params }: PublicPageProps): Promise<Met
   }
 
   const schema = normalizePageSchema(page.draftSchema);
+  if (schema.blocks.length === 0) {
+    return {};
+  }
+
   const title = schema.settings?.metaTitle || page.title;
   const description =
     schema.settings?.metaDescription || "A landing page built with Pageforce.";
@@ -47,6 +53,10 @@ export default async function PublicPage({ params }: PublicPageProps) {
   }
 
   const schema = normalizePageSchema(page.draftSchema);
+  if (schema.blocks.length === 0) {
+    notFound();
+  }
+
   const backgroundColor = schema.settings?.tokens.backgroundColor ?? "#ffffff";
 
   return (

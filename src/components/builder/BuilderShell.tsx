@@ -88,6 +88,11 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     () => pageTemplates.filter((template) => template.key !== "blank"),
     [],
   );
+  const isLive =
+    state.status === "PUBLISHED" &&
+    state.schema.blocks.length > 0 &&
+    !state.dirty &&
+    state.saveStatus !== "error";
 
   const blockIdsRef = useRef<string[]>([]);
 
@@ -179,6 +184,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
           title: current.title,
           slug: current.slug,
           schema: current.schema,
+          lastKnownUpdatedAt: current.updatedAt,
         }),
       });
       const payload = (await response.json().catch(() => null)) as SaveResponse | null;
@@ -346,6 +352,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
           notice={state.notice}
           previewMode={previewMode}
           publicUrl={publicUrl}
+          isLive={isLive}
           onTitleChange={setTitle}
           canUndo={state.past.length > 0}
           canRedo={state.future.length > 0}
@@ -399,6 +406,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
                 settings={settings}
                 slug={state.slug}
                 publicUrl={publicUrl}
+                isLive={isLive}
                 onUpdateBlock={updateBlock}
                 onDuplicateBlock={duplicateBlock}
                 onDeleteBlock={deleteBlock}

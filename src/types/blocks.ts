@@ -57,7 +57,7 @@ export type PageSettings = {
   tokens: DesignTokens;
 };
 
-export type SectionMode = "INHERIT" | "CUSTOM" | "HIDDEN";
+export type SectionMode = "INHERIT" | "HIDDEN";
 
 type BlockBase = {
   id: string;

@@ -21,10 +21,12 @@ const settingsTabs: {
 ];
 
 export function BuilderPageSettingsSidebar({
-  siteId,
   siteSlug,
   siteGlobalHeader,
   siteGlobalFooter,
+  globalSectionsDirty,
+  savingGlobalSections,
+  globalSectionsNotice,
   pages,
   settings,
   title,
@@ -32,8 +34,6 @@ export function BuilderPageSettingsSidebar({
   isHome,
   headerMode,
   footerMode,
-  headerSchema,
-  footerSchema,
   publicUrl,
   isLive,
   onTitleChange,
@@ -41,15 +41,18 @@ export function BuilderPageSettingsSidebar({
   onIsHomeChange,
   onHeaderModeChange,
   onFooterModeChange,
-  onHeaderSchemaChange,
-  onFooterSchemaChange,
+  onGlobalHeaderChange,
+  onGlobalFooterChange,
+  onSaveGlobalSections,
   onSettingsChange,
   onTokensChange,
 }: {
-  siteId: string;
   siteSlug: string;
   siteGlobalHeader: PageSchema | null;
   siteGlobalFooter: PageSchema | null;
+  globalSectionsDirty: boolean;
+  savingGlobalSections: boolean;
+  globalSectionsNotice: { tone: "success" | "error"; message: string } | null;
   pages: PageSummary[];
   settings: PageSettings;
   title: string;
@@ -57,8 +60,6 @@ export function BuilderPageSettingsSidebar({
   isHome: boolean;
   headerMode: SectionMode;
   footerMode: SectionMode;
-  headerSchema: PageSchema | null;
-  footerSchema: PageSchema | null;
   publicUrl: string;
   isLive: boolean;
   onTitleChange: (value: string) => void;
@@ -66,8 +67,9 @@ export function BuilderPageSettingsSidebar({
   onIsHomeChange: (value: boolean) => void;
   onHeaderModeChange: (value: SectionMode) => void;
   onFooterModeChange: (value: SectionMode) => void;
-  onHeaderSchemaChange: (schema: PageSchema | null) => void;
-  onFooterSchemaChange: (schema: PageSchema | null) => void;
+  onGlobalHeaderChange: (schema: PageSchema | null) => void;
+  onGlobalFooterChange: (schema: PageSchema | null) => void;
+  onSaveGlobalSections: () => Promise<boolean>;
   onSettingsChange: (patch: Partial<Omit<PageSettings, "tokens">>) => void;
   onTokensChange: (patch: Partial<DesignTokens>) => void;
 }) {
@@ -117,16 +119,16 @@ export function BuilderPageSettingsSidebar({
               activeTab={tab}
               title={title}
               slug={slug}
-              siteId={siteId}
               siteSlug={siteSlug}
               siteGlobalHeader={siteGlobalHeader}
               siteGlobalFooter={siteGlobalFooter}
+              globalSectionsDirty={globalSectionsDirty}
+              savingGlobalSections={savingGlobalSections}
+              globalSectionsNotice={globalSectionsNotice}
               pages={pages}
               isHome={isHome}
               headerMode={headerMode}
               footerMode={footerMode}
-              headerSchema={headerSchema}
-              footerSchema={footerSchema}
               publicUrl={publicUrl}
               isLive={isLive}
               settings={settings}
@@ -135,8 +137,9 @@ export function BuilderPageSettingsSidebar({
               onIsHomeChange={onIsHomeChange}
               onHeaderModeChange={onHeaderModeChange}
               onFooterModeChange={onFooterModeChange}
-              onHeaderSchemaChange={onHeaderSchemaChange}
-              onFooterSchemaChange={onFooterSchemaChange}
+              onGlobalHeaderChange={onGlobalHeaderChange}
+              onGlobalFooterChange={onGlobalFooterChange}
+              onSaveGlobalSections={onSaveGlobalSections}
               onSettingsChange={onSettingsChange}
             />
             )}

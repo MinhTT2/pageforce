@@ -306,10 +306,8 @@ export const pagePatchValidator = z
     title: z.string().min(1).max(120).optional(),
     slug: z.string().min(1).max(80).optional(),
     isHome: z.boolean().optional(),
-    headerMode: z.enum(["INHERIT", "CUSTOM", "HIDDEN"]).optional(),
-    footerMode: z.enum(["INHERIT", "CUSTOM", "HIDDEN"]).optional(),
-    headerSchema: pageSchemaValidator.nullable().optional(),
-    footerSchema: pageSchemaValidator.nullable().optional(),
+    headerMode: z.enum(["INHERIT", "HIDDEN"]).optional(),
+    footerMode: z.enum(["INHERIT", "HIDDEN"]).optional(),
     schema: pageSchemaValidator.optional(),
     lastKnownUpdatedAt: z.string().min(1).max(40).optional(),
   })

@@ -75,7 +75,6 @@ function buildSchema(theme: keyof typeof tokenPresets, blocks: PageBlock[]): Pag
 export function buildSiteHeaderSchema({
   brandText,
   pages,
-  siteSlug = "",
   urlForPage,
 }: {
   brandText: string;
@@ -85,9 +84,7 @@ export function buildSiteHeaderSchema({
 }): PageSchema {
   const links = pages.slice(0, 6).map((page, index) => ({
     label: page.isHome ? "Home" : page.title,
-    url:
-      urlForPage?.(page, index) ??
-      (siteSlug ? (page.isHome ? `/s/${siteSlug}` : `/s/${siteSlug}/${page.slug}`) : "#"),
+    url: urlForPage?.(page, index) ?? (page.isHome ? "/" : `/${page.slug}`),
   }));
 
   return buildSchema("clean", [

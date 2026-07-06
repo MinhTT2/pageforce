@@ -33,8 +33,6 @@ export type PageSummary = {
 
 export type EditablePage = PageSummary & {
   schema: PageSchema;
-  headerSchema: PageSchema | null;
-  footerSchema: PageSchema | null;
   site: SiteSummary & {
     globalHeader: PageSchema | null;
     globalFooter: PageSchema | null;

@@ -58,7 +58,6 @@ describe("pagePublicationData", () => {
     const publication = pagePublicationData(emptyPageSchema);
 
     expect(publication.status).toBe("DRAFT");
-    expect(publication.publishedSchema).toBe(Prisma.DbNull);
     expect(publication.publishedAt).toBeNull();
   });
 
@@ -71,7 +70,6 @@ describe("pagePublicationData", () => {
     const publication = pagePublicationData(schema);
 
     expect(publication.status).toBe("PUBLISHED");
-    expect(publication.publishedSchema).toEqual(schema);
     expect(publication.publishedAt).toBeInstanceOf(Date);
   });
 });
@@ -160,11 +158,8 @@ describe("createPageForUser", () => {
       isHome: false,
       headerMode: "INHERIT" as const,
       footerMode: "INHERIT" as const,
-      headerSchema: null,
-      footerSchema: null,
       status: "DRAFT" as const,
-      draftSchema: emptyPageSchema,
-      publishedSchema: null,
+      schema: emptyPageSchema,
       publishedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),

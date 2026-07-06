@@ -15,7 +15,6 @@ enum PageStatus {
 
 enum SectionMode {
   INHERIT
-  CUSTOM
   HIDDEN
 }
 
@@ -42,12 +41,9 @@ model Page {
   legacySlug      String?    @unique
   isHome          Boolean    @default(false)
   status          PageStatus @default(DRAFT)
-  draftSchema     Json
-  publishedSchema Json?
+  schema          Json
   headerMode      SectionMode @default(INHERIT)
   footerMode      SectionMode @default(INHERIT)
-  headerSchema    Json?
-  footerSchema    Json?
   publishedAt     DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt

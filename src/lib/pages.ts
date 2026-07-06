@@ -1,9 +1,9 @@
-import { Prisma, PageStatus, type SectionMode } from "@prisma/client";
+import { Prisma, PageStatus, type SectionMode as PrismaSectionMode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { fallbackSlug, slugify } from "@/lib/slug";
 import { emptyPageSchema, normalizePageSchema } from "@/lib/blocks";
 import type { CreatedSiteSummary, EditablePage, PageSummary, SiteSummary } from "@/types/page";
-import type { PageSchema } from "@/types/blocks";
+import type { PageSchema, SectionMode } from "@/types/blocks";
 
 export const MAX_PAGE_BODY_BYTES = 512 * 1024;
 export const MAX_SLUG_LENGTH = 64;
@@ -11,13 +11,16 @@ const MAX_UNIQUE_SLUG_ATTEMPTS = 25;
 const RESERVED_SLUGS = new Set(["api", "dashboard", "builder", "login", "register", "s", "p"]);
 type PageSlugClient = Pick<typeof prisma, "page">;
 
+function toAppSectionMode(mode: PrismaSectionMode): SectionMode {
+  return mode as SectionMode;
+}
+
 export function pagePublicationData(schema: PageSchema) {
   const publishable = schema.blocks.length > 0;
   const publishedAt = publishable ? new Date() : null;
 
   return {
     status: publishable ? ("PUBLISHED" as const) : ("DRAFT" as const),
-    publishedSchema: publishable ? schemaToJson(schema) : Prisma.DbNull,
     publishedAt,
   };
 }
@@ -29,8 +32,8 @@ export function toPageSummary(page: {
   title: string;
   slug: string;
   isHome: boolean;
-  headerMode: SectionMode;
-  footerMode: SectionMode;
+  headerMode: PrismaSectionMode;
+  footerMode: PrismaSectionMode;
   status: PageStatus;
   publishedAt: Date | null;
   updatedAt: Date;
@@ -44,8 +47,8 @@ export function toPageSummary(page: {
     slug: page.slug,
     publicPath: pagePublicPath(page.site.slug, page.slug, page.isHome),
     isHome: page.isHome,
-    headerMode: page.headerMode,
-    footerMode: page.footerMode,
+    headerMode: toAppSectionMode(page.headerMode),
+    footerMode: toAppSectionMode(page.footerMode),
     status: page.status,
     publishedAt: page.publishedAt?.toISOString() ?? null,
     updatedAt: page.updatedAt.toISOString(),
@@ -69,8 +72,8 @@ export function toEditablePage(page: {
       title: string;
       slug: string;
       isHome: boolean;
-      headerMode: SectionMode;
-      footerMode: SectionMode;
+      headerMode: PrismaSectionMode;
+      footerMode: PrismaSectionMode;
       status: PageStatus;
       publishedAt: Date | null;
       updatedAt: Date;
@@ -79,20 +82,16 @@ export function toEditablePage(page: {
   title: string;
   slug: string;
   isHome: boolean;
-  headerMode: SectionMode;
-  footerMode: SectionMode;
+  headerMode: PrismaSectionMode;
+  footerMode: PrismaSectionMode;
   status: PageStatus;
   publishedAt: Date | null;
   updatedAt: Date;
-  draftSchema: Prisma.JsonValue;
-  headerSchema: Prisma.JsonValue | null;
-  footerSchema: Prisma.JsonValue | null;
+  schema: Prisma.JsonValue;
 }): EditablePage {
   return {
     ...toPageSummary(page),
-    schema: normalizePageSchema(page.draftSchema),
-    headerSchema: page.headerSchema ? normalizePageSchema(page.headerSchema) : null,
-    footerSchema: page.footerSchema ? normalizePageSchema(page.footerSchema) : null,
+    schema: normalizePageSchema(page.schema),
     site: {
       id: page.site.id,
       name: page.site.name,
@@ -158,7 +157,7 @@ export async function listSitesForUser(userId: string, take = 50) {
           slug: true,
           isHome: true,
           status: true,
-          draftSchema: true,
+          schema: true,
           updatedAt: true,
           publishedAt: true,
         },
@@ -205,8 +204,7 @@ export async function createPageForUser(
         slug,
         isHome,
         status: publication.status,
-        draftSchema: schemaToJson(schema),
-        publishedSchema: publication.publishedSchema,
+        schema: schemaToJson(schema),
         publishedAt: publication.publishedAt,
       },
       include: { site: { select: { name: true, slug: true } } },

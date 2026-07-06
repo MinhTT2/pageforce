@@ -28,16 +28,16 @@ export function PageSettingsPanel({
   activeTab,
   title,
   slug,
-  siteId,
   siteSlug,
   siteGlobalHeader,
   siteGlobalFooter,
+  globalSectionsDirty,
+  savingGlobalSections,
+  globalSectionsNotice,
   pages,
   isHome,
   headerMode,
   footerMode,
-  headerSchema,
-  footerSchema,
   publicUrl,
   isLive,
   settings,
@@ -46,23 +46,24 @@ export function PageSettingsPanel({
   onIsHomeChange,
   onHeaderModeChange,
   onFooterModeChange,
-  onHeaderSchemaChange,
-  onFooterSchemaChange,
+  onGlobalHeaderChange,
+  onGlobalFooterChange,
+  onSaveGlobalSections,
   onSettingsChange,
 }: {
   activeTab: PageSettingsTab;
   title: string;
   slug: string;
-  siteId: string;
   siteSlug: string;
   siteGlobalHeader: PageSchema | null;
   siteGlobalFooter: PageSchema | null;
+  globalSectionsDirty: boolean;
+  savingGlobalSections: boolean;
+  globalSectionsNotice: { tone: "success" | "error"; message: string } | null;
   pages: PageSummary[];
   isHome: boolean;
   headerMode: SectionMode;
   footerMode: SectionMode;
-  headerSchema: PageSchema | null;
-  footerSchema: PageSchema | null;
   publicUrl: string;
   isLive: boolean;
   settings: PageSettings;
@@ -71,64 +72,31 @@ export function PageSettingsPanel({
   onIsHomeChange: (value: boolean) => void;
   onHeaderModeChange: (value: SectionMode) => void;
   onFooterModeChange: (value: SectionMode) => void;
-  onHeaderSchemaChange: (schema: PageSchema | null) => void;
-  onFooterSchemaChange: (schema: PageSchema | null) => void;
+  onGlobalHeaderChange: (schema: PageSchema | null) => void;
+  onGlobalFooterChange: (schema: PageSchema | null) => void;
+  onSaveGlobalSections: () => Promise<boolean>;
   onSettingsChange: (patch: Partial<Omit<PageSettings, "tokens">>) => void;
 }) {
-  const [globalHeader, setGlobalHeader] = useState(siteGlobalHeader);
-  const [globalFooter, setGlobalFooter] = useState(siteGlobalFooter);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
-  const [savingGlobal, setSavingGlobal] = useState(false);
-  const [globalNotice, setGlobalNotice] = useState<{
-    tone: "success" | "error";
-    message: string;
-  } | null>(null);
 
   function syncNavigationFromPages() {
-    const headerBlock = globalHeader?.blocks.find((block) => block.type === "header");
+    const headerBlock = siteGlobalHeader?.blocks.find((block) => block.type === "header");
     const brandText =
       headerBlock?.type === "header"
         ? headerBlock.props.brandText
         : pages[0]?.siteName || "Pageforce";
 
-    setGlobalHeader(
+    onGlobalHeaderChange(
       buildSiteHeaderSchema({
         brandText,
         pages,
         siteSlug,
       }),
     );
-    setGlobalNotice({
-      tone: "success",
-      message: "Navigation synced. Save global sections to publish it.",
-    });
   }
 
   async function saveGlobalSections() {
-    setSavingGlobal(true);
-    setGlobalNotice(null);
-
-    try {
-      const response = await fetch(`/api/sites/${siteId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ globalHeader, globalFooter }),
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error || "Could not save global sections");
-      }
-
-      setGlobalNotice({ tone: "success", message: "Global sections saved." });
-    } catch (error) {
-      setGlobalNotice({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Could not save global sections",
-      });
-    } finally {
-      setSavingGlobal(false);
-    }
+    await onSaveGlobalSections();
   }
 
   async function copyPublicUrl() {
@@ -192,53 +160,41 @@ export function PageSettingsPanel({
           </Button>
           <GlobalSectionEditor
             title="Global header"
-            schema={globalHeader}
+            schema={siteGlobalHeader}
             fallbackType="header"
-            onSchemaChange={setGlobalHeader}
+            onSchemaChange={onGlobalHeaderChange}
           />
           <GlobalSectionEditor
             title="Global footer"
-            schema={globalFooter}
+            schema={siteGlobalFooter}
             fallbackType="footer"
-            onSchemaChange={setGlobalFooter}
+            onSchemaChange={onGlobalFooterChange}
           />
           <Button
             type="button"
             variant="secondary"
-            disabled={savingGlobal}
+            disabled={savingGlobalSections || !globalSectionsDirty}
             onClick={saveGlobalSections}
           >
             <Save size={14} />
-            {savingGlobal ? "Saving global sections..." : "Save global sections"}
+            {savingGlobalSections ? "Saving global sections..." : "Save global sections"}
           </Button>
-          {globalNotice ? (
-            <p
-              className={
-                globalNotice.tone === "success"
-                  ? "text-sm font-medium text-success"
-                  : "text-sm font-medium text-destructive"
-              }
-            >
-              {globalNotice.message}
+          {globalSectionsNotice?.tone === "error" ? (
+            <p className="text-sm font-medium text-destructive">
+              {globalSectionsNotice.message}
             </p>
           ) : null}
         </Panel>
-        <Panel title="This page sections" description="Override shared sections for this page.">
-          <SectionModeEditor
+        <Panel title="This page sections" description="Choose whether this page shows the shared sections.">
+          <SectionVisibilityEditor
             title="Header"
             mode={headerMode}
-            schema={headerSchema}
-            fallbackType="header"
             onModeChange={onHeaderModeChange}
-            onSchemaChange={onHeaderSchemaChange}
           />
-          <SectionModeEditor
+          <SectionVisibilityEditor
             title="Footer"
             mode={footerMode}
-            schema={footerSchema}
-            fallbackType="footer"
             onModeChange={onFooterModeChange}
-            onSchemaChange={onFooterSchemaChange}
           />
         </Panel>
       </div>
@@ -349,31 +305,15 @@ function GlobalSectionEditor({
   );
 }
 
-function SectionModeEditor({
+function SectionVisibilityEditor({
   title,
   mode,
-  schema,
-  fallbackType,
   onModeChange,
-  onSchemaChange,
 }: {
   title: string;
   mode: SectionMode;
-  schema: PageSchema | null;
-  fallbackType: "header" | "footer";
   onModeChange: (mode: SectionMode) => void;
-  onSchemaChange: (schema: PageSchema | null) => void;
 }) {
-  const block = schema?.blocks[0] ?? null;
-
-  function updateBlock(nextBlock: PageBlock) {
-    onSchemaChange({
-      version: 2,
-      settings: schema?.settings,
-      blocks: [nextBlock],
-    });
-  }
-
   return (
     <div className="grid gap-3 rounded-lg border border-border bg-background p-3">
       <div className="grid gap-3">
@@ -394,44 +334,21 @@ function SectionModeEditor({
           type="single"
           value={mode}
           onValueChange={(value) => value && onModeChange(value as SectionMode)}
-          className="grid w-full grid-cols-3 rounded-lg bg-muted p-1"
+          className="grid w-full grid-cols-2 rounded-lg bg-muted p-1"
         >
           <ToggleGroupItem value="INHERIT" className="h-7 text-xs">
-            Inherit
-          </ToggleGroupItem>
-          <ToggleGroupItem value="CUSTOM" className="h-7 text-xs">
-            Custom
+            Use global
           </ToggleGroupItem>
           <ToggleGroupItem value="HIDDEN" className="h-7 text-xs">
-            Hidden
+            Hide
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
-      {mode === "CUSTOM" ? (
-        block ? (
-          <BlockEditor block={block} pageId="" onChange={updateBlock} />
-        ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              onSchemaChange({
-                version: 2,
-                blocks: [createBlock(fallbackType)],
-              })
-            }
-          >
-            <Link2 size={14} />
-            Create custom {title.toLowerCase()}
-          </Button>
-        )
-      ) : null}
     </div>
   );
 }
 
 function ModeBadge({ mode }: { mode: SectionMode }) {
-  if (mode === "CUSTOM") return <Badge variant="secondary">Custom</Badge>;
   if (mode === "HIDDEN") return <Badge variant="outline">Hidden</Badge>;
-  return <Badge variant="success">Inherit</Badge>;
+  return <Badge variant="success">Global</Badge>;
 }

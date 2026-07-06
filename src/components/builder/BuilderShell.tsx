@@ -82,6 +82,14 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   const [activeDrag, setActiveDrag] = useState<ActiveDrag>(null);
   const [dropIndicator, setDropIndicator] = useState<DropIndicator>(null);
   const [sitePages, setSitePages] = useState(page.site.pages);
+  const [siteGlobalHeader, setSiteGlobalHeaderState] = useState(page.site.globalHeader);
+  const [siteGlobalFooter, setSiteGlobalFooterState] = useState(page.site.globalFooter);
+  const [globalSectionsDirty, setGlobalSectionsDirty] = useState(false);
+  const [savingGlobalSections, setSavingGlobalSections] = useState(false);
+  const [globalSectionsNotice, setGlobalSectionsNotice] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
   const [switchingPageId, setSwitchingPageId] = useState<string | null>(null);
   const publicOrigin = usePublicOrigin();
   const router = useRouter();
@@ -94,6 +102,10 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     },
     [activePage.site.slug, publicOrigin, state.isHome, state.slug],
   );
+  const publicSiteUrl = useMemo(() => {
+    const path = `/s/${activePage.site.slug}`;
+    return publicOrigin ? `${publicOrigin}${path}` : path;
+  }, [activePage.site.slug, publicOrigin]);
   const selectedBlock = useMemo(
     () => state.schema.blocks.find((block) => block.id === state.selectedBlockId) ?? null,
     [state.schema.blocks, state.selectedBlockId],
@@ -106,11 +118,15 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     state.status === "PUBLISHED" &&
     state.schema.blocks.length > 0 &&
     !state.dirty &&
+    !globalSectionsDirty &&
     state.saveStatus !== "error";
 
   const blockIdsRef = useRef<string[]>([]);
   const loadedPageIdRef = useRef(page.id);
   const saveInFlightRef = useRef<Promise<boolean> | null>(null);
+  const siteGlobalHeaderRef = useRef(siteGlobalHeader);
+  const siteGlobalFooterRef = useRef(siteGlobalFooter);
+  const globalSectionsDirtyRef = useRef(globalSectionsDirty);
 
   useEffect(() => {
     if (loadedPageIdRef.current === page.id) {
@@ -121,6 +137,10 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     setActivePage(page);
     dispatch({ type: "loadPage", page });
     setSitePages(page.site.pages);
+    setSiteGlobalHeaderState(page.site.globalHeader);
+    setSiteGlobalFooterState(page.site.globalFooter);
+    setGlobalSectionsDirty(false);
+    setGlobalSectionsNotice(null);
     setActiveDrag(null);
     setDropIndicator(null);
     setSwitchingPageId(null);
@@ -135,6 +155,18 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   useEffect(() => {
     stateRef.current = state;
   });
+
+  useEffect(() => {
+    siteGlobalHeaderRef.current = siteGlobalHeader;
+  }, [siteGlobalHeader]);
+
+  useEffect(() => {
+    siteGlobalFooterRef.current = siteGlobalFooter;
+  }, [siteGlobalFooter]);
+
+  useEffect(() => {
+    globalSectionsDirtyRef.current = globalSectionsDirty;
+  }, [globalSectionsDirty]);
 
   // Step exactly one list position per arrow press; the stock sortable getter
   // jumps to the nearest rect, which skips items when section heights differ.
@@ -223,8 +255,6 @@ export function BuilderShell({ page }: { page: EditablePage }) {
             isHome: current.isHome,
             headerMode: current.headerMode,
             footerMode: current.footerMode,
-            headerSchema: current.headerSchema,
-            footerSchema: current.footerSchema,
             schema: current.schema,
             lastKnownUpdatedAt: current.updatedAt,
           }),
@@ -276,13 +306,68 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     return save;
   }, []);
 
+  const saveGlobalSections = useCallback(async (): Promise<boolean> => {
+    if (!globalSectionsDirtyRef.current) {
+      return true;
+    }
+
+    setSavingGlobalSections(true);
+    setGlobalSectionsNotice(null);
+
+    try {
+      const response = await fetch(`/api/sites/${activePage.site.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          globalHeader: siteGlobalHeaderRef.current,
+          globalFooter: siteGlobalFooterRef.current,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Could not save global sections");
+      }
+
+      setActivePage((current) => ({
+        ...current,
+        site: {
+          ...current.site,
+          globalHeader: siteGlobalHeaderRef.current,
+          globalFooter: siteGlobalFooterRef.current,
+        },
+      }));
+      setGlobalSectionsDirty(false);
+      return true;
+    } catch (error) {
+      setGlobalSectionsNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Could not save global sections",
+      });
+      return false;
+    } finally {
+      setSavingGlobalSections(false);
+    }
+  }, [activePage.site.id]);
+
+  const savePageAndGlobalSections = useCallback(async (): Promise<boolean> => {
+    const pageSaved = await savePage();
+
+    if (!pageSaved) {
+      return false;
+    }
+
+    return saveGlobalSections();
+  }, [saveGlobalSections, savePage]);
+
   const switchPage = useCallback(async (pageId: string) => {
     if (pageId === stateRef.current.pageId || switchingPageId) {
       return;
     }
 
     if (
-      stateRef.current.dirty &&
+      (stateRef.current.dirty || globalSectionsDirtyRef.current) &&
       !window.confirm("You have unsaved changes. Switch pages and discard them?")
     ) {
       return;
@@ -343,14 +428,16 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     (value: SectionMode) => dispatch({ type: "setFooterMode", value, at: Date.now() }),
     [],
   );
-  const setHeaderSchema = useCallback(
-    (schema: PageSchema | null) => dispatch({ type: "setHeaderSchema", schema, at: Date.now() }),
-    [],
-  );
-  const setFooterSchema = useCallback(
-    (schema: PageSchema | null) => dispatch({ type: "setFooterSchema", schema, at: Date.now() }),
-    [],
-  );
+  const setSiteGlobalHeader = useCallback((schema: PageSchema | null) => {
+    setSiteGlobalHeaderState(schema);
+    setGlobalSectionsDirty(true);
+    setGlobalSectionsNotice(null);
+  }, []);
+  const setSiteGlobalFooter = useCallback((schema: PageSchema | null) => {
+    setSiteGlobalFooterState(schema);
+    setGlobalSectionsDirty(true);
+    setGlobalSectionsNotice(null);
+  }, []);
   const updateSettings = useCallback(
     (patch: Partial<Omit<PageSettings, "tokens">>) =>
       dispatch({ type: "updateSettings", patch, at: Date.now() }),
@@ -391,9 +478,9 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     },
     [],
   );
-  useSaveShortcut(savePage);
+  useSaveShortcut(savePageAndGlobalSections);
   useUndoRedoShortcuts(undo, redo);
-  useUnsavedChangesWarning(state.dirty);
+  useUnsavedChangesWarning(state.dirty || globalSectionsDirty);
 
   function handleDragStart(event: DragStartEvent) {
     const data = event.active.data.current as
@@ -483,10 +570,11 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     <TooltipProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-canvas text-canvas-foreground">
         <BuilderHeader
-          dirty={state.dirty}
+          dirty={state.dirty || globalSectionsDirty}
+          savingGlobal={savingGlobalSections}
           saveStatus={state.saveStatus}
-          notice={state.notice}
-          publicUrl={publicUrl}
+          notice={state.notice ?? globalSectionsNotice?.message ?? null}
+          publicSiteUrl={publicSiteUrl}
           isLive={isLive}
           previewMode={previewMode}
           blocksOpen={leftMode === "blocks"}
@@ -500,7 +588,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
           onTogglePages={togglePages}
           onTogglePageSettings={togglePageSettings}
           onTogglePreview={togglePreview}
-          onSave={savePage}
+          onSave={savePageAndGlobalSections}
         />
         {previewMode ? (
           <main className="min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle_at_top,var(--surface)_0%,var(--canvas)_55%)] p-6">
@@ -516,13 +604,12 @@ export function BuilderShell({ page }: { page: EditablePage }) {
               <BlockRenderer
                 schema={composePreviewSchema({
                   pageSchema: state.schema,
-                  siteHeader: activePage.site.globalHeader,
-                  siteFooter: activePage.site.globalFooter,
-                  pageHeader: state.headerSchema,
-                  pageFooter: state.footerSchema,
+                  siteHeader: siteGlobalHeader,
+                  siteFooter: siteGlobalFooter,
                   headerMode: state.headerMode,
                   footerMode: state.footerMode,
                 })}
+                siteSlug={activePage.site.slug}
               />
             </div>
           </main>
@@ -551,10 +638,12 @@ export function BuilderShell({ page }: { page: EditablePage }) {
             >
               {leftSidebarOpen && leftMode === "pageSettings" ? (
                 <BuilderPageSettingsSidebar
-                  siteId={activePage.site.id}
                   siteSlug={activePage.site.slug}
-                  siteGlobalHeader={activePage.site.globalHeader}
-                  siteGlobalFooter={activePage.site.globalFooter}
+                  siteGlobalHeader={siteGlobalHeader}
+                  siteGlobalFooter={siteGlobalFooter}
+                  globalSectionsDirty={globalSectionsDirty}
+                  savingGlobalSections={savingGlobalSections}
+                  globalSectionsNotice={globalSectionsNotice}
                   pages={sitePages}
                   settings={settings}
                   title={state.title}
@@ -562,8 +651,6 @@ export function BuilderShell({ page }: { page: EditablePage }) {
                   isHome={state.isHome}
                   headerMode={state.headerMode}
                   footerMode={state.footerMode}
-                  headerSchema={state.headerSchema}
-                  footerSchema={state.footerSchema}
                   publicUrl={publicUrl}
                   isLive={isLive}
                   onTitleChange={setTitle}
@@ -571,8 +658,9 @@ export function BuilderShell({ page }: { page: EditablePage }) {
                   onIsHomeChange={setIsHome}
                   onHeaderModeChange={setHeaderMode}
                   onFooterModeChange={setFooterMode}
-                  onHeaderSchemaChange={setHeaderSchema}
-                  onFooterSchemaChange={setFooterSchema}
+                  onGlobalHeaderChange={setSiteGlobalHeader}
+                  onGlobalFooterChange={setSiteGlobalFooter}
+                  onSaveGlobalSections={saveGlobalSections}
                   onSettingsChange={updateSettings}
                   onTokensChange={updateTokens}
                 />
@@ -593,6 +681,11 @@ export function BuilderShell({ page }: { page: EditablePage }) {
               ) : null}
               <BuilderCanvas
                 schema={state.schema}
+                siteSlug={activePage.site.slug}
+                siteHeader={siteGlobalHeader}
+                siteFooter={siteGlobalFooter}
+                headerMode={state.headerMode}
+                footerMode={state.footerMode}
                 selectedBlockId={state.selectedBlockId}
                 dropIndicator={dropIndicator}
                 isPaletteDragging={activeDrag?.source === "palette"}
@@ -648,23 +741,17 @@ function composePreviewSchema({
   pageSchema,
   siteHeader,
   siteFooter,
-  pageHeader,
-  pageFooter,
   headerMode,
   footerMode,
 }: {
   pageSchema: PageSchema;
   siteHeader: PageSchema | null;
   siteFooter: PageSchema | null;
-  pageHeader: PageSchema | null;
-  pageFooter: PageSchema | null;
   headerMode: SectionMode;
   footerMode: SectionMode;
 }): PageSchema {
-  const headerBlocks =
-    headerMode === "HIDDEN" ? [] : headerMode === "CUSTOM" ? pageHeader?.blocks ?? [] : siteHeader?.blocks ?? [];
-  const footerBlocks =
-    footerMode === "HIDDEN" ? [] : footerMode === "CUSTOM" ? pageFooter?.blocks ?? [] : siteFooter?.blocks ?? [];
+  const headerBlocks = headerMode === "HIDDEN" ? [] : siteHeader?.blocks ?? [];
+  const footerBlocks = footerMode === "HIDDEN" ? [] : siteFooter?.blocks ?? [];
 
   return {
     ...pageSchema,

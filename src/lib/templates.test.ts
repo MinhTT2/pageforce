@@ -114,8 +114,8 @@ describe("siteTemplates", () => {
       props: {
         brandText: "Demo",
         links: [
-          { label: "Home", url: "/s/demo" },
-          { label: "Pricing", url: "/s/demo/pricing" },
+          { label: "Home", url: "/" },
+          { label: "Pricing", url: "/pricing" },
         ],
       },
     });

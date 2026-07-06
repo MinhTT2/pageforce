@@ -53,8 +53,8 @@ Builder and public pages share rendering logic, so a block edited in the builder
 
 Pageforce uses live save instead of a separate publish step.
 
-- Builder saves write the current schema to `Page.draftSchema`.
-- `Page.publishedSchema` is kept in sync for compatibility.
+- Builder saves write the current schema to `Page.schema`.
+- There is no separate publish snapshot in the MVP.
 - Pages with at least one block become publicly renderable.
 - Blank pages remain `DRAFT` and do not render publicly.
 - Public routes render only `PUBLISHED` pages with content.

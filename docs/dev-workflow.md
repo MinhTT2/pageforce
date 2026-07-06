@@ -85,7 +85,7 @@ When adding or changing a block type, update these together:
 - Editing controls in the matching file under `src/components/builder/block-editors/`
 - Unit tests for schema/default behavior
 
-The current public block contract is `PageSchema` version 2. Builder saves write the live schema to `Page.draftSchema` and keep `Page.publishedSchema` in sync for compatibility; there is no separate publish step in the MVP.
+The current public block contract is `PageSchema` version 2. Builder saves write the live schema to `Page.schema`; there is no separate publish step in the MVP.
 
 ## Leads
 

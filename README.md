@@ -91,7 +91,7 @@ For more detail, see [docs/architecture.md](docs/architecture.md).
 ## Data Model
 
 - `Site`: owned by a Supabase Auth user, contains pages, optional global header/footer JSON, and site-level lead submissions.
-- `Page`: belongs to a site, stores route metadata, section modes, live builder schema in `draftSchema`, and compatibility copy in `publishedSchema`.
+- `Page`: belongs to a site and stores route metadata, section modes, and the live builder schema in `schema`.
 - `LeadSubmission`: stores validated public form submissions against a site and block id.
 
 There is no Prisma `User` model. That is deliberate: Supabase Auth is the source of truth for identity, while Pageforce tables store product data and ownership ids.

@@ -46,8 +46,8 @@ Each Supabase Auth user can own multiple `Site` records, and each site can conta
 - App data lives in Prisma models, currently `Site`, `Page`, and `LeadSubmission`.
 - `Site.userId` stores the Supabase Auth user id and is indexed for ownership lookups.
 - `Page` belongs to `Site`; do not store user ownership directly on `Page`.
-- `Page.draftSchema` currently stores the live builder schema. The column name is legacy.
-- `Page.publishedSchema` is kept in sync for compatibility when a page is live, but there is no separate publish step in the MVP.
+- `Page.schema` stores the live builder schema.
+- There is no separate publish snapshot in the MVP.
 - Saving updates the live schema and the public page immediately once the schema has at least one block.
 - Blank pages remain `DRAFT`; public pages render only `PUBLISHED` pages with content.
 - Global header/footer JSON belongs to `Site`; page-level header/footer modes can inherit, customize, or hide those sections.

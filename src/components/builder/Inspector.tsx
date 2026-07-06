@@ -1,4 +1,4 @@
-import { Copy, PanelRightClose, Trash2, X } from "lucide-react";
+import { Copy, Trash2, X } from "lucide-react";
 import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +16,6 @@ export const Inspector = memo(function Inspector({
   onDuplicateBlock,
   onDeleteBlock,
   onClearSelection,
-  onClose,
 }: {
   selectedBlock: PageBlock | null;
   pageId: string;
@@ -51,9 +50,6 @@ export const Inspector = memo(function Inspector({
               <X size={16} />
             </Button>
           ) : null}
-          <Button variant="ghost" size="icon" aria-label="Hide inspector" onClick={onClose}>
-            <PanelRightClose size={16} />
-          </Button>
         </div>
       </div>
       {selectedBlock ? (

@@ -17,8 +17,6 @@ export type BuilderSnapshot = {
   isHome: boolean;
   headerMode: SectionMode;
   footerMode: SectionMode;
-  headerSchema: PageSchema | null;
-  footerSchema: PageSchema | null;
   schema: PageSchema;
   selectedBlockId: string | null;
 };
@@ -30,8 +28,6 @@ export type BuilderState = {
   isHome: boolean;
   headerMode: SectionMode;
   footerMode: SectionMode;
-  headerSchema: PageSchema | null;
-  footerSchema: PageSchema | null;
   status: PageStatus;
   publishedAt: string | null;
   updatedAt: string;
@@ -53,8 +49,6 @@ export type BuilderAction =
   | { type: "setIsHome"; value: boolean; at: number }
   | { type: "setHeaderMode"; value: SectionMode; at: number }
   | { type: "setFooterMode"; value: SectionMode; at: number }
-  | { type: "setHeaderSchema"; schema: PageSchema | null; at: number }
-  | { type: "setFooterSchema"; schema: PageSchema | null; at: number }
   | { type: "insertBlock"; block: PageBlock; index?: number }
   | { type: "replaceSchema"; schema: PageSchema }
   | { type: "moveBlock"; from: number; to: number }
@@ -85,8 +79,6 @@ const UNDOABLE = new Set<BuilderAction["type"]>([
   "setIsHome",
   "setHeaderMode",
   "setFooterMode",
-  "setHeaderSchema",
-  "setFooterSchema",
   "insertBlock",
   "replaceSchema",
   "moveBlock",
@@ -104,8 +96,6 @@ function snapshotOf(state: BuilderState): BuilderSnapshot {
     isHome: state.isHome,
     headerMode: state.headerMode,
     footerMode: state.footerMode,
-    headerSchema: state.headerSchema,
-    footerSchema: state.footerSchema,
     schema: state.schema,
     selectedBlockId: state.selectedBlockId,
   };
@@ -119,8 +109,6 @@ function editKeyFor(action: BuilderAction): string | null {
   if (action.type === "setIsHome") return "isHome";
   if (action.type === "setHeaderMode") return "headerMode";
   if (action.type === "setFooterMode") return "footerMode";
-  if (action.type === "setHeaderSchema") return "headerSchema";
-  if (action.type === "setFooterSchema") return "footerSchema";
   if (action.type === "updateBlock") return `block:${action.block.id}`;
   if (action.type === "updateSettings") return `settings:${Object.keys(action.patch).sort().join(",")}`;
   if (action.type === "updateTokens") return `tokens:${Object.keys(action.patch).sort().join(",")}`;
@@ -143,8 +131,6 @@ export function initialBuilderState(page: EditablePage): BuilderState {
     isHome: page.isHome,
     headerMode: page.headerMode,
     footerMode: page.footerMode,
-    headerSchema: page.headerSchema,
-    footerSchema: page.footerSchema,
     status: page.status,
     publishedAt: page.publishedAt,
     updatedAt: page.updatedAt,
@@ -285,14 +271,6 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
     }
 
     return edited(state, { footerMode: action.value });
-  }
-
-  if (action.type === "setHeaderSchema") {
-    return edited(state, { headerSchema: action.schema });
-  }
-
-  if (action.type === "setFooterSchema") {
-    return edited(state, { footerSchema: action.schema });
   }
 
   if (action.type === "insertBlock") {
@@ -437,8 +415,6 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
       isHome: action.page.isHome,
       headerMode: action.page.headerMode,
       footerMode: action.page.footerMode,
-      headerSchema: action.page.headerSchema,
-      footerSchema: action.page.footerSchema,
       status: action.page.status,
       publishedAt: action.page.publishedAt,
       updatedAt: action.page.updatedAt,
@@ -456,9 +432,13 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
     };
   }
 
-  if (action.pageId !== state.pageId || action.editVersion !== state.editVersion) {
-    return state;
+  if (action.type === "saveFailed") {
+    if (action.pageId !== state.pageId || action.editVersion !== state.editVersion) {
+      return state;
+    }
+
+    return { ...state, saveStatus: "error", notice: action.message };
   }
 
-  return { ...state, saveStatus: "error", notice: action.message };
+  return state;
 }

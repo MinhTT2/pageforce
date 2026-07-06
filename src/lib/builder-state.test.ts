@@ -24,8 +24,6 @@ function makePage(blockCount = 3): EditablePage {
       blocks: Array.from({ length: blockCount }, () => createBlock("text")),
       settings: defaultPageSettings,
     },
-    headerSchema: null,
-    footerSchema: null,
     site: {
       id: "site-1",
       name: "Demo Site",

@@ -33,7 +33,7 @@ export function HeaderEditor({
             <Field label="Label">
               <Input value={item.label} onChange={(event) => update({ label: event.target.value })} />
             </Field>
-            <Field label="URL">
+            <Field label="URL" description="Use /hello for a page in this site, #section, or a full URL.">
               <Input value={item.url} onChange={(event) => update({ url: event.target.value })} />
             </Field>
           </>
@@ -47,7 +47,7 @@ export function HeaderEditor({
           }
         />
       </Field>
-      <Field label="CTA URL">
+      <Field label="CTA URL" description="Use /hello for a page in this site, #section, or a full URL.">
         <Input
           value={block.props.ctaUrl}
           onChange={(event) =>

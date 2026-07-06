@@ -18,9 +18,10 @@ import { cn } from "@/lib/utils";
 
 export const BuilderHeader = memo(function BuilderHeader({
   dirty,
+  savingGlobal,
   saveStatus,
   notice,
-  publicUrl,
+  publicSiteUrl,
   isLive,
   previewMode,
   blocksOpen,
@@ -37,9 +38,10 @@ export const BuilderHeader = memo(function BuilderHeader({
   onSave,
 }: {
   dirty: boolean;
+  savingGlobal?: boolean;
   saveStatus: SaveStatus;
   notice: string | null;
-  publicUrl: string;
+  publicSiteUrl: string;
   isLive: boolean;
   previewMode: boolean;
   blocksOpen: boolean;
@@ -55,8 +57,8 @@ export const BuilderHeader = memo(function BuilderHeader({
   onTogglePreview: () => void;
   onSave: () => void;
 }) {
-  const saving = saveStatus === "saving";
-  const showPublicUrl = saveStatus === "saved" && isLive;
+  const saving = saveStatus === "saving" || savingGlobal;
+  const showPublicUrl = isLive;
 
   return (
     <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">
@@ -110,9 +112,9 @@ export const BuilderHeader = memo(function BuilderHeader({
         ) : null}
         {showPublicUrl ? (
           <div className="flex max-w-full items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-2 py-1 text-sm text-success">
-            <span className="min-w-0 truncate font-medium">Saved: {publicUrl}</span>
+            <span className="min-w-0 truncate font-medium">Published: {publicSiteUrl}</span>
             <Button asChild variant="ghost" size="icon-sm" aria-label="Open public website">
-              <a href={publicUrl} target="_blank" rel="noopener noreferrer">
+              <a href={publicSiteUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink size={14} />
               </a>
             </Button>

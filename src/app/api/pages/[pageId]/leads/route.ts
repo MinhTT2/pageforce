@@ -27,7 +27,7 @@ export async function POST(
 
   const page = await prisma.page.findFirst({
     where: { id: pageId, status: "PUBLISHED" },
-    select: { id: true, siteId: true, draftSchema: true },
+    select: { id: true, siteId: true, schema: true },
   });
 
   if (!page) {
@@ -39,7 +39,7 @@ export async function POST(
     return NextResponse.json({ ok: true });
   }
 
-  const schema = normalizePageSchema(page.draftSchema);
+  const schema = normalizePageSchema(page.schema);
   const acceptsLeads = schema.blocks.some(
     (block) => block.type === "leadForm" && block.id === parsed.value.blockId,
   );

@@ -1,6 +1,5 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { normalizePageSchema } from "@/lib/blocks";
 import {
@@ -104,16 +103,6 @@ export async function PATCH(
   }
 
   const normalizedSchema = data.schema ? normalizePageSchema(data.schema) : null;
-  const normalizedHeaderSchema = data.headerSchema
-    ? normalizePageSchema(data.headerSchema)
-    : data.headerSchema === null
-      ? null
-      : undefined;
-  const normalizedFooterSchema = data.footerSchema
-    ? normalizePageSchema(data.footerSchema)
-    : data.footerSchema === null
-      ? null
-      : undefined;
   const schema = normalizedSchema ? schemaToJson(normalizedSchema) : null;
   const publication = normalizedSchema ? pagePublicationData(normalizedSchema) : null;
   const updateData = {
@@ -121,17 +110,10 @@ export async function PATCH(
     ...(typeof data.isHome === "boolean" ? { isHome: data.isHome } : {}),
     ...(data.headerMode ? { headerMode: data.headerMode } : {}),
     ...(data.footerMode ? { footerMode: data.footerMode } : {}),
-    ...(normalizedHeaderSchema !== undefined
-      ? { headerSchema: normalizedHeaderSchema ? schemaToJson(normalizedHeaderSchema) : Prisma.DbNull }
-      : {}),
-    ...(normalizedFooterSchema !== undefined
-      ? { footerSchema: normalizedFooterSchema ? schemaToJson(normalizedFooterSchema) : Prisma.DbNull }
-      : {}),
-    ...(schema ? { draftSchema: schema } : {}),
+    ...(schema ? { schema } : {}),
     ...(publication
       ? {
           status: publication.status,
-          publishedSchema: publication.publishedSchema,
           publishedAt: publication.publishedAt,
         }
       : {}),

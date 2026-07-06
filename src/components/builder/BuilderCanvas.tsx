@@ -4,7 +4,7 @@ import { FileText, Layers3, MousePointerClick, Send, Sparkles } from "lucide-rea
 import { memo, useCallback, useMemo, type ReactNode } from "react";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { Button } from "@/components/ui/button";
-import type { BlockType, PageBlock, PageSchema } from "@/types/blocks";
+import type { BlockType, PageBlock, PageSchema, SectionMode } from "@/types/blocks";
 import type { PageTemplate, PageTemplateKey } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { BlockInsertMenu } from "./BlockInsertMenu";
@@ -14,6 +14,11 @@ export type DropIndicator = { blockId: string; edge: "top" | "bottom" } | "canva
 
 export const BuilderCanvas = memo(function BuilderCanvas({
   schema,
+  siteSlug,
+  siteHeader,
+  siteFooter,
+  headerMode,
+  footerMode,
   selectedBlockId,
   dropIndicator,
   isPaletteDragging,
@@ -26,6 +31,11 @@ export const BuilderCanvas = memo(function BuilderCanvas({
   templates,
 }: {
   schema: PageSchema;
+  siteSlug?: string;
+  siteHeader: PageSchema | null;
+  siteFooter: PageSchema | null;
+  headerMode: SectionMode;
+  footerMode: SectionMode;
   selectedBlockId: string | null;
   dropIndicator: DropIndicator;
   isPaletteDragging: boolean;
@@ -46,6 +56,16 @@ export const BuilderCanvas = memo(function BuilderCanvas({
     (type: BlockType, index: number) => onAddBlock(type, index),
     [onAddBlock],
   );
+  const headerSection = resolveCanvasSection({
+    kind: "header",
+    mode: headerMode,
+    globalSchema: siteHeader,
+  });
+  const footerSection = resolveCanvasSection({
+    kind: "footer",
+    mode: footerMode,
+    globalSchema: siteFooter,
+  });
 
   // Stable unless selection or the drop indicator actually changes — those are
   // exactly the renders memo(BlockRenderer) must let through.
@@ -118,6 +138,15 @@ export const BuilderCanvas = memo(function BuilderCanvas({
           isPaletteDragging && isOver && "ring-primary/70",
         )}
       >
+        {headerSection ? (
+          <CanvasSectionChrome section={headerSection}>
+            <BlockRenderer
+              schema={{ ...schema, blocks: headerSection.blocks }}
+              renderMode="editor"
+              siteSlug={siteSlug}
+            />
+          </CanvasSectionChrome>
+        ) : null}
         {schema.blocks.length === 0 ? (
           <EmptyBuilderStart
             templates={templates}
@@ -132,6 +161,7 @@ export const BuilderCanvas = memo(function BuilderCanvas({
             <BlockRenderer
               schema={schema}
               renderMode="editor"
+              siteSlug={siteSlug}
               renderBlockWrapper={renderBlockWrapper}
               emptyActions={emptyActions}
             />
@@ -140,10 +170,62 @@ export const BuilderCanvas = memo(function BuilderCanvas({
         {dropIndicator === "canvas-end" && schema.blocks.length > 0 ? (
           <div className="h-0.5 bg-primary" />
         ) : null}
+        {footerSection ? (
+          <CanvasSectionChrome section={footerSection}>
+            <BlockRenderer
+              schema={{ ...schema, blocks: footerSection.blocks }}
+              renderMode="editor"
+              siteSlug={siteSlug}
+            />
+          </CanvasSectionChrome>
+        ) : null}
       </div>
     </section>
   );
 });
+
+type CanvasSection = {
+  blocks: PageBlock[];
+  label: string;
+};
+
+function resolveCanvasSection({
+  kind,
+  mode,
+  globalSchema,
+}: {
+  kind: "header" | "footer";
+  mode: SectionMode;
+  globalSchema: PageSchema | null;
+}): CanvasSection | null {
+  if (mode === "HIDDEN") {
+    return null;
+  }
+
+  const blocks = globalSchema?.blocks ?? [];
+  return blocks.length > 0 ? { blocks, label: `Global ${kind}` } : null;
+}
+
+function CanvasSectionChrome({
+  section,
+  children,
+}: {
+  section: CanvasSection;
+  children: ReactNode;
+}) {
+  return (
+    <div className="group/section relative">
+      <div className="pointer-events-none absolute left-3 top-3 z-40 rounded-md border border-border bg-card/95 px-2 py-1 text-xs font-semibold text-card-foreground shadow-sm">
+        {section.label}
+      </div>
+      <div
+        className="pointer-events-none relative outline outline-1 outline-offset-[-1px] outline-primary/25"
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function InsertDivider({
   label,

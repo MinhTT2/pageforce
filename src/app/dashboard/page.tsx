@@ -69,7 +69,7 @@ export default async function DashboardPage({
             {sites.map((site) => {
               const homePage = site.pages.find((page) => page.isHome) ?? site.pages[0];
               const siteUrl = `${publicOrigin}/s/${site.slug}`;
-              const homeSchema = normalizePageSchema(homePage?.draftSchema);
+              const homeSchema = normalizePageSchema(homePage?.schema);
               const live = Boolean(homePage && homePage.status === "PUBLISHED" && homeSchema.blocks.length);
               return (
                 <Panel

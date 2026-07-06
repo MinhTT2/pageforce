@@ -20,6 +20,7 @@ import { defaultTokens } from "@/lib/blocks";
 import { CarouselViewer } from "@/components/blocks/CarouselViewer";
 import { LeadCaptureForm } from "@/components/blocks/LeadCaptureForm";
 import { BLOCK_PADDING_Y, BLOCK_WIDTH, blockStyleCssVars, tokenCssVars } from "@/lib/design";
+import { resolveSiteHref } from "@/lib/site-hrefs";
 import { cn } from "@/lib/utils";
 
 type BlockRendererProps = {
@@ -30,6 +31,7 @@ type BlockRendererProps = {
   // Only public site routes pass this; its presence is what lets lead forms submit
   // for real instead of rendering the builder's inert preview form.
   pageId?: string;
+  siteSlug?: string;
 };
 
 const iconMap: Record<string, LucideIcon> = {
@@ -73,6 +75,7 @@ export const BlockRenderer = memo(function BlockRenderer({
   emptyActions,
   renderMode = "live",
   pageId,
+  siteSlug,
 }: BlockRendererProps) {
   const tokens = schema.settings?.tokens ?? defaultTokens;
 
@@ -96,7 +99,14 @@ export const BlockRenderer = memo(function BlockRenderer({
   return (
     <div className="pf-root transition-colors" style={tokenCssVars(tokens)}>
       {schema.blocks.map((block) => {
-        const rendered = <RenderedBlock block={block} renderMode={renderMode} pageId={pageId} />;
+        const rendered = (
+          <RenderedBlock
+            block={block}
+            renderMode={renderMode}
+            pageId={pageId}
+            siteSlug={siteSlug}
+          />
+        );
 
         return (
           <Fragment key={block.id}>
@@ -116,11 +126,15 @@ const RenderedBlock = memo(function RenderedBlock({
   block,
   renderMode,
   pageId,
+  siteSlug,
 }: {
   block: PageBlock;
   renderMode: "live" | "editor";
   pageId?: string;
+  siteSlug?: string;
 }) {
+  const siteHref = (href: string) => resolveSiteHref(href, siteSlug);
+
   if (block.type === "header") {
     const { sectionStyle } = resolveSection(block, {
       paddingY: "py-0",
@@ -136,21 +150,21 @@ const RenderedBlock = memo(function RenderedBlock({
         style={sectionStyle}
       >
         <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-3 py-3">
-          <a href="#" className="pf-heading text-base font-semibold">
+          <a href={siteSlug ? siteHref("/") : "#"} className="pf-heading text-base font-semibold">
             {block.props.brandText}
           </a>
           <nav className="pf-muted flex flex-wrap items-center justify-end gap-4 text-sm" aria-label="Site navigation">
             {block.props.links.map((link, index) => (
               <a
                 key={`${link.label}-${index}`}
-                href={link.url || "#"}
+                href={siteHref(link.url)}
                 className="transition hover:text-(--pf-text)"
               >
                 {link.label}
               </a>
             ))}
             {block.props.ctaLabel ? (
-              <CtaLink href={block.props.ctaUrl} variant="primary">
+              <CtaLink href={siteHref(block.props.ctaUrl)} variant="primary">
                 {block.props.ctaLabel}
               </CtaLink>
             ) : null}
@@ -185,7 +199,7 @@ const RenderedBlock = memo(function RenderedBlock({
             {block.props.subheading}
           </p>
           {block.props.buttonText ? (
-            <CtaLink href={block.props.buttonUrl} variant="primary" className="mt-8">
+            <CtaLink href={siteHref(block.props.buttonUrl)} variant="primary" className="mt-8">
               {block.props.buttonText}
             </CtaLink>
           ) : null}
@@ -287,7 +301,7 @@ const RenderedBlock = memo(function RenderedBlock({
         style={sectionStyle}
       >
         <div className={cn("mx-auto", widthClass)}>
-          <CtaLink href={block.props.url} variant={block.props.variant}>
+          <CtaLink href={siteHref(block.props.url)} variant={block.props.variant}>
             {block.props.label}
           </CtaLink>
         </div>
@@ -422,7 +436,10 @@ const RenderedBlock = memo(function RenderedBlock({
                   ))}
                 </ul>
                 <div className="mt-7">
-                  <CtaLink href={plan.ctaUrl} variant={plan.highlighted ? "inverse" : "primary"}>
+                  <CtaLink
+                    href={siteHref(plan.ctaUrl)}
+                    variant={plan.highlighted ? "inverse" : "primary"}
+                  >
                     {plan.ctaLabel}
                   </CtaLink>
                 </div>
@@ -490,7 +507,7 @@ const RenderedBlock = memo(function RenderedBlock({
                   </div>
                   {item.ctaLabel ? (
                     <div className="mt-5">
-                      <CtaLink href={item.ctaUrl} variant="primary">
+                      <CtaLink href={siteHref(item.ctaUrl)} variant="primary">
                         {item.ctaLabel}
                       </CtaLink>
                     </div>
@@ -567,13 +584,13 @@ const RenderedBlock = memo(function RenderedBlock({
             )}
           >
             {block.props.primaryLabel ? (
-              <CtaLink href={block.props.primaryUrl} variant="inverse">
+              <CtaLink href={siteHref(block.props.primaryUrl)} variant="inverse">
                 {block.props.primaryLabel}
               </CtaLink>
             ) : null}
             {block.props.secondaryLabel ? (
               <a
-                href={block.props.secondaryUrl || "#"}
+                href={siteHref(block.props.secondaryUrl)}
                 className="pf-btn-secondary inline-flex h-11 items-center justify-center rounded-(--pf-radius) px-5 text-sm font-medium transition hover:opacity-90"
               >
                 {block.props.secondaryLabel}
@@ -636,7 +653,7 @@ const RenderedBlock = memo(function RenderedBlock({
           {block.props.links.map((link, index) => (
             <a
               key={`${link.label}-${index}`}
-              href={link.url || "#"}
+              href={siteHref(link.url)}
               className="transition hover:text-(--pf-text)"
             >
               {link.label}

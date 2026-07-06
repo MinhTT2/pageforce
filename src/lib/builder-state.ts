@@ -3,6 +3,7 @@ import type {
   PageBlock,
   PageSchema,
   PageSettings,
+  SectionMode,
 } from "@/types/blocks";
 import type { EditablePage, PageStatus } from "@/types/page";
 import { defaultPageSettings, defaultTokens } from "@/lib/blocks";
@@ -13,6 +14,11 @@ export type SaveStatus = "idle" | "saving" | "saved" | "error";
 export type BuilderSnapshot = {
   title: string;
   slug: string;
+  isHome: boolean;
+  headerMode: SectionMode;
+  footerMode: SectionMode;
+  headerSchema: PageSchema | null;
+  footerSchema: PageSchema | null;
   schema: PageSchema;
   selectedBlockId: string | null;
 };
@@ -20,12 +26,18 @@ export type BuilderSnapshot = {
 export type BuilderState = {
   title: string;
   slug: string;
+  isHome: boolean;
+  headerMode: SectionMode;
+  footerMode: SectionMode;
+  headerSchema: PageSchema | null;
+  footerSchema: PageSchema | null;
   status: PageStatus;
   publishedAt: string | null;
   updatedAt: string;
   schema: PageSchema;
   selectedBlockId: string | null;
   dirty: boolean;
+  editVersion: number;
   saveStatus: SaveStatus;
   notice: string | null;
   past: BuilderSnapshot[];
@@ -34,8 +46,14 @@ export type BuilderState = {
 };
 
 export type BuilderAction =
+  | { type: "loadPage"; page: EditablePage }
   | { type: "setTitle"; value: string; at: number }
   | { type: "setSlug"; value: string; at: number }
+  | { type: "setIsHome"; value: boolean; at: number }
+  | { type: "setHeaderMode"; value: SectionMode; at: number }
+  | { type: "setFooterMode"; value: SectionMode; at: number }
+  | { type: "setHeaderSchema"; schema: PageSchema | null; at: number }
+  | { type: "setFooterSchema"; schema: PageSchema | null; at: number }
   | { type: "insertBlock"; block: PageBlock; index?: number }
   | { type: "replaceSchema"; schema: PageSchema }
   | { type: "moveBlock"; from: number; to: number }
@@ -48,8 +66,8 @@ export type BuilderAction =
   | { type: "undo" }
   | { type: "redo" }
   | { type: "saveStarted" }
-  | { type: "saveSucceeded"; page: EditablePage; requestedSlug: string }
-  | { type: "saveFailed"; message: string };
+  | { type: "saveSucceeded"; page: EditablePage; requestedSlug: string; editVersion: number }
+  | { type: "saveFailed"; message: string; editVersion: number };
 
 const HISTORY_LIMIT = 50;
 const COALESCE_MS = 1000;
@@ -57,6 +75,11 @@ const COALESCE_MS = 1000;
 const UNDOABLE = new Set<BuilderAction["type"]>([
   "setTitle",
   "setSlug",
+  "setIsHome",
+  "setHeaderMode",
+  "setFooterMode",
+  "setHeaderSchema",
+  "setFooterSchema",
   "insertBlock",
   "replaceSchema",
   "moveBlock",
@@ -71,6 +94,11 @@ function snapshotOf(state: BuilderState): BuilderSnapshot {
   return {
     title: state.title,
     slug: state.slug,
+    isHome: state.isHome,
+    headerMode: state.headerMode,
+    footerMode: state.footerMode,
+    headerSchema: state.headerSchema,
+    footerSchema: state.footerSchema,
     schema: state.schema,
     selectedBlockId: state.selectedBlockId,
   };
@@ -81,6 +109,11 @@ function snapshotOf(state: BuilderState): BuilderSnapshot {
 function editKeyFor(action: BuilderAction): string | null {
   if (action.type === "setTitle") return "title";
   if (action.type === "setSlug") return "slug";
+  if (action.type === "setIsHome") return "isHome";
+  if (action.type === "setHeaderMode") return "headerMode";
+  if (action.type === "setFooterMode") return "footerMode";
+  if (action.type === "setHeaderSchema") return "headerSchema";
+  if (action.type === "setFooterSchema") return "footerSchema";
   if (action.type === "updateBlock") return `block:${action.block.id}`;
   if (action.type === "updateSettings") return `settings:${Object.keys(action.patch).sort().join(",")}`;
   if (action.type === "updateTokens") return `tokens:${Object.keys(action.patch).sort().join(",")}`;
@@ -99,12 +132,18 @@ export function initialBuilderState(page: EditablePage): BuilderState {
   return {
     title: page.title,
     slug: page.slug,
+    isHome: page.isHome,
+    headerMode: page.headerMode,
+    footerMode: page.footerMode,
+    headerSchema: page.headerSchema,
+    footerSchema: page.footerSchema,
     status: page.status,
     publishedAt: page.publishedAt,
     updatedAt: page.updatedAt,
     schema: { ...page.schema, settings: normalizeSettings(page.schema) },
     selectedBlockId: page.schema.blocks[0]?.id ?? null,
     dirty: false,
+    editVersion: 0,
     saveStatus: "idle",
     notice: null,
     past: [],
@@ -114,10 +153,21 @@ export function initialBuilderState(page: EditablePage): BuilderState {
 }
 
 function edited(state: BuilderState, patch: Partial<BuilderState>): BuilderState {
-  return { ...state, ...patch, dirty: true, saveStatus: "idle", notice: null };
+  return {
+    ...state,
+    ...patch,
+    dirty: true,
+    editVersion: state.editVersion + 1,
+    saveStatus: "idle",
+    notice: null,
+  };
 }
 
 export function builderReducer(state: BuilderState, action: BuilderAction): BuilderState {
+  if (action.type === "loadPage") {
+    return initialBuilderState(action.page);
+  }
+
   if (action.type === "undo") {
     const previous = state.past.at(-1);
 
@@ -132,6 +182,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
       future: [...state.future, snapshotOf(state)],
       lastEdit: null,
       dirty: true,
+      editVersion: state.editVersion + 1,
       saveStatus: "idle",
       notice: null,
     };
@@ -151,6 +202,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
       future: state.future.slice(0, -1),
       lastEdit: null,
       dirty: true,
+      editVersion: state.editVersion + 1,
       saveStatus: "idle",
       notice: null,
     };
@@ -179,7 +231,10 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
   };
 }
 
-type ApplyableAction = Exclude<BuilderAction, { type: "undo" } | { type: "redo" }>;
+type ApplyableAction = Exclude<
+  BuilderAction,
+  { type: "loadPage" } | { type: "undo" } | { type: "redo" }
+>;
 
 function applyAction(state: BuilderState, action: ApplyableAction): BuilderState {
   if (action.type === "setTitle") {
@@ -198,6 +253,38 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
     }
 
     return edited(state, { slug });
+  }
+
+  if (action.type === "setIsHome") {
+    if (state.isHome === action.value) {
+      return state;
+    }
+
+    return edited(state, { isHome: action.value });
+  }
+
+  if (action.type === "setHeaderMode") {
+    if (state.headerMode === action.value) {
+      return state;
+    }
+
+    return edited(state, { headerMode: action.value });
+  }
+
+  if (action.type === "setFooterMode") {
+    if (state.footerMode === action.value) {
+      return state;
+    }
+
+    return edited(state, { footerMode: action.value });
+  }
+
+  if (action.type === "setHeaderSchema") {
+    return edited(state, { headerSchema: action.schema });
+  }
+
+  if (action.type === "setFooterSchema") {
+    return edited(state, { footerSchema: action.schema });
   }
 
   if (action.type === "insertBlock") {
@@ -322,6 +409,10 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
   }
 
   if (action.type === "saveSucceeded") {
+    if (action.editVersion !== state.editVersion) {
+      return state;
+    }
+
     const schema = { ...action.page.schema, settings: normalizeSettings(action.page.schema) };
     const selectedStillExists =
       state.selectedBlockId === null ||
@@ -331,6 +422,11 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
       ...state,
       title: action.page.title,
       slug: action.page.slug,
+      isHome: action.page.isHome,
+      headerMode: action.page.headerMode,
+      footerMode: action.page.footerMode,
+      headerSchema: action.page.headerSchema,
+      footerSchema: action.page.footerSchema,
       status: action.page.status,
       publishedAt: action.page.publishedAt,
       updatedAt: action.page.updatedAt,
@@ -343,9 +439,13 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
       lastEdit: null,
       notice:
         action.page.slug !== action.requestedSlug
-          ? `That slug was taken — published at /p/${action.page.slug}`
+          ? `That slug was taken — published at ${action.page.publicPath}`
           : null,
     };
+  }
+
+  if (action.editVersion !== state.editVersion) {
+    return state;
   }
 
   return { ...state, saveStatus: "error", notice: action.message };

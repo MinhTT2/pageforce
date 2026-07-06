@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/Input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { pageTemplates, type PageTemplateKey } from "@/lib/templates";
 import { cn } from "@/lib/utils";
+import type { PageSummary } from "@/types/page";
 
 const templateIcons: Record<PageTemplateKey, LucideIcon> = {
   blank: File,
@@ -46,14 +47,24 @@ const templateIcons: Record<PageTemplateKey, LucideIcon> = {
 type CreatePageDialogProps = {
   defaultOpen?: boolean;
   label?: string;
+  siteId?: string;
+  triggerClassName?: string;
+  iconOnly?: boolean;
+  onCreated?: (page: PageSummary) => void;
 };
 
-type CreatePageResponse = {
+type CreatePageResponse = Partial<PageSummary> & {
   error?: string;
-  id?: string;
 };
 
-export function CreatePageDialog({ defaultOpen = false, label = "New page" }: CreatePageDialogProps) {
+export function CreatePageDialog({
+  defaultOpen = false,
+  label = "New page",
+  siteId,
+  triggerClassName,
+  iconOnly = false,
+  onCreated,
+}: CreatePageDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(defaultOpen);
   const [loading, setLoading] = useState(false);
@@ -94,7 +105,7 @@ export function CreatePageDialog({ defaultOpen = false, label = "New page" }: Cr
     const response = await fetch("/api/pages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, template: selectedTemplateKey }),
+      body: JSON.stringify({ title, template: selectedTemplateKey, siteId }),
     });
     const page = (await response.json().catch(() => ({}))) as CreatePageResponse;
 
@@ -106,6 +117,11 @@ export function CreatePageDialog({ defaultOpen = false, label = "New page" }: Cr
     }
 
     updateOpen(false);
+    if (page.id && onCreated) {
+      onCreated(page as PageSummary);
+      return;
+    }
+
     if (page.id) {
       router.push(`/builder/${page.id}`);
       return;
@@ -117,9 +133,9 @@ export function CreatePageDialog({ defaultOpen = false, label = "New page" }: Cr
   return (
     <Dialog open={open} onOpenChange={updateOpen}>
       <DialogTrigger asChild>
-        <Button size="lg">
+        <Button size={iconOnly ? "icon" : "lg"} className={triggerClassName} aria-label={label}>
           <Plus />
-          {label}
+          {iconOnly ? null : label}
         </Button>
       </DialogTrigger>
       <DialogContent className={cn("sm:max-w-4xl", previewing && "sm:max-w-5xl")}>

@@ -39,7 +39,7 @@ export function HeroEditor({
             }
           />
         </Field>
-        <Field label="Button URL" description="Examples: #pricing, /p/demo, https://example.com">
+        <Field label="Button URL" description="Examples: #pricing, /s/demo, https://example.com">
           <Input
             value={block.props.buttonUrl}
             onChange={(event) =>

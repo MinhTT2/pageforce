@@ -3,23 +3,35 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createBlock, emptyPageSchema } from "./blocks";
 import {
   createPageForUser,
+  createSiteFromTemplateForUser,
   createUniqueSlug,
   MAX_SLUG_LENGTH,
   pagePublicationData,
+  toCreatedSiteSummary,
 } from "./pages";
 import { prisma } from "@/lib/prisma";
 import type { PageSchema } from "@/types/blocks";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    site: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     page: {
       findFirst: vi.fn(),
+      count: vi.fn(),
       create: vi.fn(),
     },
   },
 }));
 
+const siteFindFirst = vi.mocked(prisma.site.findFirst);
+const siteCreate = vi.mocked(prisma.site.create);
+const siteUpdate = vi.mocked(prisma.site.update);
 const pageFindFirst = vi.mocked(prisma.page.findFirst);
+const pageCount = vi.mocked(prisma.page.count);
 const pageCreate = vi.mocked(prisma.page.create);
 
 function uniqueSlugError() {
@@ -32,7 +44,11 @@ function uniqueSlugError() {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  siteFindFirst.mockReset();
+  siteCreate.mockReset();
+  siteUpdate.mockReset();
   pageFindFirst.mockReset();
+  pageCount.mockReset();
   pageCreate.mockReset();
 });
 
@@ -112,8 +128,16 @@ describe("createPageForUser", () => {
     const createdPage = {
       id: "page-1",
       userId: "user-1",
+      siteId: "site-1",
+      site: { name: "Demo Site", slug: "demo" },
       title: "Launch",
       slug: "launch-2",
+      legacySlug: null,
+      isHome: false,
+      headerMode: "INHERIT" as const,
+      footerMode: "INHERIT" as const,
+      headerSchema: null,
+      footerSchema: null,
       status: "DRAFT" as const,
       draftSchema: emptyPageSchema,
       publishedSchema: null,
@@ -122,6 +146,8 @@ describe("createPageForUser", () => {
       updatedAt: new Date(),
     };
 
+    siteFindFirst.mockResolvedValue({ id: "site-1" });
+    pageCount.mockResolvedValue(1);
     pageFindFirst.mockResolvedValue(null);
     pageCreate.mockRejectedValueOnce(uniqueSlugError()).mockResolvedValueOnce(createdPage);
 
@@ -136,5 +162,168 @@ describe("createPageForUser", () => {
       2,
       expect.objectContaining({ data: expect.objectContaining({ slug: "launch-2" }) }),
     );
+  });
+});
+
+describe("createSiteFromTemplateForUser", () => {
+  it("creates the site and each template page in order", async () => {
+    const createdSite = {
+      id: "site-1",
+      userId: "user-1",
+      name: "Demo Site",
+      slug: "demo-site",
+      globalHeader: null,
+      globalFooter: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const schema: PageSchema = {
+      version: 2,
+      blocks: [createBlock("hero")],
+      settings: emptyPageSchema.settings,
+    };
+
+    siteCreate.mockResolvedValue(createdSite);
+    siteUpdate.mockResolvedValue(createdSite);
+    siteFindFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "site-1" })
+      .mockResolvedValueOnce({ id: "site-1" });
+    pageFindFirst.mockResolvedValue(null);
+    pageCount.mockResolvedValueOnce(0).mockResolvedValueOnce(1);
+    pageCreate
+      .mockResolvedValueOnce({
+        id: "page-home",
+        siteId: "site-1",
+        site: { name: "Demo Site", slug: "demo-site" },
+        title: "Home",
+        slug: "home",
+        isHome: true,
+        headerMode: "INHERIT" as const,
+        footerMode: "INHERIT" as const,
+        status: "PUBLISHED" as const,
+        publishedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .mockResolvedValueOnce({
+        id: "page-pricing",
+        siteId: "site-1",
+        site: { name: "Demo Site", slug: "demo-site" },
+        title: "Pricing",
+        slug: "pricing",
+        isHome: false,
+        headerMode: "INHERIT" as const,
+        footerMode: "INHERIT" as const,
+        status: "DRAFT" as const,
+        publishedAt: null,
+        updatedAt: new Date(),
+      });
+
+    await expect(
+      createSiteFromTemplateForUser("user-1", "Demo Site", [
+        { title: "Home", schema },
+        { title: "Pricing", schema: emptyPageSchema },
+      ], {
+        buildGlobalHeader: (site, pages) => ({
+          version: 2,
+          blocks: [
+            {
+              id: "header-1",
+              type: "header",
+              props: {
+                brandText: site.slug,
+                links: pages.map((page) => ({
+                  label: page.title,
+                  url: page.isHome ? "/home" : `/${page.slug}`,
+                })),
+                ctaLabel: "",
+                ctaUrl: "#",
+                sticky: true,
+              },
+            },
+          ],
+          settings: emptyPageSchema.settings,
+        }),
+      }),
+    ).resolves.toMatchObject({
+      id: "site-1",
+      pages: [
+        { id: "page-home", title: "Home", slug: "home", isHome: true },
+        { id: "page-pricing", title: "Pricing", slug: "pricing", isHome: false },
+      ],
+    });
+
+    expect(siteCreate).toHaveBeenCalledWith({
+      data: {
+        userId: "user-1",
+        name: "Demo Site",
+        slug: "demo-site",
+      },
+    });
+    expect(pageCreate).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: "Home",
+          slug: "home",
+          isHome: true,
+          status: "PUBLISHED",
+        }),
+      }),
+    );
+    expect(pageCreate).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: "Pricing",
+          slug: "pricing",
+          isHome: false,
+          status: "DRAFT",
+        }),
+      }),
+    );
+    expect(siteUpdate).toHaveBeenCalledWith({
+      where: { id: "site-1" },
+      data: {
+        globalHeader: expect.objectContaining({
+          blocks: [
+            expect.objectContaining({
+              type: "header",
+              props: expect.objectContaining({
+                brandText: "demo-site",
+                links: [
+                  { label: "Home", url: "/home" },
+                  { label: "Pricing", url: "/pricing" },
+                ],
+              }),
+            }),
+          ],
+        }),
+      },
+    });
+  });
+});
+
+describe("toCreatedSiteSummary", () => {
+  it("includes the home page id and public path for create-site navigation", () => {
+    const summary = toCreatedSiteSummary({
+      id: "site-1",
+      name: "Demo Site",
+      slug: "demo-site",
+      updatedAt: new Date("2026-07-06T00:00:00.000Z"),
+      pages: [
+        { id: "page-pricing", slug: "pricing", isHome: false },
+        { id: "page-home", slug: "home", isHome: true },
+      ],
+    });
+
+    expect(summary).toEqual({
+      id: "site-1",
+      name: "Demo Site",
+      slug: "demo-site",
+      updatedAt: "2026-07-06T00:00:00.000Z",
+      homePageId: "page-home",
+      publicPath: "/s/demo-site",
+    });
   });
 });

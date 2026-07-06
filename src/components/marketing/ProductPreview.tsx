@@ -10,7 +10,7 @@ export function ProductPreview() {
         <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3">
           <div>
             <p className="text-sm font-semibold text-foreground">Launch page</p>
-            <p className="text-xs text-muted-foreground">/p/launch-page</p>
+            <p className="text-xs text-muted-foreground">/s/nova/launch</p>
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm">
@@ -44,7 +44,7 @@ export function ProductPreview() {
                 </h3>
                 <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
                   Create a clean landing page from simple blocks, save changes, and share the URL
-                  when the message feels right.
+                  as soon as the message feels right.
                 </p>
                 <div className="mt-5 inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground">
                   Start building

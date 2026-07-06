@@ -4,14 +4,16 @@ import { createPageForUser, listPagesForUser, MAX_PAGE_BODY_BYTES, toPageSummary
 import { readJsonBody } from "@/lib/request-body";
 import { resolveTemplateSchema } from "@/lib/templates";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getCurrentUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const pages = await listPagesForUser(user.id);
+  const { searchParams } = new URL(request.url);
+  const siteId = searchParams.get("siteId") || undefined;
+  const pages = await listPagesForUser(user.id, siteId);
 
   return NextResponse.json(pages.map(toPageSummary));
 }
@@ -32,8 +34,9 @@ export async function POST(request: Request) {
   const body = json.value as Record<string, unknown>;
   const title =
     typeof body.title === "string" && body.title.trim() ? body.title.trim() : "Untitled page";
+  const siteId = typeof body.siteId === "string" && body.siteId ? body.siteId : undefined;
   const schema = resolveTemplateSchema(body.template);
-  const page = await createPageForUser(user.id, title, schema);
+  const page = await createPageForUser(user.id, title, schema, siteId);
 
   return NextResponse.json(toPageSummary(page), { status: 201 });
 }

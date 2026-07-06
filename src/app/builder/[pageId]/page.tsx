@@ -1,8 +1,6 @@
-import { notFound } from "next/navigation";
-import { BuilderShell } from "@/components/builder/BuilderShell";
+import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { toEditablePage } from "@/lib/pages";
 
 export default async function BuilderPage({
   params,
@@ -13,11 +11,12 @@ export default async function BuilderPage({
   const user = await requireUser(`/builder/${pageId}`);
   const page = await prisma.page.findFirst({
     where: { id: pageId, userId: user.id },
+    select: { id: true, siteId: true },
   });
 
   if (!page) {
     notFound();
   }
 
-  return <BuilderShell page={toEditablePage(page)} />;
+  redirect(`/builder/site/${page.siteId}?page=${page.id}`);
 }

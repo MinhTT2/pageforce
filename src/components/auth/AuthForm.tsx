@@ -44,7 +44,7 @@ export function AuthForm(_props: AuthFormProps) {
   return (
     <div className="flex min-h-screen w-full max-w-[560px] flex-col px-6 py-8 sm:px-10 lg:px-12">
 
-      <div className="mt-20 lg:mt-24">
+      <div className="mt-12 lg:mt-18">
         <h1 className="text-3xl font-semibold tracking-normal text-foreground">
           Log in or sign up
         </h1>
@@ -95,22 +95,22 @@ export function AuthForm(_props: AuthFormProps) {
 export function AuthShowcase() {
   return (
     <aside className="relative hidden min-h-screen overflow-hidden border-r border-border bg-[linear-gradient(180deg,var(--surface)_0%,var(--background)_100%)] lg:flex lg:flex-col">
-      <div className="p-10 xl:p-14">
+      <div className="p-8 xl:px-12 xl:pt-10 xl:pb-6">
         <BrandLogo size="md" />
       </div>
 
-      <div className="flex flex-1 items-center px-10 xl:px-14">
+      <div className="flex flex-1 items-center px-8 pb-8 xl:px-12">
         <div className="w-full max-w-2xl">
           <BuilderMockup />
 
-          <div className="mt-10 max-w-xl">
-            <h2 className="text-3xl font-semibold tracking-normal text-foreground">
+          <div className="mt-6 max-w-xl">
+            <h2 className="text-2xl font-semibold tracking-normal text-foreground">
               Start building today
             </h2>
-            <p className="mt-4 text-base leading-7 text-muted-foreground">
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
               Build landing pages, edit content, and open public URLs from one workspace.
             </p>
-            <div className="mt-6 grid gap-3 text-sm font-medium text-foreground">
+            <div className="mt-4 grid gap-2.5 text-sm font-medium text-foreground">
               <Benefit>Manage multiple landing pages from your dashboard</Benefit>
               <Benefit>Edit hero, CTA, pricing, FAQ, and lead form blocks</Benefit>
               <Benefit>Save live and share public URLs instantly</Benefit>
@@ -124,7 +124,7 @@ export function AuthShowcase() {
 
 function BuilderMockup() {
   return (
-    <div className="rounded-lg border border-border bg-card p-4 shadow-xl shadow-primary/5">
+    <div className="rounded-lg border border-border bg-card p-3 shadow-xl shadow-primary/5">
       <div className="grid gap-3 rounded-md border border-border bg-background p-3">
         <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
           <div>
@@ -135,17 +135,17 @@ function BuilderMockup() {
           </div>
           <div className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-2 py-1 text-xs font-medium text-muted-foreground">
             <ExternalLink className="size-3.5" />
-            /p/launch
+            /s/nova
           </div>
         </div>
 
-        <div className="rounded-md bg-[linear-gradient(180deg,var(--surface)_0%,var(--card)_100%)] px-5 py-8 text-center">
+        <div className="rounded-md bg-[linear-gradient(180deg,var(--surface)_0%,var(--card)_100%)] px-5 py-6 text-center">
           <div className="mx-auto mb-3 flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Sparkles className="size-4" />
           </div>
           <div className="mx-auto h-4 w-56 rounded-full bg-foreground/90" />
           <div className="mx-auto mt-3 h-3 w-72 max-w-full rounded-full bg-muted" />
-          <div className="mx-auto mt-6 h-9 w-28 rounded-lg bg-primary" />
+          <div className="mx-auto mt-5 h-9 w-28 rounded-lg bg-primary" />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">

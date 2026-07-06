@@ -109,7 +109,7 @@ function SaveLiveVisual() {
       </div>
       <div className="mt-3 flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-4 py-2.5 text-sm font-medium text-success">
         <span className="size-2 rounded-full bg-success" />
-        Live at /p/launch-page
+        Live at /s/launch/launch-page
       </div>
     </div>
   );

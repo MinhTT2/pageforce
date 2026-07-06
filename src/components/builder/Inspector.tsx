@@ -1,46 +1,33 @@
-import { Copy, Trash2, X } from "lucide-react";
+import { Copy, PanelRightClose, Trash2, X } from "lucide-react";
 import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { blockLabels } from "@/lib/blocks";
-import type { DesignTokens, PageBlock, PageSettings } from "@/types/blocks";
+import type { PageBlock, PageSettings } from "@/types/blocks";
 import { BlockEditor } from "./block-editors";
 import { blockOptions } from "./block-meta";
-import { DesignPanel } from "./DesignPanel";
-import { PageSettingsPanel } from "./PageSettingsPanel";
 import { StyleEditor } from "./StyleEditor";
 
 export const Inspector = memo(function Inspector({
   selectedBlock,
   pageId,
   settings,
-  slug,
-  publicUrl,
-  isLive,
   onUpdateBlock,
   onDuplicateBlock,
   onDeleteBlock,
   onClearSelection,
-  onSlugChange,
-  onSettingsChange,
-  onTokensChange,
+  onClose,
 }: {
   selectedBlock: PageBlock | null;
   pageId: string;
   settings: PageSettings;
-  slug: string;
-  publicUrl: string;
-  isLive: boolean;
   onUpdateBlock: (block: PageBlock) => void;
   onDuplicateBlock: (id: string) => void;
   onDeleteBlock: (id: string) => void;
   onClearSelection: () => void;
-  onSlugChange: (value: string) => void;
-  onSettingsChange: (patch: Partial<Omit<PageSettings, "tokens">>) => void;
-  onTokensChange: (patch: Partial<DesignTokens>) => void;
+  onClose: () => void;
 }) {
   const [blockTab, setBlockTab] = useState("content");
-  const [pageTab, setPageTab] = useState("page");
 
   return (
     <aside className="overflow-auto border-l border-border bg-card p-4">
@@ -53,16 +40,21 @@ export const Inspector = memo(function Inspector({
             {selectedBlock ? "Block" : "Page"}
           </h2>
         </div>
-        {selectedBlock ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Clear selected block"
-            onClick={onClearSelection}
-          >
-            <X size={16} />
+        <div className="flex gap-1">
+          {selectedBlock ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Clear selected block"
+              onClick={onClearSelection}
+            >
+              <X size={16} />
+            </Button>
+          ) : null}
+          <Button variant="ghost" size="icon" aria-label="Hide inspector" onClick={onClose}>
+            <PanelRightClose size={16} />
           </Button>
-        ) : null}
+        </div>
       </div>
       {selectedBlock ? (
         <div className="mt-4 space-y-4">
@@ -112,26 +104,12 @@ export const Inspector = memo(function Inspector({
           </Tabs>
         </div>
       ) : (
-        <div className="mt-4">
-          <Tabs value={pageTab} onValueChange={setPageTab}>
-            <TabsList className="w-full">
-              <TabsTrigger value="page">Page</TabsTrigger>
-              <TabsTrigger value="design">Design</TabsTrigger>
-            </TabsList>
-            <TabsContent value="page" className="mt-3">
-              <PageSettingsPanel
-                slug={slug}
-                publicUrl={publicUrl}
-                isLive={isLive}
-                settings={settings}
-                onSlugChange={onSlugChange}
-                onSettingsChange={onSettingsChange}
-              />
-            </TabsContent>
-            <TabsContent value="design" className="mt-3">
-              <DesignPanel tokens={settings.tokens} onChange={onTokensChange} />
-            </TabsContent>
-          </Tabs>
+        <div className="mt-4 rounded-lg border border-dashed border-border bg-surface p-4">
+          <p className="text-sm font-medium text-surface-foreground">Select a block</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Use the page icon in the header for page settings, or select a canvas block to edit its
+            content and style here.
+          </p>
         </div>
       )}
     </aside>

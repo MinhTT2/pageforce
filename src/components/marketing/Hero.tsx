@@ -24,7 +24,7 @@ export function Hero() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
               <Link href="/login">
-                Log in / Sign up
+                Start building
                 <ArrowRight />
               </Link>
             </Button>

@@ -5,6 +5,7 @@ import { CtaEditor } from "./CtaEditor";
 import { FaqEditor } from "./FaqEditor";
 import { FeaturesEditor } from "./FeaturesEditor";
 import { FooterEditor } from "./FooterEditor";
+import { HeaderEditor } from "./HeaderEditor";
 import { HeroEditor } from "./HeroEditor";
 import { ImageEditor } from "./ImageEditor";
 import { LeadFormEditor } from "./LeadFormEditor";
@@ -22,6 +23,7 @@ export function BlockEditor({
   pageId: string;
   onChange: (block: PageBlock) => void;
 }) {
+  if (block.type === "header") return <HeaderEditor block={block} onChange={onChange} />;
   if (block.type === "hero") return <HeroEditor block={block} onChange={onChange} />;
   if (block.type === "text") return <TextEditor block={block} onChange={onChange} />;
   if (block.type === "image") {

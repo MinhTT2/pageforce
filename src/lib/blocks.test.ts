@@ -12,6 +12,7 @@ import { pageSchemaValidator } from "./validators";
 import type { BlockType, PageSchema } from "@/types/blocks";
 
 const blockTypes: BlockType[] = [
+  "header",
   "hero",
   "text",
   "image",

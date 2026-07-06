@@ -48,6 +48,23 @@ const pageSettingsSchema = z.object({
   tokens: designTokensSchema.optional(),
 });
 
+const headerBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("header"),
+  props: z.object({
+    brandText: z.string(),
+    links: z.array(
+      z.object({
+        label: z.string(),
+        url: z.string(),
+      }),
+    ),
+    ctaLabel: z.string(),
+    ctaUrl: z.string(),
+    sticky: z.boolean(),
+  }),
+});
+
 const heroBlockSchema = z.object({
   ...blockBase,
   type: z.literal("hero"),
@@ -247,6 +264,7 @@ const footerBlockSchema = z.object({
 
 const blocksSchema = z.array(
   z.discriminatedUnion("type", [
+    headerBlockSchema,
     heroBlockSchema,
     textBlockSchema,
     imageBlockSchema,
@@ -287,8 +305,29 @@ export const pagePatchValidator = z
   .object({
     title: z.string().min(1).max(120).optional(),
     slug: z.string().min(1).max(80).optional(),
+    isHome: z.boolean().optional(),
+    headerMode: z.enum(["INHERIT", "CUSTOM", "HIDDEN"]).optional(),
+    footerMode: z.enum(["INHERIT", "CUSTOM", "HIDDEN"]).optional(),
+    headerSchema: pageSchemaValidator.nullable().optional(),
+    footerSchema: pageSchemaValidator.nullable().optional(),
     schema: pageSchemaValidator.optional(),
     lastKnownUpdatedAt: z.string().min(1).max(40).optional(),
+  })
+  .strict();
+
+export const siteCreateValidator = z
+  .object({
+    name: z.string().min(1).max(120).optional(),
+    template: z.string().min(1).max(80).optional(),
+  })
+  .strict();
+
+export const sitePatchValidator = z
+  .object({
+    name: z.string().min(1).max(120).optional(),
+    slug: z.string().min(1).max(80).optional(),
+    globalHeader: pageSchemaValidator.nullable().optional(),
+    globalFooter: pageSchemaValidator.nullable().optional(),
   })
   .strict();
 

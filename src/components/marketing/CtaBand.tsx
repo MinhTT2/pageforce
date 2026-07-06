@@ -16,7 +16,7 @@ export function CtaBand() {
         <div className="flex justify-center">
           <Button asChild size="lg" variant="secondary">
             <Link href="/login">
-              Log in / Sign up
+              Start building
               <ArrowRight />
             </Link>
           </Button>

@@ -13,21 +13,51 @@ enum PageStatus {
   PUBLISHED
 }
 
+enum SectionMode {
+  INHERIT
+  CUSTOM
+  HIDDEN
+}
+
+model Site {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  slug         String   @unique
+  globalHeader Json?
+  globalFooter Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  pages        Page[]
+
+  @@index([userId])
+}
+
 model Page {
   id              String     @id @default(cuid())
   userId          String
+  siteId          String
   title           String
-  slug            String     @unique
+  slug            String
+  legacySlug      String?    @unique
+  isHome          Boolean    @default(false)
   status          PageStatus @default(DRAFT)
   draftSchema     Json
   publishedSchema Json?
+  headerMode      SectionMode @default(INHERIT)
+  footerMode      SectionMode @default(INHERIT)
+  headerSchema    Json?
+  footerSchema    Json?
   publishedAt     DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
+  site            Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
   leadSubmissions LeadSubmission[]
 
   @@index([userId])
+  @@index([siteId])
   @@index([status, slug])
+  @@unique([siteId, slug])
 }
 
 model LeadSubmission {

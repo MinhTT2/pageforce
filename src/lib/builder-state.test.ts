@@ -6,8 +6,15 @@ import type { EditablePage } from "@/types/page";
 function makePage(blockCount = 3): EditablePage {
   return {
     id: "page-1",
+    siteId: "site-1",
+    siteName: "Demo Site",
+    siteSlug: "demo",
     title: "Launch",
     slug: "launch",
+    publicPath: "/s/demo/launch",
+    isHome: false,
+    headerMode: "INHERIT",
+    footerMode: "INHERIT",
     status: "PUBLISHED",
     publishedAt: null,
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -15,6 +22,17 @@ function makePage(blockCount = 3): EditablePage {
       version: 2,
       blocks: Array.from({ length: blockCount }, () => createBlock("text")),
       settings: defaultPageSettings,
+    },
+    headerSchema: null,
+    footerSchema: null,
+    site: {
+      id: "site-1",
+      name: "Demo Site",
+      slug: "demo",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      globalHeader: null,
+      globalFooter: null,
+      pages: [],
     },
   };
 }
@@ -29,6 +47,7 @@ describe("initialBuilderState", () => {
 
     expect(state.selectedBlockId).toBe(state.schema.blocks[0].id);
     expect(state.dirty).toBe(false);
+    expect(state.editVersion).toBe(0);
     expect(state.saveStatus).toBe("idle");
   });
 
@@ -330,6 +349,7 @@ describe("save lifecycle", () => {
       type: "saveSucceeded",
       page,
       requestedSlug: page.slug,
+      editVersion: saving.editVersion,
     });
 
     expect(next.dirty).toBe(false);
@@ -349,6 +369,7 @@ describe("save lifecycle", () => {
       type: "saveSucceeded",
       page,
       requestedSlug: page.slug,
+      editVersion: 0,
     });
 
     expect(next.status).toBe("DRAFT");
@@ -362,6 +383,7 @@ describe("save lifecycle", () => {
       type: "saveSucceeded",
       page,
       requestedSlug: page.slug,
+      editVersion: cleared.editVersion,
     });
 
     expect(next.selectedBlockId).toBeNull();
@@ -373,18 +395,61 @@ describe("save lifecycle", () => {
       type: "saveSucceeded",
       page,
       requestedSlug: "launch",
+      editVersion: 0,
     });
 
     expect(next.slug).toBe("launch-2");
-    expect(next.notice).toContain("/p/launch-2");
+    expect(next.notice).toContain("/s/demo/launch");
   });
 
   it("keeps dirty and reports the error on failure", () => {
     const dirtyState = builderReducer(makeState(), { type: "setTitle", value: "Renamed", at: 0 });
-    const next = builderReducer(dirtyState, { type: "saveFailed", message: "Could not save" });
+    const next = builderReducer(dirtyState, {
+      type: "saveFailed",
+      message: "Could not save",
+      editVersion: dirtyState.editVersion,
+    });
 
     expect(next.dirty).toBe(true);
+    expect(next.editVersion).toBe(dirtyState.editVersion);
     expect(next.saveStatus).toBe("error");
     expect(next.notice).toBe("Could not save");
+  });
+
+  it("increments editVersion for edits but not save lifecycle actions", () => {
+    const state = makeState();
+    const edited = builderReducer(state, { type: "setSlug", value: "New Page", at: 0 });
+    const saving = builderReducer(edited, { type: "saveStarted" });
+    const failed = builderReducer(saving, {
+      type: "saveFailed",
+      message: "Conflict",
+      editVersion: saving.editVersion,
+    });
+
+    expect(edited.editVersion).toBe(1);
+    expect(saving.editVersion).toBe(1);
+    expect(failed.editVersion).toBe(1);
+  });
+
+  it("ignores stale save responses after a newer edit", () => {
+    const firstEdit = builderReducer(makeState(), { type: "setTitle", value: "First", at: 0 });
+    const saving = builderReducer(firstEdit, { type: "saveStarted" });
+    const secondEdit = builderReducer(saving, { type: "setTitle", value: "Second", at: 10 });
+    const staleSuccess = builderReducer(secondEdit, {
+      type: "saveSucceeded",
+      page: { ...makePage(), title: "First" },
+      requestedSlug: "launch",
+      editVersion: firstEdit.editVersion,
+    });
+    const staleFailure = builderReducer(secondEdit, {
+      type: "saveFailed",
+      message: "Old conflict",
+      editVersion: firstEdit.editVersion,
+    });
+
+    expect(staleSuccess.title).toBe("Second");
+    expect(staleSuccess.dirty).toBe(true);
+    expect(staleFailure.notice).toBeNull();
+    expect(staleFailure.saveStatus).toBe("idle");
   });
 });

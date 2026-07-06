@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
-import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { normalizePageSchema } from "@/lib/blocks";
+import { pagePublicPath } from "@/lib/pages";
 import { prisma } from "@/lib/prisma";
 
 type PublicPageProps = {
@@ -13,7 +13,11 @@ export const dynamic = "force-dynamic";
 
 const getPublicPage = cache(async (slug: string) => {
   return prisma.page.findFirst({
-    where: { slug, status: "PUBLISHED" },
+    where: {
+      status: "PUBLISHED",
+      OR: [{ legacySlug: slug }, { slug }],
+    },
+    include: { site: { select: { slug: true } } },
   });
 });
 
@@ -57,11 +61,5 @@ export default async function PublicPage({ params }: PublicPageProps) {
     notFound();
   }
 
-  const backgroundColor = schema.settings?.tokens.backgroundColor ?? "#ffffff";
-
-  return (
-    <main className="min-h-screen" style={{ backgroundColor }}>
-      <BlockRenderer schema={schema} pageId={page.id} />
-    </main>
-  );
+  redirect(pagePublicPath(page.site.slug, page.slug, page.isHome));
 }

@@ -52,7 +52,7 @@ export async function SiteHeader() {
             <Button asChild>
               <Link href={authHref}>
                 <LogIn />
-                Log in / Sign up
+                Start building
               </Link>
             </Button>
           </nav>

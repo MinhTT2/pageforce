@@ -69,7 +69,7 @@ export const BlockPalette = memo(function BlockPalette({
   const hasMatches = visibleGroups.length > 0;
 
   return (
-    <aside className="flex min-h-0 flex-col overflow-hidden border-r border-border bg-card">
+    <div className="flex min-h-0 flex-col overflow-hidden bg-card">
       <div className="border-b border-border bg-card px-3.5 py-3.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -161,7 +161,7 @@ export const BlockPalette = memo(function BlockPalette({
           </div>
         )}
       </div>
-    </aside>
+    </div>
   );
 });
 

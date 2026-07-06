@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { normalizePageSchema } from "@/lib/blocks";
 import {
@@ -26,6 +27,16 @@ export async function GET(
   const { pageId } = await params;
   const page = await prisma.page.findFirst({
     where: { id: pageId, userId: user.id },
+    include: {
+      site: {
+        include: {
+          pages: {
+            include: { site: { select: { name: true, slug: true } } },
+            orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
+          },
+        },
+      },
+    },
   });
 
   if (!page) {
@@ -69,7 +80,14 @@ export async function PATCH(
 
   const page = await prisma.page.findFirst({
     where: { id: pageId, userId: user.id },
-    select: { id: true, slug: true, updatedAt: true },
+    select: {
+      id: true,
+      siteId: true,
+      slug: true,
+      isHome: true,
+      updatedAt: true,
+      site: { select: { slug: true } },
+    },
   });
 
   if (!page) {
@@ -86,10 +104,29 @@ export async function PATCH(
   }
 
   const normalizedSchema = data.schema ? normalizePageSchema(data.schema) : null;
+  const normalizedHeaderSchema = data.headerSchema
+    ? normalizePageSchema(data.headerSchema)
+    : data.headerSchema === null
+      ? null
+      : undefined;
+  const normalizedFooterSchema = data.footerSchema
+    ? normalizePageSchema(data.footerSchema)
+    : data.footerSchema === null
+      ? null
+      : undefined;
   const schema = normalizedSchema ? schemaToJson(normalizedSchema) : null;
   const publication = normalizedSchema ? pagePublicationData(normalizedSchema) : null;
   const updateData = {
     ...(data.title ? { title: data.title } : {}),
+    ...(typeof data.isHome === "boolean" ? { isHome: data.isHome } : {}),
+    ...(data.headerMode ? { headerMode: data.headerMode } : {}),
+    ...(data.footerMode ? { footerMode: data.footerMode } : {}),
+    ...(normalizedHeaderSchema !== undefined
+      ? { headerSchema: normalizedHeaderSchema ? schemaToJson(normalizedHeaderSchema) : Prisma.DbNull }
+      : {}),
+    ...(normalizedFooterSchema !== undefined
+      ? { footerSchema: normalizedFooterSchema ? schemaToJson(normalizedFooterSchema) : Prisma.DbNull }
+      : {}),
     ...(schema ? { draftSchema: schema } : {}),
     ...(publication
       ? {
@@ -99,20 +136,41 @@ export async function PATCH(
         }
       : {}),
   };
-  const updated = data.slug
-    ? await updatePageWithUniqueSlug(data.slug, pageId, (slug) =>
-        prisma.page.update({
-          where: { id: pageId },
-          data: { ...updateData, slug },
-        }),
-      )
-    : await prisma.page.update({
-        where: { id: pageId },
-        data: updateData,
+  const updated = await prisma.$transaction(async (tx) => {
+    if (data.isHome) {
+      await tx.page.updateMany({
+        where: { siteId: page.siteId, id: { not: pageId } },
+        data: { isHome: false },
       });
+    }
+
+    const write = (slug: string) =>
+      tx.page.update({
+        where: { id: pageId },
+        data: { ...updateData, slug },
+        include: {
+          site: {
+            include: {
+              pages: {
+                include: { site: { select: { name: true, slug: true } } },
+                orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
+              },
+            },
+          },
+        },
+      });
+
+    return data.slug
+      ? updatePageWithUniqueSlug(data.slug, pageId, page.siteId, write)
+      : write(page.slug);
+  });
 
   revalidatePath(`/p/${page.slug}`);
   revalidatePath(`/p/${updated.slug}`);
+  revalidatePath(`/s/${page.site.slug}`);
+  revalidatePath(`/s/${updated.site.slug}`);
+  if (!page.isHome) revalidatePath(`/s/${page.site.slug}/${page.slug}`);
+  if (!updated.isHome) revalidatePath(`/s/${updated.site.slug}/${updated.slug}`);
 
   return NextResponse.json(toEditablePage(updated));
 }
@@ -130,7 +188,7 @@ export async function DELETE(
   const { pageId } = await params;
   const page = await prisma.page.findFirst({
     where: { id: pageId, userId: user.id },
-    select: { id: true, slug: true },
+    select: { id: true, slug: true, isHome: true, site: { select: { slug: true } } },
   });
 
   if (!page) {
@@ -139,6 +197,8 @@ export async function DELETE(
 
   await prisma.page.delete({ where: { id: pageId } });
   revalidatePath(`/p/${page.slug}`);
+  revalidatePath(`/s/${page.site.slug}`);
+  if (!page.isHome) revalidatePath(`/s/${page.site.slug}/${page.slug}`);
 
   return NextResponse.json({ ok: true });
 }

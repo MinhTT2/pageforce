@@ -22,11 +22,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { blockLabels, createBlock, defaultPageSettings } from "@/lib/blocks";
 import { builderReducer, initialBuilderState } from "@/lib/builder-state";
 import { getPageTemplate, pageTemplates, type PageTemplateKey } from "@/lib/templates";
-import type { BlockType, DesignTokens, PageBlock, PageSettings } from "@/types/blocks";
+import { cn } from "@/lib/utils";
+import type { BlockType, DesignTokens, PageBlock, PageSchema, PageSettings, SectionMode } from "@/types/blocks";
 import type { EditablePage } from "@/types/page";
 import { BlockPalette, PaletteDragPreview } from "./BlockPalette";
 import { BuilderCanvas, type DropIndicator } from "./BuilderCanvas";
 import { BuilderHeader } from "./BuilderHeader";
+import { BuilderPageNavigator } from "./BuilderPageNavigator";
+import { BuilderPageSettingsSidebar } from "./BuilderPageSettingsSidebar";
 import { blockOptions } from "./block-meta";
 import { Inspector } from "./Inspector";
 import {
@@ -70,15 +73,24 @@ function sameIndicator(a: DropIndicator, b: DropIndicator): boolean {
 
 export function BuilderShell({ page }: { page: EditablePage }) {
   const [state, dispatch] = useReducer(builderReducer, page, initialBuilderState);
+  const [activePage, setActivePage] = useState(page);
   const [previewMode, setPreviewMode] = useState(false);
+  const [leftMode, setLeftMode] = useState<"blocks" | "pages" | "pageSettings">("blocks");
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [activeDrag, setActiveDrag] = useState<ActiveDrag>(null);
   const [dropIndicator, setDropIndicator] = useState<DropIndicator>(null);
+  const [sitePages, setSitePages] = useState(page.site.pages);
+  const [switchingPageId, setSwitchingPageId] = useState<string | null>(null);
   const publicOrigin = usePublicOrigin();
 
   const settings = state.schema.settings ?? defaultPageSettings;
   const publicUrl = useMemo(
-    () => (publicOrigin ? `${publicOrigin}/p/${state.slug}` : `/p/${state.slug}`),
-    [publicOrigin, state.slug],
+    () => {
+      const path = state.isHome ? `/s/${activePage.site.slug}` : `/s/${activePage.site.slug}/${state.slug}`;
+      return publicOrigin ? `${publicOrigin}${path}` : path;
+    },
+    [activePage.site.slug, publicOrigin, state.isHome, state.slug],
   );
   const selectedBlock = useMemo(
     () => state.schema.blocks.find((block) => block.id === state.selectedBlockId) ?? null,
@@ -95,6 +107,23 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     state.saveStatus !== "error";
 
   const blockIdsRef = useRef<string[]>([]);
+  const pageIdRef = useRef(page.id);
+  const lastAutosavedVersionRef = useRef(0);
+  const switchRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (pageIdRef.current === page.id) {
+      return;
+    }
+
+    pageIdRef.current = page.id;
+    setActivePage(page);
+    dispatch({ type: "loadPage", page });
+    setSitePages(page.site.pages);
+    setActiveDrag(null);
+    setDropIndicator(null);
+    setSwitchingPageId(null);
+  }, [page]);
 
   useEffect(() => {
     blockIdsRef.current = state.schema.blocks.map((block) => block.id);
@@ -168,21 +197,28 @@ export function BuilderShell({ page }: { page: EditablePage }) {
 
   const savePage = useCallback(async () => {
     const current = stateRef.current;
+    const currentPageId = pageIdRef.current;
 
     if (!current.dirty || current.saveStatus === "saving") {
       return;
     }
 
     const requestedSlug = current.slug;
+    const editVersion = current.editVersion;
     dispatch({ type: "saveStarted" });
 
     try {
-      const response = await fetch(`/api/pages/${page.id}`, {
+      const response = await fetch(`/api/pages/${currentPageId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: current.title,
           slug: current.slug,
+          isHome: current.isHome,
+          headerMode: current.headerMode,
+          footerMode: current.footerMode,
+          headerSchema: current.headerSchema,
+          footerSchema: current.footerSchema,
           schema: current.schema,
           lastKnownUpdatedAt: current.updatedAt,
         }),
@@ -190,14 +226,76 @@ export function BuilderShell({ page }: { page: EditablePage }) {
       const payload = (await response.json().catch(() => null)) as SaveResponse | null;
 
       if (response.ok && payload) {
-        dispatch({ type: "saveSucceeded", page: payload, requestedSlug });
+        dispatch({ type: "saveSucceeded", page: payload, requestedSlug, editVersion });
+        setActivePage(payload);
+        setSitePages(payload.site.pages);
       } else {
-        dispatch({ type: "saveFailed", message: payload?.error ?? "Could not save page" });
+        dispatch({
+          type: "saveFailed",
+          message: payload?.error ?? "Could not save page",
+          editVersion,
+        });
       }
     } catch {
-      dispatch({ type: "saveFailed", message: "Could not save page" });
+      dispatch({ type: "saveFailed", message: "Could not save page", editVersion });
     }
-  }, [page.id]);
+  }, []);
+
+  const switchPage = useCallback(async (pageId: string) => {
+    if (pageId === pageIdRef.current || switchingPageId) {
+      return;
+    }
+
+    if (
+      stateRef.current.dirty &&
+      !window.confirm("You have unsaved changes. Switch pages anyway?")
+    ) {
+      return;
+    }
+
+    const requestId = switchRequestIdRef.current + 1;
+    switchRequestIdRef.current = requestId;
+    setSwitchingPageId(pageId);
+
+    try {
+      const response = await fetch(`/api/pages/${pageId}`);
+      const payload = (await response.json().catch(() => null)) as SaveResponse | null;
+
+      if (switchRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      if (!response.ok || !payload || payload.error) {
+        dispatch({
+          type: "saveFailed",
+          message: payload?.error ?? "Could not open page",
+          editVersion: stateRef.current.editVersion,
+        });
+        return;
+      }
+
+      pageIdRef.current = payload.id;
+      setActivePage(payload);
+      dispatch({ type: "loadPage", page: payload });
+      setSitePages(payload.site.pages);
+      setActiveDrag(null);
+      setDropIndicator(null);
+      lastAutosavedVersionRef.current = 0;
+      window.history.pushState(null, "", `/builder/site/${payload.site.id}?page=${payload.id}`);
+    } catch {
+      if (switchRequestIdRef.current === requestId) {
+        dispatch({
+          type: "saveFailed",
+          message: "Could not open page",
+          editVersion: stateRef.current.editVersion,
+        });
+      }
+    } finally {
+      if (switchRequestIdRef.current === requestId) {
+        setSwitchingPageId(null);
+      }
+    }
+  }, [switchingPageId]);
 
   const addBlock = useCallback((type: BlockType, index?: number) => {
     const blocks = stateRef.current.schema.blocks;
@@ -229,8 +327,24 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     [],
   );
   const clearSelection = useCallback(() => dispatch({ type: "selectBlock", id: null }), []);
-  const setTitle = useCallback((value: string) => dispatch({ type: "setTitle", value, at: Date.now() }), []);
   const setSlug = useCallback((value: string) => dispatch({ type: "setSlug", value, at: Date.now() }), []);
+  const setIsHome = useCallback((value: boolean) => dispatch({ type: "setIsHome", value, at: Date.now() }), []);
+  const setHeaderMode = useCallback(
+    (value: SectionMode) => dispatch({ type: "setHeaderMode", value, at: Date.now() }),
+    [],
+  );
+  const setFooterMode = useCallback(
+    (value: SectionMode) => dispatch({ type: "setFooterMode", value, at: Date.now() }),
+    [],
+  );
+  const setHeaderSchema = useCallback(
+    (schema: PageSchema | null) => dispatch({ type: "setHeaderSchema", schema, at: Date.now() }),
+    [],
+  );
+  const setFooterSchema = useCallback(
+    (schema: PageSchema | null) => dispatch({ type: "setFooterSchema", schema, at: Date.now() }),
+    [],
+  );
   const updateSettings = useCallback(
     (patch: Partial<Omit<PageSettings, "tokens">>) =>
       dispatch({ type: "updateSettings", patch, at: Date.now() }),
@@ -253,6 +367,42 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     dispatch({ type: "moveBlock", from, to: from + delta });
   }, []);
   const togglePreview = useCallback(() => setPreviewMode((current) => !current), []);
+  const showBlocks = useCallback(() => {
+    setLeftMode("blocks");
+    setLeftSidebarOpen(true);
+  }, []);
+  const togglePages = useCallback(
+    () => {
+      setLeftSidebarOpen(true);
+      setLeftMode((current) => (current === "pages" ? "blocks" : "pages"));
+    },
+    [],
+  );
+  const togglePageSettings = useCallback(
+    () => {
+      setLeftSidebarOpen(true);
+      setLeftMode((current) => (current === "pageSettings" ? "blocks" : "pageSettings"));
+    },
+    [],
+  );
+  const toggleRightSidebar = useCallback(() => setRightSidebarOpen((current) => !current), []);
+
+  useEffect(() => {
+    if (
+      !state.dirty ||
+      state.saveStatus === "saving" ||
+      state.editVersion === lastAutosavedVersionRef.current
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      lastAutosavedVersionRef.current = stateRef.current.editVersion;
+      void savePage();
+    }, 1500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [savePage, state.dirty, state.editVersion, state.saveStatus]);
 
   useSaveShortcut(savePage);
   useUndoRedoShortcuts(undo, redo);
@@ -346,18 +496,22 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     <TooltipProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-canvas text-canvas-foreground">
         <BuilderHeader
-          title={state.title}
           dirty={state.dirty}
           saveStatus={state.saveStatus}
           notice={state.notice}
           previewMode={previewMode}
-          publicUrl={publicUrl}
-          isLive={isLive}
-          onTitleChange={setTitle}
+          blocksOpen={leftMode === "blocks"}
+          pagesOpen={leftMode === "pages"}
+          pageSettingsOpen={leftMode === "pageSettings"}
+          rightSidebarOpen={rightSidebarOpen}
           canUndo={state.past.length > 0}
           canRedo={state.future.length > 0}
           onUndo={undo}
           onRedo={redo}
+          onShowBlocks={showBlocks}
+          onTogglePages={togglePages}
+          onTogglePageSettings={togglePageSettings}
+          onToggleRightSidebar={toggleRightSidebar}
           onTogglePreview={togglePreview}
           onSave={savePage}
         />
@@ -372,7 +526,17 @@ export function BuilderShell({ page }: { page: EditablePage }) {
               </span>
             </div>
             <div className="mx-auto max-w-5xl overflow-hidden rounded-lg border border-border bg-white shadow-lg shadow-primary/5">
-              <BlockRenderer schema={state.schema} />
+              <BlockRenderer
+                schema={composePreviewSchema({
+                  pageSchema: state.schema,
+                  siteHeader: activePage.site.globalHeader,
+                  siteFooter: activePage.site.globalFooter,
+                  pageHeader: state.headerSchema,
+                  pageFooter: state.footerSchema,
+                  headerMode: state.headerMode,
+                  footerMode: state.footerMode,
+                })}
+              />
             </div>
           </main>
         ) : (
@@ -385,8 +549,66 @@ export function BuilderShell({ page }: { page: EditablePage }) {
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
           >
-            <main className="grid min-h-0 flex-1 grid-cols-1 overflow-auto lg:grid-cols-[280px_minmax(0,1fr)_340px] lg:overflow-hidden">
-              <BlockPalette onAdd={addBlock} />
+            <main
+              className={cn(
+                "grid min-h-0 flex-1 grid-cols-1 overflow-auto lg:overflow-hidden",
+                leftSidebarOpen &&
+                  rightSidebarOpen &&
+                  leftMode === "pages" &&
+                  "lg:grid-cols-[300px_minmax(0,1fr)_340px]",
+                leftSidebarOpen &&
+                  rightSidebarOpen &&
+                  leftMode !== "pages" &&
+                  "lg:grid-cols-[360px_minmax(0,1fr)_340px]",
+                leftSidebarOpen &&
+                  !rightSidebarOpen &&
+                  leftMode === "pages" &&
+                  "lg:grid-cols-[300px_minmax(0,1fr)]",
+                leftSidebarOpen &&
+                  !rightSidebarOpen &&
+                  leftMode !== "pages" &&
+                  "lg:grid-cols-[360px_minmax(0,1fr)]",
+                !leftSidebarOpen && rightSidebarOpen && "lg:grid-cols-[minmax(0,1fr)_340px]",
+                !leftSidebarOpen && !rightSidebarOpen && "lg:grid-cols-1",
+              )}
+            >
+              {leftSidebarOpen && leftMode === "pageSettings" ? (
+                <BuilderPageSettingsSidebar
+                  siteId={activePage.site.id}
+                  siteGlobalHeader={activePage.site.globalHeader}
+                  siteGlobalFooter={activePage.site.globalFooter}
+                  settings={settings}
+                  slug={state.slug}
+                  isHome={state.isHome}
+                  headerMode={state.headerMode}
+                  footerMode={state.footerMode}
+                  headerSchema={state.headerSchema}
+                  footerSchema={state.footerSchema}
+                  publicUrl={publicUrl}
+                  isLive={isLive}
+                  onSlugChange={setSlug}
+                  onIsHomeChange={setIsHome}
+                  onHeaderModeChange={setHeaderMode}
+                  onFooterModeChange={setFooterMode}
+                  onHeaderSchemaChange={setHeaderSchema}
+                  onFooterSchemaChange={setFooterSchema}
+                  onSettingsChange={updateSettings}
+                  onTokensChange={updateTokens}
+                />
+              ) : leftSidebarOpen && leftMode === "pages" ? (
+                <BuilderPageNavigator
+                  siteId={activePage.site.id}
+                  pages={sitePages}
+                  currentPageId={activePage.id}
+                  switchingPageId={switchingPageId}
+                  onSelectPage={switchPage}
+                  onClose={() => setLeftMode("blocks")}
+                />
+              ) : leftSidebarOpen ? (
+                <aside className="min-h-0 overflow-auto border-r border-border bg-card">
+                  <BlockPalette onAdd={addBlock} />
+                </aside>
+              ) : null}
               <BuilderCanvas
                 schema={state.schema}
                 selectedBlockId={state.selectedBlockId}
@@ -400,21 +622,18 @@ export function BuilderShell({ page }: { page: EditablePage }) {
                 onAddBlock={addBlock}
                 onApplyTemplate={applyTemplate}
               />
-              <Inspector
-                selectedBlock={selectedBlock}
-                pageId={page.id}
-                settings={settings}
-                slug={state.slug}
-                publicUrl={publicUrl}
-                isLive={isLive}
-                onUpdateBlock={updateBlock}
-                onDuplicateBlock={duplicateBlock}
-                onDeleteBlock={deleteBlock}
-                onClearSelection={clearSelection}
-                onSlugChange={setSlug}
-                onSettingsChange={updateSettings}
-                onTokensChange={updateTokens}
-              />
+              {rightSidebarOpen ? (
+                <Inspector
+                  selectedBlock={selectedBlock}
+                  pageId={activePage.id}
+                  settings={settings}
+                  onUpdateBlock={updateBlock}
+                  onDuplicateBlock={duplicateBlock}
+                  onDeleteBlock={deleteBlock}
+                  onClearSelection={clearSelection}
+                  onClose={() => setRightSidebarOpen(false)}
+                />
+              ) : null}
             </main>
             <DragOverlay>
               {activeDrag?.source === "palette" ? (
@@ -441,6 +660,34 @@ function CanvasDragPreview({ block }: { block: PageBlock }) {
       {blockLabels[block.type]}
     </div>
   );
+}
+
+function composePreviewSchema({
+  pageSchema,
+  siteHeader,
+  siteFooter,
+  pageHeader,
+  pageFooter,
+  headerMode,
+  footerMode,
+}: {
+  pageSchema: PageSchema;
+  siteHeader: PageSchema | null;
+  siteFooter: PageSchema | null;
+  pageHeader: PageSchema | null;
+  pageFooter: PageSchema | null;
+  headerMode: SectionMode;
+  footerMode: SectionMode;
+}): PageSchema {
+  const headerBlocks =
+    headerMode === "HIDDEN" ? [] : headerMode === "CUSTOM" ? pageHeader?.blocks ?? [] : siteHeader?.blocks ?? [];
+  const footerBlocks =
+    footerMode === "HIDDEN" ? [] : footerMode === "CUSTOM" ? pageFooter?.blocks ?? [] : siteFooter?.blocks ?? [];
+
+  return {
+    ...pageSchema,
+    blocks: [...headerBlocks, ...pageSchema.blocks, ...footerBlocks],
+  };
 }
 
 function buildAnnouncements(blocks: PageBlock[]): Announcements {

@@ -29,6 +29,7 @@ type EditPageDialogProps = {
 type EditPageResponse = {
   error?: string;
   slug?: string;
+  publicPath?: string;
 };
 
 export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) {
@@ -66,7 +67,9 @@ export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) 
 
     if (payload.slug && payload.slug !== requestedSlug) {
       setSlug(payload.slug);
-      setNotice(`That slug was taken. This page is now published at /p/${payload.slug}.`);
+      setNotice(
+        `That slug was taken. This page is now published at ${payload.publicPath ?? payload.slug}.`,
+      );
       router.refresh();
       return;
     }

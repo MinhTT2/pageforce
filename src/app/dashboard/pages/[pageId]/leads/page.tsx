@@ -34,7 +34,7 @@ export default async function PageLeadsPage({ params }: PageLeadsProps) {
 
   const page = await prisma.page.findFirst({
     where: { id: pageId, userId: user.id },
-    select: { id: true, title: true, slug: true },
+    select: { id: true, title: true, slug: true, isHome: true, site: { select: { slug: true } } },
   });
 
   if (!page) {
@@ -120,7 +120,9 @@ export default async function PageLeadsPage({ params }: PageLeadsProps) {
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Add a Lead Form block with built-in capture, then share your public page at{" "}
-                  <span className="font-medium text-foreground">/p/{page.slug}</span>.
+                  <span className="font-medium text-foreground">
+                    {page.isHome ? `/s/${page.site.slug}` : `/s/${page.site.slug}/${page.slug}`}
+                  </span>.
                 </p>
               </div>
             </div>

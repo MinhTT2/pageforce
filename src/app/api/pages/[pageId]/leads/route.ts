@@ -3,7 +3,7 @@ import { normalizePageSchema } from "@/lib/blocks";
 import { createLeadSubmission, parseLeadBody } from "@/lib/leads";
 import { prisma } from "@/lib/prisma";
 
-// Public endpoint: visitors on /p/[slug] submit lead forms here, so there is
+// Public endpoint: visitors on public /s routes submit lead forms here, so there is
 // no auth. The page id is the only linkage; abuse is bounded by the body-size
 // cap, the strict payload schema, and the honeypot field.
 export async function POST(

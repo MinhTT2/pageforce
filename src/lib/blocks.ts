@@ -53,6 +53,7 @@ export const emptyPageSchema: PageSchema = {
 };
 
 export const blockLabels: Record<BlockType, string> = {
+  header: "Header",
   hero: "Hero",
   text: "Text",
   image: "Image",
@@ -70,6 +71,24 @@ export const blockLabels: Record<BlockType, string> = {
 
 export function createBlock(type: BlockType): PageBlock {
   const id = crypto.randomUUID();
+
+  if (type === "header") {
+    return {
+      id,
+      type,
+      props: {
+        brandText: "Pageforce",
+        links: [
+          { label: "Products", url: "#products" },
+          { label: "Pricing", url: "#pricing" },
+          { label: "Contact", url: "#contact" },
+        ],
+        ctaLabel: "Buy now",
+        ctaUrl: "#",
+        sticky: true,
+      },
+    };
+  }
 
   if (type === "hero") {
     return {

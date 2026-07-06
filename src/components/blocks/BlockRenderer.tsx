@@ -26,7 +26,7 @@ type BlockRendererProps = {
   schema: PageSchema;
   renderBlockWrapper?: (block: PageBlock, children: ReactNode) => ReactNode;
   emptyActions?: ReactNode;
-  // Only /p/[slug] passes this; its presence is what lets lead forms submit
+  // Only public site routes pass this; its presence is what lets lead forms submit
   // for real instead of rendering the builder's inert preview form.
   pageId?: string;
 };
@@ -65,7 +65,7 @@ function resolveSection(block: PageBlock, defaults: SectionDefaults) {
 }
 
 // memo keeps builder keystrokes from re-rendering the whole preview; it is a
-// no-op when this renders on the server for /p/[slug].
+// no-op when this renders on the server for public site routes.
 export const BlockRenderer = memo(function BlockRenderer({
   schema,
   renderBlockWrapper,
@@ -117,6 +117,45 @@ const RenderedBlock = memo(function RenderedBlock({
   block: PageBlock;
   pageId?: string;
 }) {
+  if (block.type === "header") {
+    const { sectionStyle } = resolveSection(block, {
+      paddingY: "py-0",
+      width: "wide",
+    });
+
+    return (
+      <header
+        className={cn(
+          "pf-border border-b bg-(--pf-bg)/95 px-6 backdrop-blur",
+          block.props.sticky && "sticky top-0 z-30",
+        )}
+        style={sectionStyle}
+      >
+        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-3 py-3">
+          <a href="#" className="pf-heading text-base font-semibold">
+            {block.props.brandText}
+          </a>
+          <nav className="pf-muted flex flex-wrap items-center justify-end gap-4 text-sm" aria-label="Site navigation">
+            {block.props.links.map((link, index) => (
+              <a
+                key={`${link.label}-${index}`}
+                href={link.url || "#"}
+                className="transition hover:text-(--pf-text)"
+              >
+                {link.label}
+              </a>
+            ))}
+            {block.props.ctaLabel ? (
+              <CtaLink href={block.props.ctaUrl} variant="primary">
+                {block.props.ctaLabel}
+              </CtaLink>
+            ) : null}
+          </nav>
+        </div>
+      </header>
+    );
+  }
+
   if (block.type === "hero") {
     const { paddingClass, widthClass, align, sectionStyle } = resolveSection(block, {
       paddingY: "py-[calc(var(--pf-section-y)*1.2)]",

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { emptyPageSchema, tokenPresets } from "./blocks";
-import { getPageTemplate, pageTemplates, resolveTemplateSchema } from "./templates";
+import {
+  buildSiteHeaderSchema,
+  getPageTemplate,
+  pageTemplates,
+  resolveSiteTemplate,
+  resolveTemplateSchema,
+  siteTemplates,
+} from "./templates";
 import { pageSchemaValidator } from "./validators";
 
 // Must match iconMap in src/components/blocks/BlockRenderer.tsx — unknown
@@ -67,5 +74,50 @@ describe("resolveTemplateSchema", () => {
 
   it.each(["nope", undefined, 42, null, {}])("falls back to blank for %s", (key) => {
     expect(resolveTemplateSchema(key)).toEqual(emptyPageSchema);
+  });
+});
+
+describe("siteTemplates", () => {
+  it("has unique keys and includes blank first", () => {
+    const keys = siteTemplates.map((template) => template.key);
+
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys[0]).toBe("blank-site");
+  });
+
+  it.each(siteTemplates)("builds valid page schemas for $key", (template) => {
+    expect(template.pages.length).toBeGreaterThan(0);
+
+    for (const page of template.pages) {
+      expect(page.title).toBeTruthy();
+      expect(pageSchemaValidator.safeParse(page.schema()).success).toBe(true);
+    }
+  });
+
+  it("falls back to blank site for unknown keys", () => {
+    expect(resolveSiteTemplate("missing").key).toBe("blank-site");
+  });
+
+  it("builds a valid global header with site page links", () => {
+    const schema = buildSiteHeaderSchema({
+      brandText: "Demo",
+      siteSlug: "demo",
+      pages: [
+        { title: "Home", slug: "home", isHome: true },
+        { title: "Pricing", slug: "pricing", isHome: false },
+      ],
+    });
+
+    expect(pageSchemaValidator.safeParse(schema).success).toBe(true);
+    expect(schema.blocks[0]).toMatchObject({
+      type: "header",
+      props: {
+        brandText: "Demo",
+        links: [
+          { label: "Home", url: "/s/demo" },
+          { label: "Pricing", url: "/s/demo/pricing" },
+        ],
+      },
+    });
   });
 });

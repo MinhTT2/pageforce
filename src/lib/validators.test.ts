@@ -9,6 +9,7 @@ import {
 import type { BlockType } from "@/types/blocks";
 
 const blockTypes: BlockType[] = [
+  "header",
   "hero",
   "text",
   "image",

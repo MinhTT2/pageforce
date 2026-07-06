@@ -1,4 +1,5 @@
 export type BlockType =
+  | "header"
   | "hero"
   | "text"
   | "image"
@@ -56,9 +57,25 @@ export type PageSettings = {
   tokens: DesignTokens;
 };
 
+export type SectionMode = "INHERIT" | "CUSTOM" | "HIDDEN";
+
 type BlockBase = {
   id: string;
   style?: BlockStyle;
+};
+
+export type HeaderBlock = BlockBase & {
+  type: "header";
+  props: {
+    brandText: string;
+    links: Array<{
+      label: string;
+      url: string;
+    }>;
+    ctaLabel: string;
+    ctaUrl: string;
+    sticky: boolean;
+  };
 };
 
 export type HeroBlock = BlockBase & {
@@ -220,6 +237,7 @@ export type FooterBlock = BlockBase & {
 };
 
 export type PageBlock =
+  | HeaderBlock
   | HeroBlock
   | TextBlock
   | ImageBlock

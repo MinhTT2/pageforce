@@ -7,7 +7,7 @@ import type { LeadFormBlock } from "@/types/blocks";
 type LeadCaptureFormProps = {
   blockId: string;
   props: LeadFormBlock["props"];
-  // Absent in the builder (canvas and preview mode); only /p/[slug] supplies
+  // Absent in the builder (canvas and preview mode); only public /s routes supply
   // it, which is what arms real submission.
   pageId?: string;
 };

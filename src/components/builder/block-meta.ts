@@ -2,6 +2,7 @@ import {
   BadgeDollarSign,
   CircleHelp,
   GalleryHorizontal,
+  PanelTop,
   Image as ImageIcon,
   LayoutTemplate,
   ListChecks,
@@ -20,7 +21,7 @@ export const blockGroups: Array<{
   label: string;
   blocks: BlockType[];
 }> = [
-  { label: "Structure", blocks: ["hero", "text", "image", "carousel", "features"] },
+  { label: "Structure", blocks: ["header", "hero", "text", "image", "carousel", "features"] },
   { label: "Conversion", blocks: ["cta", "button", "leadForm", "pricing", "products"] },
   { label: "Trust", blocks: ["testimonials", "faq"] },
   { label: "Utility", blocks: ["footer"] },
@@ -33,6 +34,10 @@ export const blockOptions: Record<
     description: string;
   }
 > = {
+  header: {
+    icon: PanelTop,
+    description: "Brand navigation with links and a CTA.",
+  },
   hero: {
     icon: LayoutTemplate,
     description: "Top section with headline and CTA.",

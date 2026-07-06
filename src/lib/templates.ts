@@ -17,6 +17,33 @@ export type PageTemplate = {
   build: () => PageSchema;
 };
 
+export type SiteTemplateKey =
+  | "blank-site"
+  | "saas-site"
+  | "agency-site"
+  | "commerce-site"
+  | "event-site"
+  | "launch-site";
+
+export type SiteTemplatePage = {
+  title: string;
+  schema: () => PageSchema;
+};
+
+export type SiteTemplate = {
+  key: SiteTemplateKey;
+  name: string;
+  description: string;
+  brandText: string;
+  pages: SiteTemplatePage[];
+};
+
+export type SiteNavigationPage = {
+  title: string;
+  slug: string;
+  isHome: boolean;
+};
+
 // Feature-item icons must exist in BlockRenderer's iconMap
 // (BadgeCheck, Check, Globe, MessageCircle, Sparkles, Star, Zap) —
 // unknown names silently fall back to Sparkles.
@@ -43,6 +70,35 @@ function buildSchema(theme: keyof typeof tokenPresets, blocks: PageBlock[]): Pag
       tokens: { ...tokenPresets[theme] },
     },
   };
+}
+
+export function buildSiteHeaderSchema({
+  brandText,
+  pages,
+  siteSlug = "",
+  urlForPage,
+}: {
+  brandText: string;
+  pages: SiteNavigationPage[];
+  siteSlug?: string;
+  urlForPage?: (page: SiteNavigationPage, index: number) => string;
+}): PageSchema {
+  const links = pages.slice(0, 6).map((page, index) => ({
+    label: page.isHome ? "Home" : page.title,
+    url:
+      urlForPage?.(page, index) ??
+      (siteSlug ? (page.isHome ? `/s/${siteSlug}` : `/s/${siteSlug}/${page.slug}`) : "#"),
+  }));
+
+  return buildSchema("clean", [
+    buildBlock("header", {
+      brandText,
+      links,
+      ctaLabel: links.length > 1 ? "Contact" : "",
+      ctaUrl: links.find((link) => link.label.toLowerCase() === "contact")?.url ?? "#",
+      sticky: true,
+    }),
+  ]);
 }
 
 function buildProductLaunch(): PageSchema {
@@ -609,6 +665,152 @@ function buildCommerceCollection(): PageSchema {
   ]);
 }
 
+function buildSaasProductPage(): PageSchema {
+  return buildSchema("bold", [
+    buildBlock("hero", {
+      heading: "A clearer workflow for every growth team",
+      subheading:
+        "See how MetricFlow turns scattered usage signals into account priorities, lifecycle campaigns, and shared revenue visibility.",
+      buttonText: "Book a demo",
+      buttonUrl: "#",
+    }),
+    buildBlock("features", {
+      eyebrow: "Platform",
+      heading: "Everything in one operating view",
+      description: "Connect the signals that usually live across analytics, CRM, and support tools.",
+      items: [
+        {
+          title: "Unified customer health",
+          description: "Spot expansion and save-risk accounts before pipeline slips.",
+          icon: "Star",
+        },
+        {
+          title: "Campaign triggers",
+          description: "Launch onboarding, adoption, and renewal plays from live behavior.",
+          icon: "Zap",
+        },
+        {
+          title: "Team dashboards",
+          description: "Give sales, success, and marketing one shared source of truth.",
+          icon: "Globe",
+        },
+      ],
+    }),
+    buildBlock("cta", {
+      headline: "Tour the platform",
+      supportingText: "Walk through the dashboard with a product specialist.",
+      primaryLabel: "Schedule demo",
+      secondaryLabel: "See pricing",
+    }),
+    buildBlock("footer", {
+      brandText: "MetricFlow",
+    }),
+  ]);
+}
+
+function buildContactPage(theme: keyof typeof tokenPresets, brandText: string): PageSchema {
+  return buildSchema(theme, [
+    buildBlock("hero", {
+      heading: "Let's talk",
+      subheading: "Tell us what you are building and we will point you to the best next step.",
+      buttonText: "Send a note",
+      buttonUrl: "#contact",
+    }),
+    buildBlock("leadForm", {
+      headline: "Start the conversation",
+      description: "Share your goals, timeline, and anything useful about the project.",
+      submitLabel: "Send request",
+    }),
+    buildBlock("faq", {
+      heading: "Before you reach out",
+      items: [
+        {
+          question: "How quickly will you reply?",
+          answer: "Most requests receive a thoughtful reply within one business day.",
+        },
+        {
+          question: "Can we start with a small scope?",
+          answer: "Yes. A focused first page or consultation is often the fastest way to begin.",
+        },
+      ],
+    }),
+    buildBlock("footer", {
+      brandText,
+    }),
+  ]);
+}
+
+function buildAgencyWorkPage(): PageSchema {
+  return buildSchema("clean", [
+    buildBlock("hero", {
+      heading: "Selected launch systems",
+      subheading:
+        "A look at the positioning, page structures, and campaign assets we create for focused B2B teams.",
+      buttonText: "Plan a project",
+      buttonUrl: "#",
+    }),
+    buildBlock("features", {
+      eyebrow: "Case studies",
+      heading: "Work that clarifies the sale",
+      description: "Each engagement turns a fuzzy offer into a page and message system that can ship.",
+      items: [
+        {
+          title: "Forma Cloud",
+          description: "Repositioned a technical platform for executive buyers before launch.",
+          icon: "Sparkles",
+        },
+        {
+          title: "Tempo Supply",
+          description: "Built a campaign page system for a new operations product line.",
+          icon: "BadgeCheck",
+        },
+        {
+          title: "Lumen Works",
+          description: "Turned founder-led sales notes into reusable service pages.",
+          icon: "MessageCircle",
+        },
+      ],
+    }),
+    buildBlock("testimonials", {
+      heading: "Clients come back when the stakes are high",
+      items: [
+        {
+          quote: "The page gave our team language we could use across sales and marketing.",
+          author: "Iris Cole",
+          role: "CEO, Lumen Works",
+        },
+      ],
+    }),
+    buildBlock("footer", {
+      brandText: "Northline Studio",
+    }),
+  ]);
+}
+
+function buildCommerceAboutPage(): PageSchema {
+  return buildSchema("warm", [
+    buildBlock("hero", {
+      heading: "Objects for calmer workdays",
+      subheading:
+        "Hearth Desk Co. makes warm, useful office pieces for people who care how their space feels.",
+      buttonText: "Shop the collection",
+      buttonUrl: "#",
+    }),
+    buildBlock("text", {
+      content:
+        "We design small-batch desk essentials with natural materials, simple forms, and details that make everyday work feel more intentional.",
+      align: "center",
+    }),
+    buildBlock("image", {
+      src: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=1600&auto=format&fit=crop",
+      alt: "A warm organized desk",
+    }),
+    buildBlock("footer", {
+      brandText: "Hearth Desk Co.",
+    }),
+  ]);
+}
+
 export const pageTemplates: PageTemplate[] = [
   {
     key: "blank",
@@ -654,6 +856,76 @@ export const pageTemplates: PageTemplate[] = [
   },
 ];
 
+export const siteTemplates: SiteTemplate[] = [
+  {
+    key: "blank-site",
+    name: "Blank website",
+    description: "Start with one empty home page.",
+    brandText: "My Site",
+    pages: [{ title: "Home", schema: () => buildSchema("clean", []) }],
+  },
+  {
+    key: "saas-site",
+    name: "SaaS website",
+    description: "Home, product, pricing, and contact pages for a software business.",
+    brandText: "MetricFlow",
+    pages: [
+      { title: "Home", schema: buildSaasGrowth },
+      { title: "Product", schema: buildSaasProductPage },
+      { title: "Pricing", schema: buildProductLaunch },
+      { title: "Contact", schema: () => buildContactPage("bold", "MetricFlow") },
+    ],
+  },
+  {
+    key: "agency-site",
+    name: "Agency website",
+    description: "Home, work, services, and contact pages for a service business.",
+    brandText: "Northline Studio",
+    pages: [
+      { title: "Home", schema: buildAgencyService },
+      { title: "Work", schema: buildAgencyWorkPage },
+      { title: "Services", schema: buildProductLaunch },
+      { title: "Contact", schema: () => buildContactPage("clean", "Northline Studio") },
+    ],
+  },
+  {
+    key: "commerce-site",
+    name: "Commerce website",
+    description: "Home, collection, about, and contact pages for a product brand.",
+    brandText: "Hearth Desk Co.",
+    pages: [
+      { title: "Home", schema: buildCommerceCollection },
+      { title: "Collection", schema: buildSalesPromo },
+      { title: "About", schema: buildCommerceAboutPage },
+      { title: "Contact", schema: () => buildContactPage("warm", "Hearth Desk Co.") },
+    ],
+  },
+  {
+    key: "event-site",
+    name: "Event website",
+    description: "Home, agenda, speakers, and registration pages for an event.",
+    brandText: "Launch Live",
+    pages: [
+      { title: "Home", schema: buildEvent },
+      { title: "Agenda", schema: buildProductLaunch },
+      { title: "Speakers", schema: buildAgencyWorkPage },
+      { title: "Register", schema: buildEvent },
+    ],
+  },
+  {
+    key: "launch-site",
+    name: "Launch website",
+    description: "Home, features, pricing, and signup pages for a new offer.",
+    brandText: "Nova",
+    pages: [
+      { title: "Home", schema: buildProductLaunch },
+      { title: "Features", schema: buildSaasProductPage },
+      { title: "Pricing", schema: buildSaasGrowth },
+      { title: "Signup", schema: buildEvent },
+    ],
+  },
+];
+
 export function getPageTemplate(key: unknown): PageTemplate | undefined {
   return pageTemplates.find((template) => template.key === key);
 }
@@ -661,4 +933,12 @@ export function getPageTemplate(key: unknown): PageTemplate | undefined {
 export function resolveTemplateSchema(key: unknown): PageSchema {
   const template = getPageTemplate(key) ?? pageTemplates[0];
   return template.build();
+}
+
+export function getSiteTemplate(key: unknown): SiteTemplate | undefined {
+  return siteTemplates.find((template) => template.key === key);
+}
+
+export function resolveSiteTemplate(key: unknown): SiteTemplate {
+  return getSiteTemplate(key) ?? siteTemplates[0];
 }

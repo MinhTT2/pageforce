@@ -1,77 +1,101 @@
 import Link from "next/link";
-import { ArrowLeft, Check, Copy, ExternalLink, Eye, Pencil, Redo2, Save, Undo2 } from "lucide-react";
-import { memo, useState } from "react";
+import {
+  ArrowLeft,
+  Eye,
+  FileText,
+  LayoutGrid,
+  PanelRightClose,
+  PanelRightOpen,
+  Pencil,
+  Redo2,
+  Save,
+  Settings,
+  Undo2,
+} from "lucide-react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/Input";
 import type { SaveStatus } from "@/lib/builder-state";
 import { cn } from "@/lib/utils";
 
 export const BuilderHeader = memo(function BuilderHeader({
-  title,
   dirty,
   saveStatus,
   notice,
   previewMode,
-  publicUrl,
-  isLive,
-  onTitleChange,
+  blocksOpen,
+  pagesOpen,
+  pageSettingsOpen,
+  rightSidebarOpen,
   canUndo,
   canRedo,
   onUndo,
   onRedo,
+  onShowBlocks,
+  onTogglePages,
+  onTogglePageSettings,
+  onToggleRightSidebar,
   onTogglePreview,
   onSave,
 }: {
-  title: string;
   dirty: boolean;
   saveStatus: SaveStatus;
   notice: string | null;
   previewMode: boolean;
-  publicUrl: string;
-  isLive: boolean;
-  onTitleChange: (value: string) => void;
+  blocksOpen: boolean;
+  pagesOpen: boolean;
+  pageSettingsOpen: boolean;
+  rightSidebarOpen: boolean;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  onShowBlocks: () => void;
+  onTogglePages: () => void;
+  onTogglePageSettings: () => void;
+  onToggleRightSidebar: () => void;
   onTogglePreview: () => void;
   onSave: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
   const saving = saveStatus === "saving";
-  const statusLabel = saving ? "Saving..." : saveStatus === "error" ? "Save failed" : dirty ? "Unsaved" : "Saved";
-
-  async function copyUrl() {
-    if (!isLive) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setCopied(false);
-    }
-  }
 
   return (
-    <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-5 py-3">
+    <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" size="icon" aria-label="Dashboard">
           <Link href="/dashboard">
-            <ArrowLeft />
-            Dashboard
+            <ArrowLeft size={18} />
           </Link>
         </Button>
-        <div className="min-w-64 max-w-md flex-1">
-          <Input
-            value={title}
-            onChange={(event) => onTitleChange(event.target.value)}
-            className="h-9 font-medium"
-            aria-label="Page title"
-          />
-        </div>
+        <Button
+          variant={blocksOpen ? "secondary" : "ghost"}
+          size="icon"
+          onClick={onShowBlocks}
+          aria-pressed={blocksOpen}
+          aria-label="Blocks"
+          className={cn(blocksOpen && "shadow-md")}
+        >
+          <LayoutGrid size={18} />
+        </Button>
+        <Button
+          variant={pagesOpen ? "secondary" : "ghost"}
+          size="icon"
+          onClick={onTogglePages}
+          aria-pressed={pagesOpen}
+          aria-label="Pages"
+          className={cn(pagesOpen && "shadow-md")}
+        >
+          <FileText size={18} />
+        </Button>
+        <Button
+          variant={pageSettingsOpen ? "secondary" : "ghost"}
+          size="icon"
+          onClick={onTogglePageSettings}
+          aria-pressed={pageSettingsOpen}
+          aria-label="Page settings"
+          className={cn(pageSettingsOpen && "shadow-md")}
+        >
+          <Settings size={18} />
+        </Button>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
         {notice ? (
@@ -84,28 +108,6 @@ export const BuilderHeader = memo(function BuilderHeader({
             {notice}
           </span>
         ) : null}
-        <span
-          className={cn(
-            "rounded-md border px-2.5 py-1 text-sm",
-            saveStatus === "error"
-              ? "border-destructive/30 bg-destructive/10 text-destructive"
-              : dirty
-                ? "border-warning/30 bg-warning/10 text-warning"
-                : "border-border bg-surface text-muted-foreground",
-          )}
-        >
-          {statusLabel}
-        </span>
-        <span
-          className={cn(
-            "rounded-md border px-2.5 py-1 text-sm",
-            isLive
-              ? "border-primary/20 bg-primary/10 text-primary"
-              : "border-border bg-surface text-muted-foreground",
-          )}
-        >
-          {isLive ? "Live" : "Draft"}
-        </span>
         <Button
           variant="ghost"
           size="icon"
@@ -125,6 +127,15 @@ export const BuilderHeader = memo(function BuilderHeader({
           <Redo2 size={16} />
         </Button>
         <Button
+          variant={rightSidebarOpen ? "ghost" : "secondary"}
+          size="icon"
+          onClick={onToggleRightSidebar}
+          aria-pressed={rightSidebarOpen}
+          aria-label={rightSidebarOpen ? "Hide inspector" : "Show inspector"}
+        >
+          {rightSidebarOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+        </Button>
+        <Button
           variant="secondary"
           onClick={onTogglePreview}
           aria-pressed={previewMode}
@@ -133,26 +144,9 @@ export const BuilderHeader = memo(function BuilderHeader({
           {previewMode ? <Pencil size={16} /> : <Eye size={16} />}
           {previewMode ? "Edit" : "Preview"}
         </Button>
-        <Button variant="secondary" onClick={copyUrl} disabled={!isLive} aria-label="Copy public URL">
-          {copied ? <Check size={16} /> : <Copy size={16} />}
-          {copied ? "Copied" : "Copy URL"}
-        </Button>
-        {isLive ? (
-          <Button asChild variant="secondary" aria-label="Open public page">
-            <a href={publicUrl} target="_blank" rel="noreferrer">
-              <ExternalLink size={16} />
-              Open
-            </a>
-          </Button>
-        ) : (
-          <Button variant="secondary" disabled aria-label="Open public page">
-            <ExternalLink size={16} />
-            Open
-          </Button>
-        )}
         <Button onClick={onSave} disabled={saving || !dirty}>
           <Save size={16} />
-          {saving ? "Saving..." : "Save"}
+          {saving ? "Saving..." : "Save now"}
         </Button>
       </div>
     </header>

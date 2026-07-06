@@ -1,19 +1,22 @@
 import Link from "next/link";
-import Image from "next/image";
-import type { Prisma } from "@prisma/client";
-import { Edit, Inbox, Plus, Search } from "lucide-react";
+import {
+  CheckCircle2,
+  Edit,
+  Inbox,
+  Plus,
+  Search,
+} from "lucide-react";
 import { headers } from "next/headers";
-import { CreatePageDialog } from "@/components/dashboard/CreatePageDialog";
+import { CreateSiteDialog } from "@/components/dashboard/CreateSiteDialog";
 import { DeletePageButton } from "@/components/dashboard/DeletePageButton";
 import { EditPageDialog } from "@/components/dashboard/EditPageDialog";
 import { PageSchemaThumbnail } from "@/components/dashboard/PageSchemaThumbnail";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/card";
 import { Input } from "@/components/ui/Input";
 import { requireUser } from "@/lib/auth";
+import { listSitesForUser } from "@/lib/pages";
 import { normalizePageSchema } from "@/lib/blocks";
-import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage({
   searchParams,
@@ -26,36 +29,25 @@ export default async function DashboardPage({
     searchParams,
   ]);
   const publicOrigin = getRequestOrigin(headerStore);
-  const query = typeof params.q === "string" ? params.q.trim() : "";
-  const pages = await prisma.page.findMany({
-    where: {
-      userId: user.id,
-      ...(query ? { title: { contains: query, mode: "insensitive" as const } } : {}),
-    },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      status: true,
-      draftSchema: true,
-      _count: { select: { leadSubmissions: true } },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 50,
-  });
-  const hasAnyPages = query
-    ? (await prisma.page.count({ where: { userId: user.id } })) > 0
-    : pages.length > 0;
+  const query = typeof params.q === "string" ? params.q.trim().toLowerCase() : "";
+  const allSites = await listSitesForUser(user.id);
+  const sites = query
+    ? allSites.filter(
+        (site) =>
+          site.name.toLowerCase().includes(query) ||
+          site.slug.toLowerCase().includes(query) ||
+          site.pages.some((page) => page.title.toLowerCase().includes(query)),
+      )
+    : allSites;
 
   return (
     <main>
       <section className="mx-auto grid w-full max-w-6xl gap-6 px-6 py-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-normal text-foreground">Pages</h1>
+            <h1 className="text-2xl font-semibold tracking-normal text-foreground">Websites</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {pages.length} {pages.length === 1 ? "page" : "pages"}
-              {query ? ` matching "${query}"` : " in your workspace"}
+              Manage sites, pages, public URLs, and captured leads.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -65,149 +57,148 @@ export default async function DashboardPage({
                 type="search"
                 name="q"
                 defaultValue={query}
-                placeholder="Search pages"
-                aria-label="Search pages"
-                className="w-52 pl-8"
+                placeholder="Search sites or pages"
+                aria-label="Search sites or pages"
+                className="w-60 pl-8"
               />
             </form>
-            <CreatePageDialog />
+            <CreateSiteDialog />
           </div>
         </div>
 
-        <Panel className="overflow-hidden rounded-lg">
-          {pages.length ? (
-            <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
-              {pages.map((page) => {
-                const publicUrl = `${publicOrigin}/p/${page.slug}`;
-                const schema = normalizePageSchema(page.draftSchema);
-                const isLive = page.status === "PUBLISHED" && schema.blocks.length > 0;
-                const cardHref = isLive ? publicUrl : `/builder/${page.id}`;
-
-                return (
-                  <article
-                    key={page.id}
-                    className="relative overflow-hidden rounded-lg border border-border bg-card shadow-xs transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
-                  >
+        {sites.length ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {sites.map((site) => {
+              const homePage = site.pages.find((page) => page.isHome) ?? site.pages[0];
+              const siteUrl = `${publicOrigin}/s/${site.slug}`;
+              const homeSchema = normalizePageSchema(homePage?.draftSchema);
+              const live = Boolean(homePage && homePage.status === "PUBLISHED" && homeSchema.blocks.length);
+              return (
+                <Panel
+                  key={site.id}
+                  className="group overflow-hidden rounded-lg transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  {homePage ? (
                     <Link
-                      href={cardHref}
-                      {...(isLive ? { target: "_blank", rel: "noreferrer" } : {})}
-                      aria-label={`Open ${page.title}`}
-                      className="absolute inset-0 z-0"
+                      href={siteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      prefetch={false}
+                      aria-label={`Open ${site.name} in a new tab`}
+                      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <SiteCardMain
+                        homeSchema={homeSchema}
+                        name={site.name}
+                        siteUrl={siteUrl}
+                        live={live}
+                      />
+                    </Link>
+                  ) : (
+                    <SiteCardMain
+                      homeSchema={homeSchema}
+                      name={site.name}
+                      siteUrl={siteUrl}
+                      live={live}
                     />
-                    <PageSchemaThumbnail schema={schema} />
-                    <div className="pointer-events-none relative z-10 grid gap-4 p-4">
-                      <div className="flex min-w-0 items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="truncate font-medium text-foreground">{page.title}</h3>
-                          <p
-                            className={`mt-1 truncate text-sm font-medium ${
-                              isLive ? "text-primary" : "text-muted-foreground"
-                            }`}
-                          >
-                            {publicUrl}
-                          </p>
-                        </div>
-                        <Badge variant={isLive ? "success" : "warning"}>
-                          {isLive ? "Live" : "Draft"}
-                        </Badge>
-                      </div>
+                  )}
 
-                      <PageActions page={page} />
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          ) : hasAnyPages ? (
-            <div className="grid min-h-60 place-items-center px-6 py-10 text-center">
-              <div>
-                <div className="mx-auto flex size-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                  <Search className="size-5" />
-                </div>
-                <h2 className="mt-4 text-base font-semibold text-panel-foreground">
-                  No pages match &ldquo;{query}&rdquo;
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Try a different search, or clear it to see every page.
-                </p>
-                <Button asChild variant="outline" size="sm" className="mt-4">
-                  <Link href="/dashboard">Clear search</Link>
-                </Button>
+                  <div className="grid gap-4 p-4 pt-0">
+                    {homePage ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button asChild>
+                          <Link href={`/builder/site/${site.id}?page=${homePage.id}`}>
+                            <Edit />
+                            Edit builder
+                          </Link>
+                        </Button>
+                        <EditPageDialog
+                          page={{ id: homePage.id, title: homePage.title, slug: homePage.slug }}
+                          triggerClassName="w-full"
+                        />
+                        <DeletePageButton
+                          pageId={homePage.id}
+                          title={homePage.title}
+                          triggerClassName="w-full"
+                        />
+                        <Button asChild size="sm" variant="outline" className="w-full">
+                          <Link href={`/dashboard/pages/${homePage.id}/leads`}>
+                            <Inbox />
+                            Leads
+                          </Link>
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                </Panel>
+              );
+            })}
+          </div>
+        ) : (
+          <Panel className="grid min-h-80 place-items-center rounded-lg px-6 py-10 text-center">
+            <div>
+              <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                {query ? <Search className="size-5" /> : <Plus className="size-5" />}
               </div>
+              <h2 className="mt-4 text-lg font-semibold text-panel-foreground">
+                {query ? "No sites found" : "Create your first website"}
+              </h2>
+              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                {query
+                  ? "Try a different site name, slug, or page title."
+                  : "Start from a ready structure, then Pageforce will open the builder for your home page."}
+              </p>
+              {query ? null : (
+                <div className="mt-5 flex justify-center">
+                  <CreateSiteDialog />
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="grid min-h-80 gap-8 px-6 py-10 md:grid-cols-[minmax(0,0.9fr)_minmax(320px,1.1fr)] md:items-center">
-              <div className="text-center md:text-left">
-                <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-accent text-accent-foreground md:mx-0">
-                  <Plus className="size-5" />
-                </div>
-                <h2 className="mt-4 text-lg font-semibold text-panel-foreground">
-                  Create your first landing page
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Start with a blank page, add a hero, drop in an image block, then share the public
-                  URL when it looks ready.
-                </p>
-                <div className="mt-5 flex justify-center md:justify-start">
-                  <CreatePageDialog defaultOpen label="Create first page" />
-                </div>
-              </div>
-              <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-                <div className="relative aspect-[16/10] bg-muted">
-                  <Image
-                    src="https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1200&auto=format&fit=crop"
-                    alt=""
-                    fill
-                    unoptimized
-                    sizes="(min-width: 768px) 520px, 100vw"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="grid gap-2 p-4">
-                  <div className="h-3 w-28 rounded-full bg-primary/25" />
-                  <div className="h-2 w-full rounded-full bg-muted" />
-                  <div className="h-2 w-4/5 rounded-full bg-muted" />
-                </div>
-              </div>
-            </div>
-          )}
-        </Panel>
+          </Panel>
+        )}
       </section>
     </main>
   );
 }
 
-type DashboardPageItem = {
-  id: string;
-  title: string;
-  slug: string;
-  status: "DRAFT" | "PUBLISHED";
-  draftSchema: Prisma.JsonValue;
-  _count: { leadSubmissions: number };
-};
-
-function PageActions({ page }: { page: DashboardPageItem }) {
+function SiteCardMain({
+  homeSchema,
+  name,
+  siteUrl,
+  live,
+}: {
+  homeSchema: Parameters<typeof PageSchemaThumbnail>[0]["schema"];
+  name: string;
+  siteUrl: string;
+  live: boolean;
+}) {
   return (
-    <div className="pointer-events-auto relative z-20 grid grid-cols-3 gap-2">
-      <Button asChild size="sm" className="w-full">
-        <Link href={`/builder/${page.id}`}>
-          <Edit />
-          Builder
-        </Link>
-      </Button>
-      <EditPageDialog
-        page={{ id: page.id, title: page.title, slug: page.slug }}
-        triggerClassName="w-full"
-      />
-      <DeletePageButton pageId={page.id} title={page.title} triggerClassName="w-full" />
-      <Button asChild size="sm" variant="outline" className="col-span-3 w-full">
-        <Link href={`/dashboard/pages/${page.id}/leads`}>
-          <Inbox />
-          Leads
-          <Badge variant="secondary">{page._count.leadSubmissions}</Badge>
-        </Link>
-      </Button>
-    </div>
+    <>
+      <div className="relative">
+        <PageSchemaThumbnail
+          schema={homeSchema}
+          className="aspect-[16/9] border-b bg-surface p-3"
+          frameClassName="rounded-sm"
+        />
+      </div>
+
+      <div className="grid gap-4 p-4">
+        <div className="min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold text-panel-foreground">{name}</h2>
+              <span className="mt-1 block truncate font-mono text-xs font-semibold text-primary">
+                {siteUrl}
+              </span>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 text-xs font-medium text-muted-foreground">
+              <CheckCircle2 className={live ? "size-3.5 text-success" : "size-3.5 text-warning"} />
+              {live ? "Live" : "Draft"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 

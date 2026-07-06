@@ -109,7 +109,7 @@ export default async function DashboardPage({
                         <Button asChild>
                           <Link href={`/builder/site/${site.id}?page=${homePage.id}`}>
                             <Edit />
-                            Edit builder
+                             Edit
                           </Link>
                         </Button>
                         <EditPageDialog

@@ -26,6 +26,7 @@ type BlockRendererProps = {
   schema: PageSchema;
   renderBlockWrapper?: (block: PageBlock, children: ReactNode) => ReactNode;
   emptyActions?: ReactNode;
+  renderMode?: "live" | "editor";
   // Only public site routes pass this; its presence is what lets lead forms submit
   // for real instead of rendering the builder's inert preview form.
   pageId?: string;
@@ -70,6 +71,7 @@ export const BlockRenderer = memo(function BlockRenderer({
   schema,
   renderBlockWrapper,
   emptyActions,
+  renderMode = "live",
   pageId,
 }: BlockRendererProps) {
   const tokens = schema.settings?.tokens ?? defaultTokens;
@@ -94,7 +96,7 @@ export const BlockRenderer = memo(function BlockRenderer({
   return (
     <div className="pf-root transition-colors" style={tokenCssVars(tokens)}>
       {schema.blocks.map((block) => {
-        const rendered = <RenderedBlock block={block} pageId={pageId} />;
+        const rendered = <RenderedBlock block={block} renderMode={renderMode} pageId={pageId} />;
 
         return (
           <Fragment key={block.id}>
@@ -112,9 +114,11 @@ export const BlockRenderer = memo(function BlockRenderer({
 // that can invalidate the memo.
 const RenderedBlock = memo(function RenderedBlock({
   block,
+  renderMode,
   pageId,
 }: {
   block: PageBlock;
+  renderMode: "live" | "editor";
   pageId?: string;
 }) {
   if (block.type === "header") {
@@ -127,7 +131,7 @@ const RenderedBlock = memo(function RenderedBlock({
       <header
         className={cn(
           "pf-border border-b bg-(--pf-bg)/95 px-6 backdrop-blur",
-          block.props.sticky && "sticky top-0 z-30",
+          renderMode === "live" && block.props.sticky && "sticky top-0 z-30",
         )}
         style={sectionStyle}
       >

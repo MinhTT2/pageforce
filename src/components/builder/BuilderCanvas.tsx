@@ -131,6 +131,7 @@ export const BuilderCanvas = memo(function BuilderCanvas({
           >
             <BlockRenderer
               schema={schema}
+              renderMode="editor"
               renderBlockWrapper={renderBlockWrapper}
               emptyActions={emptyActions}
             />

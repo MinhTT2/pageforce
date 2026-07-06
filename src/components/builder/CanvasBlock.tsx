@@ -62,7 +62,7 @@ export function CanvasBlock({
         blockRef.current = node;
       }}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn("group/canvas-block relative", isDragging && "z-10 opacity-40")}
+      className={cn("group/canvas-block relative isolate", isDragging && "z-10 opacity-40")}
     >
       {dropEdge === "top" ? <DropLine position="top" /> : null}
       <div
@@ -84,7 +84,7 @@ export function CanvasBlock({
       </div>
       <div
         className={cn(
-          "absolute right-3 top-3 z-20 flex items-center gap-1 rounded-md border border-border bg-card p-1 opacity-0 shadow-sm transition group-hover/canvas-block:opacity-100 focus-within:opacity-100",
+          "absolute right-3 top-3 z-50 flex items-center gap-1 rounded-md border border-border bg-card p-1 opacity-0 shadow-sm transition group-hover/canvas-block:opacity-100 focus-within:opacity-100",
           selected && "opacity-100",
         )}
       >

@@ -554,19 +554,9 @@ export function BuilderShell({ page }: { page: EditablePage }) {
                 "grid min-h-0 flex-1 grid-cols-1 overflow-auto lg:overflow-hidden",
                 leftSidebarOpen &&
                   rightSidebarOpen &&
-                  leftMode === "pages" &&
-                  "lg:grid-cols-[300px_minmax(0,1fr)_340px]",
-                leftSidebarOpen &&
-                  rightSidebarOpen &&
-                  leftMode !== "pages" &&
                   "lg:grid-cols-[360px_minmax(0,1fr)_340px]",
                 leftSidebarOpen &&
                   !rightSidebarOpen &&
-                  leftMode === "pages" &&
-                  "lg:grid-cols-[300px_minmax(0,1fr)]",
-                leftSidebarOpen &&
-                  !rightSidebarOpen &&
-                  leftMode !== "pages" &&
                   "lg:grid-cols-[360px_minmax(0,1fr)]",
                 !leftSidebarOpen && rightSidebarOpen && "lg:grid-cols-[minmax(0,1fr)_340px]",
                 !leftSidebarOpen && !rightSidebarOpen && "lg:grid-cols-1",

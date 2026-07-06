@@ -3,10 +3,12 @@ import type { ReactNode } from "react";
 export function Field({
   label,
   description,
+  error,
   children,
 }: {
   label: string;
   description?: string;
+  error?: string;
   children: ReactNode;
 }) {
   return (
@@ -20,6 +22,11 @@ export function Field({
         ) : null}
       </span>
       {children}
+      {error ? (
+        <span className="block text-xs leading-5 text-destructive" role="alert">
+          {error}
+        </span>
+      ) : null}
     </label>
   );
 }

@@ -15,22 +15,30 @@ import { TextEditor } from "./TextEditor";
 
 export function BlockEditor({
   block,
+  pageId,
   onChange,
 }: {
   block: PageBlock;
+  pageId: string;
   onChange: (block: PageBlock) => void;
 }) {
   if (block.type === "hero") return <HeroEditor block={block} onChange={onChange} />;
   if (block.type === "text") return <TextEditor block={block} onChange={onChange} />;
-  if (block.type === "image") return <ImageEditor block={block} onChange={onChange} />;
-  if (block.type === "carousel") return <CarouselEditor block={block} onChange={onChange} />;
+  if (block.type === "image") {
+    return <ImageEditor block={block} pageId={pageId} onChange={onChange} />;
+  }
+  if (block.type === "carousel") {
+    return <CarouselEditor block={block} pageId={pageId} onChange={onChange} />;
+  }
   if (block.type === "button") return <ButtonEditor block={block} onChange={onChange} />;
   if (block.type === "features") return <FeaturesEditor block={block} onChange={onChange} />;
   if (block.type === "testimonials") {
     return <TestimonialsEditor block={block} onChange={onChange} />;
   }
   if (block.type === "pricing") return <PricingEditor block={block} onChange={onChange} />;
-  if (block.type === "products") return <ProductsEditor block={block} onChange={onChange} />;
+  if (block.type === "products") {
+    return <ProductsEditor block={block} pageId={pageId} onChange={onChange} />;
+  }
   if (block.type === "faq") return <FaqEditor block={block} onChange={onChange} />;
   if (block.type === "cta") return <CtaEditor block={block} onChange={onChange} />;
   if (block.type === "leadForm") return <LeadFormEditor block={block} onChange={onChange} />;

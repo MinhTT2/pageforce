@@ -5,14 +5,17 @@ import { Field, Panel } from "../fields/Field";
 
 export function ImageEditor({
   block,
+  pageId,
   onChange,
 }: {
   block: ImageBlock;
+  pageId: string;
   onChange: (block: PageBlock) => void;
 }) {
   return (
     <Panel title="Image">
       <ImageUrlField
+        pageId={pageId}
         value={block.props.src}
         onChange={(src) => onChange({ ...block, props: { ...block.props, src } })}
       />

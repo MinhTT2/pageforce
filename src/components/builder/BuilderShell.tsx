@@ -395,6 +395,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
               />
               <Inspector
                 selectedBlock={selectedBlock}
+                pageId={page.id}
                 settings={settings}
                 slug={state.slug}
                 publicUrl={publicUrl}

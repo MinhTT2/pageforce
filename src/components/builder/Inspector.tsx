@@ -12,6 +12,7 @@ import { StyleEditor } from "./StyleEditor";
 
 export const Inspector = memo(function Inspector({
   selectedBlock,
+  pageId,
   settings,
   slug,
   publicUrl,
@@ -24,6 +25,7 @@ export const Inspector = memo(function Inspector({
   onTokensChange,
 }: {
   selectedBlock: PageBlock | null;
+  pageId: string;
   settings: PageSettings;
   slug: string;
   publicUrl: string;
@@ -96,7 +98,7 @@ export const Inspector = memo(function Inspector({
               <TabsTrigger value="style">Style</TabsTrigger>
             </TabsList>
             <TabsContent value="content" className="mt-3">
-              <BlockEditor block={selectedBlock} onChange={onUpdateBlock} />
+              <BlockEditor block={selectedBlock} pageId={pageId} onChange={onUpdateBlock} />
             </TabsContent>
             <TabsContent value="style" className="mt-3">
               <StyleEditor

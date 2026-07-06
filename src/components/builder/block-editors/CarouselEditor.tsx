@@ -7,9 +7,11 @@ import { ImageUrlField } from "../fields/ImageUrlField";
 
 export function CarouselEditor({
   block,
+  pageId,
   onChange,
 }: {
   block: CarouselBlock;
+  pageId: string;
   onChange: (block: PageBlock) => void;
 }) {
   return (
@@ -43,7 +45,7 @@ export function CarouselEditor({
         onChange={(items) => onChange({ ...block, props: { ...block.props, items } })}
         renderItem={(item, update) => (
           <>
-            <ImageUrlField value={item.src} onChange={(src) => update({ src })} />
+            <ImageUrlField pageId={pageId} value={item.src} onChange={(src) => update({ src })} />
             <Field label="Alt text">
               <Input value={item.alt} onChange={(event) => update({ alt: event.target.value })} />
             </Field>

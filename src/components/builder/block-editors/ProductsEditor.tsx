@@ -7,9 +7,11 @@ import { ImageUrlField } from "../fields/ImageUrlField";
 
 export function ProductsEditor({
   block,
+  pageId,
   onChange,
 }: {
   block: ProductsBlock;
+  pageId: string;
   onChange: (block: PageBlock) => void;
 }) {
   return (
@@ -82,7 +84,11 @@ export function ProductsEditor({
                   onChange={(event) => update({ badge: event.target.value })}
                 />
               </Field>
-              <ImageUrlField value={item.image} onChange={(image) => update({ image })} />
+              <ImageUrlField
+                pageId={pageId}
+                value={item.image}
+                onChange={(image) => update({ image })}
+              />
               <Field label="Image alt" description="Describe the image for accessibility.">
                 <Input
                   value={item.imageAlt}

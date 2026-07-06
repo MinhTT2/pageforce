@@ -14,10 +14,13 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    label: "Pages",
+    label: "Websites",
     href: "/dashboard",
     icon: LayoutDashboard,
-    isActive: (pathname) => pathname === "/dashboard" || pathname.startsWith("/dashboard/pages"),
+    isActive: (pathname) =>
+      pathname === "/dashboard" ||
+      pathname.startsWith("/dashboard/pages") ||
+      pathname.startsWith("/dashboard/sites"),
   },
 ];
 

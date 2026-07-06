@@ -27,7 +27,7 @@ export async function POST(
 
   const page = await prisma.page.findFirst({
     where: { id: pageId, status: "PUBLISHED" },
-    select: { id: true, draftSchema: true },
+    select: { id: true, siteId: true, draftSchema: true },
   });
 
   if (!page) {
@@ -48,7 +48,7 @@ export async function POST(
     return NextResponse.json({ error: "Lead form not found" }, { status: 404 });
   }
 
-  await createLeadSubmission(pageId, parsed.value.blockId, parsed.value.data);
+  await createLeadSubmission(page.siteId, parsed.value.blockId, parsed.value.data);
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }

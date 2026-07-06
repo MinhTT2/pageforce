@@ -10,9 +10,9 @@ This file is the source of truth for agents working in this repository. Read it 
 
 ## Project Overview
 
-Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, create landing pages, compose them from JSON-backed blocks, save changes live, capture leads, and view public pages at `/p/[slug]`.
+Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, create sites, compose landing pages from JSON-backed blocks, save changes live, capture leads, and view public pages at `/s/[siteSlug]`.
 
-Each Supabase Auth user can own multiple `Page` records.
+Each Supabase Auth user can own multiple `Site` records, and each site can contain multiple `Page` records.
 
 ## Stack
 
@@ -43,8 +43,9 @@ Each Supabase Auth user can own multiple `Page` records.
 
 - Supabase Auth is the user source of truth. Users live in Supabase `auth.users`.
 - Do not create a Prisma `User` model for the MVP.
-- App data lives in Prisma models, currently `Page` and `LeadSubmission`.
-- `Page.userId` stores the Supabase Auth user id and is indexed for ownership lookups.
+- App data lives in Prisma models, currently `Site`, `Page`, and `LeadSubmission`.
+- `Site.userId` stores the Supabase Auth user id and is indexed for ownership lookups.
+- `Page` belongs to `Site`; do not store user ownership directly on `Page`.
 - `Page.draftSchema` currently stores the live builder schema. The column name is legacy.
 - `Page.publishedSchema` is kept in sync for compatibility when a page is live, but there is no separate publish step in the MVP.
 - Saving updates the live schema and the public page immediately once the schema has at least one block.
@@ -56,9 +57,9 @@ Each Supabase Auth user can own multiple `Page` records.
 
 - Use Supabase SSR helpers from `src/lib/supabase`.
 - Guard `/dashboard` and `/builder` routes.
-- Public route `/p/[slug]` must not require auth.
-- Public route `/p/[slug]` renders only `PUBLISHED` pages with at least one block.
-- API routes that mutate or read private data must get the current Supabase user and enforce ownership with `userId`.
+- Public routes `/s/[siteSlug]` and `/s/[siteSlug]/[pageSlug]` must not require auth.
+- Public routes render only `PUBLISHED` pages with at least one block.
+- API routes that mutate or read private data must get the current Supabase user and enforce ownership through `Site.userId`.
 
 ## Page API Rules
 
@@ -67,13 +68,14 @@ Each Supabase Auth user can own multiple `Page` records.
 - `PATCH /api/pages/[pageId]` saves live metadata/content: title, slug, and `schema`.
 - `PATCH /api/pages/[pageId]` must not trust client-sent status changes.
 - There is no separate publish endpoint in the MVP.
-- Delete, update, and get operations must enforce `Page.userId = current Supabase user id`.
+- Delete, update, and get operations must enforce `Page.site.userId = current Supabase user id`.
 
 ## Lead API Rules
 
-- `POST /api/pages/[pageId]/leads` is public because visitors submit forms from `/p/[slug]`.
+- `POST /api/pages/[pageId]/leads` is public because visitors submit forms from public `/s` pages.
 - Public lead submission must validate payloads, cap body size, and preserve the honeypot guard.
-- Dashboard lead views must get the current Supabase user and enforce ownership through `Page.userId`.
+- Dashboard lead views must get the current Supabase user and enforce ownership through `Site.userId`.
+- Stored lead submissions belong to `Site`; public submission endpoints may still accept `pageId` to validate the source lead form.
 
 ## Builder Rules
 
@@ -123,7 +125,7 @@ Before coding, read:
 
 When changing builder features, update the type, validator, renderer, editor, and default factory together.
 
-When changing auth or database behavior, never query users through Prisma. Get users from Supabase session helpers and enforce `Page.userId` ownership.
+When changing auth or database behavior, never query users through Prisma. Get users from Supabase session helpers and enforce ownership through `Site.userId`.
 
 When changing save/public behavior, preserve the live-save model: save updates the current schema and public pages render that current schema.
 

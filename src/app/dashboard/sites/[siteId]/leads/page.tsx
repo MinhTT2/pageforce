@@ -13,11 +13,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireUser } from "@/lib/auth";
-import { listLeadsForPage, toLeadSummary } from "@/lib/leads";
+import { listLeadsForSite, toLeadSummary } from "@/lib/leads";
 import { prisma } from "@/lib/prisma";
 
-type PageLeadsProps = {
-  params: Promise<{ pageId: string }>;
+type SiteLeadsProps = {
+  params: Promise<{ siteId: string }>;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -28,20 +28,20 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
 });
 
-export default async function PageLeadsPage({ params }: PageLeadsProps) {
-  const { pageId } = await params;
-  const user = await requireUser(`/dashboard/pages/${pageId}/leads`);
+export default async function SiteLeadsPage({ params }: SiteLeadsProps) {
+  const { siteId } = await params;
+  const user = await requireUser(`/dashboard/sites/${siteId}/leads`);
 
-  const page = await prisma.page.findFirst({
-    where: { id: pageId, userId: user.id },
-    select: { id: true, title: true, slug: true, isHome: true, site: { select: { slug: true } } },
+  const site = await prisma.site.findFirst({
+    where: { id: siteId, userId: user.id },
+    select: { id: true, name: true, slug: true },
   });
 
-  if (!page) {
+  if (!site) {
     notFound();
   }
 
-  const leads = (await listLeadsForPage(page.id)).map(toLeadSummary);
+  const leads = (await listLeadsForSite(site.id)).map(toLeadSummary);
 
   return (
     <main>
@@ -57,7 +57,8 @@ export default async function PageLeadsPage({ params }: PageLeadsProps) {
             Leads
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Submissions from the lead form on <span className="font-medium text-foreground">{page.title}</span>.
+            Submissions from lead forms on{" "}
+            <span className="font-medium text-foreground">{site.name}</span>.
           </p>
         </div>
 
@@ -85,7 +86,7 @@ export default async function PageLeadsPage({ params }: PageLeadsProps) {
                         {dateFormatter.format(new Date(lead.createdAt))}
                       </TableCell>
                       <TableCell className="font-medium text-foreground">
-                        {lead.data.name || "—"}
+                        {lead.data.name || "-"}
                       </TableCell>
                       <TableCell>
                         {lead.data.email ? (
@@ -96,12 +97,12 @@ export default async function PageLeadsPage({ params }: PageLeadsProps) {
                             {lead.data.email}
                           </a>
                         ) : (
-                          "—"
+                          "-"
                         )}
                       </TableCell>
                       <TableCell className="max-w-md">
                         <span className="line-clamp-3 whitespace-pre-line text-muted-foreground">
-                          {lead.data.message || "—"}
+                          {lead.data.message || "-"}
                         </span>
                       </TableCell>
                     </TableRow>
@@ -119,10 +120,8 @@ export default async function PageLeadsPage({ params }: PageLeadsProps) {
                   No submissions yet
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Add a Lead Form block with built-in capture, then share your public page at{" "}
-                  <span className="font-medium text-foreground">
-                    {page.isHome ? `/s/${page.site.slug}` : `/s/${page.site.slug}/${page.slug}`}
-                  </span>.
+                  Add a Lead Form block with built-in capture, then share your public site at{" "}
+                  <span className="font-medium text-foreground">/s/{site.slug}</span>.
                 </p>
               </div>
             </div>

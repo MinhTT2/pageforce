@@ -71,22 +71,22 @@ export function toLeadSummary(row: {
 }
 
 export async function createLeadSubmission(
-  pageId: string,
+  siteId: string,
   blockId: string,
   data: LeadSubmissionData,
 ) {
   return prisma.leadSubmission.create({
     data: {
-      pageId,
+      siteId,
       blockId,
       data: data as Prisma.InputJsonValue,
     },
   });
 }
 
-export async function listLeadsForPage(pageId: string) {
+export async function listLeadsForSite(siteId: string) {
   return prisma.leadSubmission.findMany({
-    where: { pageId },
+    where: { siteId },
     orderBy: { createdAt: "desc" },
     take: 200,
   });

@@ -31,7 +31,6 @@ export async function GET() {
         status: page.status,
         updatedAt: page.updatedAt.toISOString(),
         publishedAt: page.publishedAt?.toISOString() ?? null,
-        leadCount: page._count.leadSubmissions,
       })),
     })),
   );

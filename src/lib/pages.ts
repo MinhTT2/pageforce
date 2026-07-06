@@ -160,7 +160,6 @@ export async function listSitesForUser(userId: string, take = 50) {
           draftSchema: true,
           updatedAt: true,
           publishedAt: true,
-          _count: { select: { leadSubmissions: true } },
         },
         orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
       },
@@ -172,7 +171,7 @@ export async function listSitesForUser(userId: string, take = 50) {
 
 export async function listPagesForUser(userId: string, siteId?: string, take = 50) {
   return prisma.page.findMany({
-    where: { userId, ...(siteId ? { siteId } : {}) },
+    where: { site: { is: { userId } }, ...(siteId ? { siteId } : {}) },
     include: { site: { select: { name: true, slug: true } } },
     orderBy: { updatedAt: "desc" },
     take,
@@ -193,14 +192,13 @@ export async function createPageForUser(
     throw new Error("Site not found");
   }
 
-  const existingCount = await prisma.page.count({ where: { siteId: site.id, userId } });
+  const existingCount = await prisma.page.count({ where: { siteId: site.id } });
   const isHome = existingCount === 0;
   const publication = pagePublicationData(schema);
 
   return writeWithUniqueSlug(fallbackSlug(title), site.id, undefined, (slug) => {
     return prisma.page.create({
       data: {
-        userId,
         siteId: site.id,
         title,
         slug,

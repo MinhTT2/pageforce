@@ -6,10 +6,10 @@ Mini Landing Page Builder SaaS MVP built with Next.js App Router, TypeScript, Ta
 
 - Supabase Auth stores users in `auth.users`.
 - App data lives in Supabase Postgres tables managed by Prisma.
-- `Page.userId` stores the Supabase Auth user id.
-- Each user can own multiple landing pages.
+- `Site.userId` stores the Supabase Auth user id.
+- Each user can own multiple sites, and each site can contain multiple landing pages.
 - Builder saves landing pages as JSON block schemas.
-- Saves are live once a page has content: saved pages with at least one block render the latest schema at `/p/[slug]`; blank pages stay Draft and do not render publicly.
+- Saves are live once a page has content: saved pages with at least one block render the latest schema at `/s/[siteSlug]`; blank pages stay Draft and do not render publicly.
 - Lead Form blocks can capture submissions into the `LeadSubmission` table or use `mailto`/external action URLs.
 - Agent and MCP setup lives in `AGENTS.md` and `docs/mcp-agent-setup.md`.
 
@@ -70,14 +70,14 @@ Open http://localhost:3000.
 
 - Register, login, logout, guarded dashboard and builder.
 - Google sign-in through Supabase Auth.
-- Multi-page dashboard with create, list, edit title/slug, delete, and per-page lead views.
+- Multi-site dashboard with create, list, edit title/slug, delete, and site-level lead views.
 - Builder with draggable block palette, live canvas, and tabbed inspector (Content/Style per block, Page/Design for the page).
 - Thirteen block types: Hero, Text, Image, Carousel, Button, Features, Testimonials, Pricing, Products, FAQ, CTA, Lead Form, Footer.
 - Drag blocks from the palette onto the canvas, reorder with drag-and-drop (keyboard accessible), duplicate and delete per block.
 - Per-block style overrides (background, text, accent color, alignment, padding, width) on top of page-wide design tokens (brand color, fonts, radius, spacing) with three starter presets.
 - Page settings for meta title/description and slug; live public pages render SEO metadata.
 - Save JSON schema to Postgres and update the public page immediately when the schema has at least one block.
-- Blank pages stay Draft; `/p/[slug]` only renders live pages with content.
+- Blank pages stay Draft; public `/s` pages only render live pages with content.
 - Built-in lead capture endpoint for public pages, with a dashboard table for the latest submissions.
 
 ## Deploy

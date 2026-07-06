@@ -95,7 +95,7 @@ Lead Form blocks support three delivery modes:
 - `mailto`: the live form submits to a mailto action.
 - `actionUrl`: the live form submits to an external URL.
 
-Private lead views live at `/dashboard/pages/[pageId]/leads` and must enforce page ownership through the current Supabase Auth user. Public lead submission is intentionally unauthenticated because visitors submit forms from `/p/[slug]`; keep payload validation, body-size limits, and the honeypot guard in place when changing it.
+Private lead views live at `/dashboard/sites/[siteId]/leads` and must enforce site ownership through the current Supabase Auth user. Public lead submission is intentionally unauthenticated because visitors submit forms from public `/s` pages; keep payload validation, body-size limits, and the honeypot guard in place when changing it.
 
 ## Release Flow
 
@@ -109,5 +109,5 @@ Private lead views live at `/dashboard/pages/[pageId]/leads` and must enforce pa
 - Create a page.
 - Add, edit, reorder, and delete blocks.
 - Save the builder.
-- Open `/p/[slug]` and confirm the latest saved page renders.
-- Submit a Lead Form in capture mode and confirm it appears in the page's dashboard leads view.
+- Open `/s/[siteSlug]` or `/s/[siteSlug]/[pageSlug]` and confirm the latest saved page renders.
+- Submit a Lead Form in capture mode and confirm it appears in the site's dashboard leads view.

@@ -84,7 +84,7 @@ describe("POST /api/uploads", () => {
     await expect(response.json()).resolves.toEqual({ error: "Page not found" });
     expect(response.status).toBe(404);
     expect(pageFindFirst).toHaveBeenCalledWith({
-      where: { id: "page-1", userId: "user-1" },
+      where: { id: "page-1", site: { is: { userId: "user-1" } } },
       select: { id: true },
     });
   });

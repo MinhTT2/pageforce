@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   const page = await prisma.page.findFirst({
-    where: { id: pageId, userId: user.id },
+    where: { id: pageId, site: { is: { userId: user.id } } },
     select: { id: true },
   });
 

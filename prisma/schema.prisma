@@ -20,22 +20,22 @@ enum SectionMode {
 }
 
 model Site {
-  id           String   @id @default(cuid())
-  userId       String
-  name         String
-  slug         String   @unique
-  globalHeader Json?
-  globalFooter Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  pages        Page[]
+  id              String           @id @default(cuid())
+  userId          String
+  name            String
+  slug            String           @unique
+  globalHeader    Json?
+  globalFooter    Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  pages           Page[]
+  leadSubmissions LeadSubmission[]
 
   @@index([userId])
 }
 
 model Page {
   id              String     @id @default(cuid())
-  userId          String
   siteId          String
   title           String
   slug            String
@@ -52,9 +52,7 @@ model Page {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   site            Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  leadSubmissions LeadSubmission[]
 
-  @@index([userId])
   @@index([siteId])
   @@index([status, slug])
   @@unique([siteId, slug])
@@ -62,11 +60,11 @@ model Page {
 
 model LeadSubmission {
   id        String   @id @default(cuid())
-  pageId    String
+  siteId    String
   blockId   String
   data      Json
   createdAt DateTime @default(now())
-  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
-  @@index([pageId, createdAt])
+  @@index([siteId, createdAt])
 }

@@ -1,5 +1,30 @@
-import { describe, expect, it } from "vitest";
-import { MAX_LEAD_BODY_BYTES, parseLeadBody, toLeadSummary } from "./leads";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createLeadSubmission,
+  listLeadsForSite,
+  MAX_LEAD_BODY_BYTES,
+  parseLeadBody,
+  toLeadSummary,
+} from "./leads";
+import { prisma } from "@/lib/prisma";
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    leadSubmission: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+    },
+  },
+}));
+
+const leadCreate = vi.mocked(prisma.leadSubmission.create);
+const leadFindMany = vi.mocked(prisma.leadSubmission.findMany);
+
+beforeEach(() => {
+  vi.restoreAllMocks();
+  leadCreate.mockReset();
+  leadFindMany.mockReset();
+});
 
 describe("parseLeadBody", () => {
   it("accepts a valid submission body", () => {
@@ -74,5 +99,39 @@ describe("toLeadSummary", () => {
     });
 
     expect(summary.data).toEqual({});
+  });
+});
+
+describe("lead persistence", () => {
+  it("stores submissions against the site id", async () => {
+    leadCreate.mockResolvedValue({
+      id: "lead-1",
+      siteId: "site-1",
+      blockId: "block-1",
+      data: { email: "minh@example.com" },
+      createdAt: new Date("2026-07-03T10:00:00Z"),
+    });
+
+    await createLeadSubmission("site-1", "block-1", { email: "minh@example.com" });
+
+    expect(leadCreate).toHaveBeenCalledWith({
+      data: {
+        siteId: "site-1",
+        blockId: "block-1",
+        data: { email: "minh@example.com" },
+      },
+    });
+  });
+
+  it("lists submissions by site id", async () => {
+    leadFindMany.mockResolvedValue([]);
+
+    await listLeadsForSite("site-1");
+
+    expect(leadFindMany).toHaveBeenCalledWith({
+      where: { siteId: "site-1" },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
   });
 });

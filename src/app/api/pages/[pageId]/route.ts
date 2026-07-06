@@ -26,7 +26,7 @@ export async function GET(
 
   const { pageId } = await params;
   const page = await prisma.page.findFirst({
-    where: { id: pageId, userId: user.id },
+    where: { id: pageId, site: { is: { userId: user.id } } },
     include: {
       site: {
         include: {
@@ -79,7 +79,7 @@ export async function PATCH(
   }
 
   const page = await prisma.page.findFirst({
-    where: { id: pageId, userId: user.id },
+    where: { id: pageId, site: { is: { userId: user.id } } },
     select: {
       id: true,
       siteId: true,
@@ -165,8 +165,6 @@ export async function PATCH(
       : write(page.slug);
   });
 
-  revalidatePath(`/p/${page.slug}`);
-  revalidatePath(`/p/${updated.slug}`);
   revalidatePath(`/s/${page.site.slug}`);
   revalidatePath(`/s/${updated.site.slug}`);
   if (!page.isHome) revalidatePath(`/s/${page.site.slug}/${page.slug}`);
@@ -187,7 +185,7 @@ export async function DELETE(
 
   const { pageId } = await params;
   const page = await prisma.page.findFirst({
-    where: { id: pageId, userId: user.id },
+    where: { id: pageId, site: { is: { userId: user.id } } },
     select: { id: true, slug: true, isHome: true, site: { select: { slug: true } } },
   });
 
@@ -196,7 +194,6 @@ export async function DELETE(
   }
 
   await prisma.page.delete({ where: { id: pageId } });
-  revalidatePath(`/p/${page.slug}`);
   revalidatePath(`/s/${page.site.slug}`);
   if (!page.isHome) revalidatePath(`/s/${page.site.slug}/${page.slug}`);
 

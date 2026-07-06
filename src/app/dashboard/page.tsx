@@ -122,7 +122,7 @@ export default async function DashboardPage({
                           triggerClassName="w-full"
                         />
                         <Button asChild size="sm" variant="outline" className="w-full">
-                          <Link href={`/dashboard/pages/${homePage.id}/leads`}>
+                          <Link href={`/dashboard/sites/${site.id}/leads`}>
                             <Inbox />
                             Leads
                           </Link>

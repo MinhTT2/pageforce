@@ -127,7 +127,6 @@ describe("createPageForUser", () => {
   it("retries with a suffixed slug when Prisma reports a unique conflict", async () => {
     const createdPage = {
       id: "page-1",
-      userId: "user-1",
       siteId: "site-1",
       site: { name: "Demo Site", slug: "demo" },
       title: "Launch",
@@ -154,9 +153,19 @@ describe("createPageForUser", () => {
     await expect(createPageForUser("user-1", "Launch")).resolves.toMatchObject({
       slug: "launch-2",
     });
+    expect(pageCount).toHaveBeenCalledWith({ where: { siteId: "site-1" } });
     expect(pageCreate).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ data: expect.objectContaining({ slug: "launch" }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          siteId: "site-1",
+          slug: "launch",
+        }),
+      }),
+    );
+    expect(pageCreate).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ data: expect.not.objectContaining({ userId: "user-1" }) }),
     );
     expect(pageCreate).toHaveBeenNthCalledWith(
       2,

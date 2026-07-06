@@ -10,7 +10,7 @@ export default async function BuilderPage({
   const { pageId } = await params;
   const user = await requireUser(`/builder/${pageId}`);
   const page = await prisma.page.findFirst({
-    where: { id: pageId, userId: user.id },
+    where: { id: pageId, site: { is: { userId: user.id } } },
     select: { id: true, siteId: true },
   });
 

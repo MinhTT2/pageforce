@@ -46,10 +46,10 @@ export function AuthForm(_props: AuthFormProps) {
 
       <div className="mt-20 lg:mt-24">
         <h1 className="text-3xl font-semibold tracking-normal text-foreground">
-          Đăng nhập hoặc đăng ký
+          Log in or sign up
         </h1>
         <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
-          Tiếp tục bằng Google để vào dashboard và bắt đầu xây landing page.
+          Continue with Google to open your dashboard and start building landing pages.
         </p>
       </div>
 
@@ -62,29 +62,29 @@ export function AuthForm(_props: AuthFormProps) {
           className="h-11 w-full rounded-lg"
         >
           <GoogleIcon />
-          {googleLoading ? "Đang mở Google..." : "Tiếp tục với Google"}
+          {googleLoading ? "Opening Google..." : "Continue with Google"}
         </Button>
       </div>
 
       {error ? <p className="mt-4 text-sm font-medium text-destructive">{error}</p> : null}
 
       <p className="mt-6 text-center text-sm leading-6 text-muted-foreground">
-        Bằng cách tiếp tục, bạn đồng ý với{" "}
+        By continuing, you agree to our{" "}
         <Link href="#" className="font-medium text-primary hover:underline">
-          Điều khoản
+          Terms
         </Link>{" "}
-        và{" "}
+        and{" "}
         <Link href="#" className="font-medium text-primary hover:underline">
-          chính sách
-        </Link>{" "}
-        của chúng tôi.
+          Privacy Policy
+        </Link>
+        .
       </p>
 
       <footer className="mt-auto border-t border-border pt-6 text-center text-sm text-muted-foreground">
         <div className="flex flex-wrap justify-center gap-8">
           <span>Copyright (c) 2026 Pageforce</span>
           <Link href="#" className="hover:text-foreground">
-            Chính sách bảo mật
+            Privacy Policy
           </Link>
         </div>
       </footer>
@@ -105,15 +105,15 @@ export function AuthShowcase() {
 
           <div className="mt-10 max-w-xl">
             <h2 className="text-3xl font-semibold tracking-normal text-foreground">
-              Bắt đầu ngay hôm nay
+              Start building today
             </h2>
             <p className="mt-4 text-base leading-7 text-muted-foreground">
-              Dựng landing page, chỉnh nội dung và mở public URL trong cùng một workspace.
+              Build landing pages, edit content, and open public URLs from one workspace.
             </p>
             <div className="mt-6 grid gap-3 text-sm font-medium text-foreground">
-              <Benefit>Quản lý nhiều landing page trong dashboard</Benefit>
-              <Benefit>Chỉnh hero, CTA, pricing, FAQ và lead form bằng block</Benefit>
-              <Benefit>Lưu live và chia sẻ public URL ngay lập tức</Benefit>
+              <Benefit>Manage multiple landing pages from your dashboard</Benefit>
+              <Benefit>Edit hero, CTA, pricing, FAQ, and lead form blocks</Benefit>
+              <Benefit>Save live and share public URLs instantly</Benefit>
             </div>
           </div>
         </div>

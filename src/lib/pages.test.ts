@@ -154,7 +154,6 @@ describe("createPageForUser", () => {
       site: { name: "Demo Site", slug: "demo" },
       title: "Launch",
       slug: "launch-2",
-      legacySlug: null,
       isHome: false,
       headerMode: "INHERIT" as const,
       footerMode: "INHERIT" as const,

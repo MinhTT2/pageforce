@@ -38,7 +38,6 @@ model Page {
   siteId          String
   title           String
   slug            String
-  legacySlug      String?    @unique
   isHome          Boolean    @default(false)
   status          PageStatus @default(DRAFT)
   schema          Json        @map("draftSchema")

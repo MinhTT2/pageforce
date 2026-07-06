@@ -11,7 +11,7 @@ import { slugify } from "@/lib/slug";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-export type BuilderSnapshot = {
+type BuilderSnapshot = {
   title: string;
   slug: string;
   isHome: boolean;

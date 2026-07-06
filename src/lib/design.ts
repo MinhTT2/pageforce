@@ -21,7 +21,7 @@ export const FONT_OPTIONS: Record<FontKey, { label: string; stack: string }> = {
   serif: { label: "System Serif", stack: "Georgia, 'Times New Roman', serif" },
 };
 
-export const RADIUS_SCALE: Record<RadiusKey, string> = {
+const RADIUS_SCALE: Record<RadiusKey, string> = {
   none: "0px",
   sm: "0.25rem",
   md: "0.5rem",
@@ -29,7 +29,7 @@ export const RADIUS_SCALE: Record<RadiusKey, string> = {
   full: "1.75rem",
 };
 
-export const SECTION_Y_SCALE: Record<SpacingKey, string> = {
+const SECTION_Y_SCALE: Record<SpacingKey, string> = {
   compact: "3rem",
   normal: "4.5rem",
   relaxed: "6rem",
@@ -50,7 +50,7 @@ export const BLOCK_WIDTH: Record<BlockWidth, string> = {
   full: "max-w-none",
 };
 
-export function contrastForeground(hex: string): string {
+function contrastForeground(hex: string): string {
   const value = hex.replace("#", "");
   const expanded =
     value.length === 3

@@ -25,7 +25,7 @@ export type SiteTemplateKey =
   | "event-site"
   | "launch-site";
 
-export type SiteTemplatePage = {
+type SiteTemplatePage = {
   title: string;
   schema: () => PageSchema;
 };
@@ -932,7 +932,7 @@ export function resolveTemplateSchema(key: unknown): PageSchema {
   return template.build();
 }
 
-export function getSiteTemplate(key: unknown): SiteTemplate | undefined {
+function getSiteTemplate(key: unknown): SiteTemplate | undefined {
   return siteTemplates.find((template) => template.key === key);
 }
 

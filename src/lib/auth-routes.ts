@@ -1,4 +1,4 @@
-export const DEFAULT_AUTH_REDIRECT_PATH = "/dashboard";
+const DEFAULT_AUTH_REDIRECT_PATH = "/dashboard";
 
 export function getSafeNextPath(
   next: string | null | undefined,

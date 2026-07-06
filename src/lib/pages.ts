@@ -142,7 +142,7 @@ export function toCreatedSiteSummary(site: {
   };
 }
 
-export function pagePublicPath(siteSlug: string, pageSlug: string, isHome: boolean) {
+function pagePublicPath(siteSlug: string, pageSlug: string, isHome: boolean) {
   return isHome ? `/s/${siteSlug}` : `/s/${siteSlug}/${pageSlug}`;
 }
 
@@ -212,7 +212,7 @@ export async function createPageForUser(
   });
 }
 
-export async function createSiteForUser(userId: string, name = "Untitled site") {
+async function createSiteForUser(userId: string, name = "Untitled site") {
   const site = await writeWithUniqueSiteSlug(fallbackSlug(name), undefined, (slug) =>
     prisma.site.create({
       data: {
@@ -279,7 +279,7 @@ export async function createSiteFromTemplateForUser(
   return { ...site, pages: createdPages };
 }
 
-export async function getOrCreateDefaultSiteForUser(userId: string) {
+async function getOrCreateDefaultSiteForUser(userId: string) {
   const existing = await prisma.site.findFirst({
     where: { userId },
     orderBy: { updatedAt: "desc" },

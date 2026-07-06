@@ -6,7 +6,7 @@ import type { LeadSubmissionData, LeadSubmissionSummary } from "@/types/lead";
 
 export const MAX_LEAD_BODY_BYTES = 16 * 1024;
 
-export type LeadSubmissionInput = z.infer<typeof leadSubmissionValidator>;
+type LeadSubmissionInput = z.infer<typeof leadSubmissionValidator>;
 
 export type ParseLeadBodyResult =
   | { ok: true; value: LeadSubmissionInput }

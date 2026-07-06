@@ -8,7 +8,7 @@ const ALLOWED_IMAGE_EXTENSIONS = {
   "image/webp": ["webp"],
 } as const;
 
-export type AllowedImageMimeType = keyof typeof ALLOWED_IMAGE_EXTENSIONS;
+type AllowedImageMimeType = keyof typeof ALLOWED_IMAGE_EXTENSIONS;
 
 export type ImageUploadValidationResult =
   | {

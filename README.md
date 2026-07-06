@@ -1,19 +1,102 @@
 # Pageforce
 
-Mini Landing Page Builder SaaS MVP built with Next.js App Router, TypeScript, Tailwind CSS v4, Supabase Auth, Supabase Postgres, and Prisma.
+[![CI](https://github.com/MinhTT2/pageforce/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTT2/pageforce/actions/workflows/ci.yml)
 
-## Core Flow
+Pageforce is a mini landing page builder SaaS MVP for creating multi-page marketing sites from structured JSON blocks. It combines a guarded dashboard and drag-and-drop builder with live public rendering, lead capture, image uploads, and Supabase-backed auth/data.
 
-- Supabase Auth stores users in `auth.users`.
-- App data lives in Supabase Postgres tables managed by Prisma.
-- `Site.userId` stores the Supabase Auth user id.
-- Each user can own multiple sites, and each site can contain multiple landing pages.
-- Builder saves landing pages as JSON block schemas.
-- Saves are live once a page has content: saved pages with at least one block render the latest schema at `/s/[siteSlug]`; blank pages stay Draft and do not render publicly.
-- Lead Form blocks can capture submissions into the `LeadSubmission` table or use `mailto`/external action URLs.
-- Agent and MCP setup lives in `AGENTS.md` and `docs/mcp-agent-setup.md`.
+The project is intentionally small enough to review in one sitting, but built with production-minded boundaries: explicit ownership checks, schema validation, CI, Prisma migrations, environment guards, and reusable rendering between the builder preview and public pages.
 
-## Setup
+![Pageforce landing page](docs/assets/screenshots/home-desktop.png)
+
+## Review In 5 Minutes
+
+1. Scan the screenshot gallery and [Showcase](docs/showcase.md).
+2. Inspect the data model in `prisma/schema.prisma`.
+3. Inspect the block contract in `src/types/blocks.ts`, `src/lib/blocks.ts`, `src/lib/validators.ts`, and `src/components/blocks/BlockRenderer.tsx`.
+4. Inspect ownership checks under `src/app/api/pages` and `src/app/api/sites`.
+5. Run `npm run lint`, `npm run test`, and `npm run build`.
+
+## What Reviewers Should Notice
+
+- Full-stack product flow: Google/Supabase auth, dashboard, builder, public pages, image uploads, and lead capture.
+- Multi-tenant ownership model without a duplicated app `User` table; Supabase Auth remains the user source of truth.
+- JSON block contract shared across types, defaults, validation, editing, and rendering.
+- Live-save publishing model: saving content updates the public page immediately once it has at least one block.
+- Security-minded API boundaries: private routes enforce `Site.userId`, public lead submission stays unauthenticated but validated.
+- Quality posture: unit tests, Playwright smoke tests, CI, Prisma migration scripts, and production-safe migration commands.
+
+## Demo
+
+Live demo URL can be added after deployment. Until then, the screenshot set below gives reviewers a quick visual pass through the unauthenticated product surfaces.
+
+| Landing | Auth | Design system | Mobile |
+| --- | --- | --- | --- |
+| ![Landing page](docs/assets/screenshots/home-desktop.png) | ![Login page](docs/assets/screenshots/login-desktop.png) | ![Design system](docs/assets/screenshots/design-system-desktop.png) | ![Mobile landing page](docs/assets/screenshots/home-mobile.png) |
+
+See [docs/showcase.md](docs/showcase.md) for the product story and reviewer path. Screenshot regeneration notes live in [docs/assets/README.md](docs/assets/README.md).
+
+## Tech Stack
+
+- Next.js 16 App Router, React 19, TypeScript
+- Tailwind CSS v4, shadcn/ui primitives, lucide-react icons
+- Supabase Auth, Supabase Postgres, Supabase Storage
+- Prisma 6 for app data access and migrations
+- Vitest, Playwright, ESLint, GitHub Actions, Vercel
+
+## Feature Tour
+
+- Google sign-in through Supabase Auth with guarded dashboard and builder routes.
+- Multi-site dashboard where each user can create sites and manage landing pages.
+- Drag-and-drop builder with live canvas, block palette, keyboard-accessible reordering, duplication, deletion, and tabbed inspectors.
+- Thirteen block types: Hero, Text, Image, Carousel, Button, Features, Testimonials, Pricing, Products, FAQ, CTA, Lead Form, Footer.
+- Page-wide design tokens plus per-block style overrides for colors, fonts, radius, spacing, alignment, padding, and width.
+- Template-driven site/page creation and global header/footer support.
+- Live public URLs at `/s/[siteSlug]` and `/s/[siteSlug]/[pageSlug]`.
+- SEO metadata from page settings.
+- Lead Form blocks with capture, `mailto`, or external action delivery modes.
+- Authenticated image uploads to Supabase Storage with file type and size validation.
+
+## Why This Is More Than CRUD
+
+Pageforce is centered on a schema-driven builder, not a set of plain database forms. The page schema is typed, validated, edited visually, saved to Postgres, and rendered through shared components on public routes.
+
+The app also demonstrates real SaaS boundaries: Supabase Auth identity, Prisma-owned product data, site-level ownership checks, public rendering rules, visitor lead capture, image upload validation, CI, and production-safe migration scripts.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  browser[Browser]
+  app[Next.js App Router]
+  auth[Supabase Auth]
+  prisma[Prisma Client]
+  db[(Supabase Postgres)]
+  storage[Supabase Storage]
+
+  browser --> app
+  app --> auth
+  app --> prisma
+  prisma --> db
+  app --> storage
+```
+
+The app keeps authentication and application data separate. Supabase Auth owns users in `auth.users`; Prisma owns Pageforce data in `Site`, `Page`, and `LeadSubmission`.
+
+`Site.userId` stores the Supabase Auth user id. Pages belong to sites, and private reads/mutations enforce ownership through `Page.site.userId = current user id`.
+
+Public rendering is unauthenticated by design. Public `/s` routes only render pages that are `PUBLISHED` and have content. Blank pages stay `DRAFT`.
+
+For more detail, see [docs/architecture.md](docs/architecture.md).
+
+## Data Model
+
+- `Site`: owned by a Supabase Auth user, contains pages, optional global header/footer JSON, and site-level lead submissions.
+- `Page`: belongs to a site, stores route metadata, section modes, live builder schema in `draftSchema`, and compatibility copy in `publishedSchema`.
+- `LeadSubmission`: stores validated public form submissions against a site and block id.
+
+There is no Prisma `User` model. That is deliberate: Supabase Auth is the source of truth for identity, while Pageforce tables store product data and ownership ids.
+
+## Local Setup
 
 Create two Supabase projects before filling env values:
 
@@ -25,9 +108,12 @@ npm install
 cp .env.example .env
 npm run prisma:generate
 npm run prisma:migrate
+npm run dev
 ```
 
 Fill `.env` with the `pageforce-dev` Supabase values before running migrations. Keep `PAGEFORCE_ENV="development"` locally. Do not point local `.env` at the production Supabase project.
+
+Open http://localhost:3000.
 
 ## Google Login
 
@@ -38,8 +124,6 @@ Google sign-in uses Supabase Auth OAuth. The app renders a unified `Continue wit
 ```txt
 https://[PROJECT_REF].supabase.co/auth/v1/callback
 ```
-
-For local development, use the same Supabase project ref that appears in `NEXT_PUBLIC_SUPABASE_URL`.
 
 2. In Supabase Dashboard, open `Authentication` > `Providers` > `Google`, enable Google, then paste your Google OAuth Client ID and Client Secret.
 
@@ -58,27 +142,28 @@ https://your-domain.com/auth/callback
 
 Do not commit the Google Client Secret or put it in any `NEXT_PUBLIC_*` environment variable.
 
-## Development
+## Image Uploads
+
+Image uploads use the Supabase Storage bucket named `page-assets`. Create it as a public bucket in the active Supabase project before uploading images from the builder.
+
+The upload endpoint requires an authenticated user, validates page ownership, accepts JPEG, PNG, WebP, and GIF files, and rejects files larger than 5MB.
+
+## Quality Checks
 
 ```bash
-npm run dev
+npm run lint
+npm run test
+npm run build
+npm run test:e2e
 ```
 
-Open http://localhost:3000.
+Use the combined CI command before larger handoffs:
 
-## MVP Features
+```bash
+npm run ci
+```
 
-- Register, login, logout, guarded dashboard and builder.
-- Google sign-in through Supabase Auth.
-- Multi-site dashboard with create, list, edit title/slug, delete, and site-level lead views.
-- Builder with draggable block palette, live canvas, and tabbed inspector (Content/Style per block, Page/Design for the page).
-- Thirteen block types: Hero, Text, Image, Carousel, Button, Features, Testimonials, Pricing, Products, FAQ, CTA, Lead Form, Footer.
-- Drag blocks from the palette onto the canvas, reorder with drag-and-drop (keyboard accessible), duplicate and delete per block.
-- Per-block style overrides (background, text, accent color, alignment, padding, width) on top of page-wide design tokens (brand color, fonts, radius, spacing) with three starter presets.
-- Page settings for meta title/description and slug; live public pages render SEO metadata.
-- Save JSON schema to Postgres and update the public page immediately when the schema has at least one block.
-- Blank pages stay Draft; public `/s` pages only render live pages with content.
-- Built-in lead capture endpoint for public pages, with a dashboard table for the latest submissions.
+GitHub Actions runs lint, unit tests, and build on pull requests and pushes to `main`. Production migration deployment is handled separately with guarded Prisma commands.
 
 ## Deploy
 
@@ -97,3 +182,12 @@ npm run prisma:deploy
 ```
 
 Never run `npm run prisma:migrate` against production.
+
+## More Docs
+
+- [Architecture](docs/architecture.md)
+- [Showcase](docs/showcase.md)
+- [Reviewer Guide](docs/reviewer-guide.md)
+- [Roadmap](docs/roadmap.md)
+- [Development Workflow](docs/dev-workflow.md)
+- [MCP and Agent Setup](docs/mcp-agent-setup.md)

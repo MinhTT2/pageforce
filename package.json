@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "demo:screenshots": "node scripts/capture-demo-screenshots.mjs",
     "prisma:generate": "prisma generate",
     "prisma:deploy": "node scripts/guard-prisma-env.mjs migrate-deploy && prisma migrate deploy",
     "prisma:migrate": "node scripts/guard-prisma-env.mjs migrate-dev && prisma migrate dev",

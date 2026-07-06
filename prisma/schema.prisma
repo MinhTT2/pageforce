@@ -41,7 +41,7 @@ model Page {
   legacySlug      String?    @unique
   isHome          Boolean    @default(false)
   status          PageStatus @default(DRAFT)
-  schema          Json
+  schema          Json        @map("draftSchema")
   headerMode      SectionMode @default(INHERIT)
   footerMode      SectionMode @default(INHERIT)
   publishedAt     DateTime?

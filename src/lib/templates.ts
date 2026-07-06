@@ -1,7 +1,14 @@
 import type { BlockStyle, BlockType, PageBlock, PageSchema } from "@/types/blocks";
 import { createBlock, defaultPageSettings, tokenPresets } from "@/lib/blocks";
 
-export type PageTemplateKey = "blank" | "product-launch" | "event" | "sales-promo";
+export type PageTemplateKey =
+  | "blank"
+  | "product-launch"
+  | "event"
+  | "sales-promo"
+  | "saas-growth"
+  | "agency-service"
+  | "commerce-collection";
 
 export type PageTemplate = {
   key: PageTemplateKey;
@@ -293,6 +300,315 @@ function buildSalesPromo(): PageSchema {
   ]);
 }
 
+function buildSaasGrowth(): PageSchema {
+  return buildSchema("bold", [
+    buildBlock("hero", {
+      heading: "Turn product signals into revenue",
+      subheading:
+        "MetricFlow helps growing SaaS teams spot expansion opportunities, prioritize accounts, and launch smarter lifecycle campaigns.",
+      buttonText: "Book a demo",
+      buttonUrl: "#",
+    }),
+    buildBlock("carousel", {
+      heading: "A command center for every revenue motion",
+      autoplay: true,
+      items: [
+        {
+          src: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1600&auto=format&fit=crop",
+          alt: "Analytics dashboard on a laptop",
+          caption: "Track activation, retention, and expansion signals in one place.",
+        },
+        {
+          src: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=1600&auto=format&fit=crop",
+          alt: "Team reviewing growth metrics",
+          caption: "Give sales, success, and marketing the same customer context.",
+        },
+        {
+          src: "https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1600&auto=format&fit=crop",
+          alt: "Growth team planning a launch",
+          caption: "Launch campaigns from real usage and account health data.",
+        },
+      ],
+    }),
+    buildBlock("features", {
+      eyebrow: "Growth stack",
+      heading: "Built for teams past the first launch",
+      description: "Move from scattered reports to a practical growth operating system.",
+      items: [
+        {
+          title: "Account scoring",
+          description: "Prioritize expansion and save-risk accounts with clear health signals.",
+          icon: "Star",
+        },
+        {
+          title: "Lifecycle plays",
+          description: "Trigger onboarding, adoption, and renewal campaigns from product behavior.",
+          icon: "Zap",
+        },
+        {
+          title: "Shared dashboards",
+          description: "Give every go-to-market team a clean view of what is changing.",
+          icon: "Globe",
+        },
+      ],
+    }),
+    buildBlock("testimonials", {
+      heading: "Revenue teams grow faster with MetricFlow",
+      items: [
+        {
+          quote: "We found our highest-intent expansion accounts in the first afternoon.",
+          author: "Maya Chen",
+          role: "VP Growth, Orbitlane",
+        },
+        {
+          quote: "MetricFlow made customer signals usable for the whole team, not just analysts.",
+          author: "Alex Morgan",
+          role: "Head of Revenue, Northstar AI",
+        },
+      ],
+    }),
+    buildBlock("pricing", {
+      heading: "Plans for every growth stage",
+      description: "Start with the essentials, then add more seats and automations as your team grows.",
+      plans: [
+        {
+          name: "Growth",
+          price: "$79",
+          billingText: "per month",
+          features: ["5 seats", "Account scoring", "Core lifecycle dashboards"],
+          ctaLabel: "Start Growth",
+          ctaUrl: "#",
+          highlighted: false,
+        },
+        {
+          name: "Scale",
+          price: "$149",
+          billingText: "per month",
+          features: ["Unlimited seats", "Advanced plays", "Priority onboarding"],
+          ctaLabel: "Book a demo",
+          ctaUrl: "#",
+          highlighted: true,
+        },
+      ],
+    }),
+    buildBlock("faq", {
+      heading: "Questions from growth teams",
+      items: [
+        {
+          question: "How fast can we launch?",
+          answer: "Most teams connect their core data and publish their first dashboard in a day.",
+        },
+        {
+          question: "Do we need an analyst?",
+          answer: "No. MetricFlow ships with ready-made account health and lifecycle views.",
+        },
+        {
+          question: "Can we invite sales and success?",
+          answer: "Yes. Shared dashboards are designed for cross-functional teams.",
+        },
+      ],
+    }),
+    buildBlock("cta", {
+      headline: "Ready to turn signals into pipeline?",
+      supportingText: "See how MetricFlow can uncover your next expansion motion.",
+      primaryLabel: "Book a demo",
+      secondaryLabel: "View sample dashboard",
+    }),
+    buildBlock("footer", {
+      brandText: "MetricFlow",
+    }),
+  ]);
+}
+
+function buildAgencyService(): PageSchema {
+  return buildSchema("clean", [
+    buildBlock("hero", {
+      heading: "Brand systems for ambitious service teams",
+      subheading:
+        "Northline Studio turns positioning, websites, and launch campaigns into a clear growth engine for modern B2B companies.",
+      buttonText: "Plan a project",
+      buttonUrl: "#",
+    }),
+    buildBlock("text", {
+      content:
+        "Your brand should make the sales conversation easier. We shape the story, design the page, and build the campaign assets your team needs to move faster.",
+      align: "center",
+    }),
+    buildBlock("image", {
+      src: "https://images.unsplash.com/photo-1556761175-4b46a572b786?q=80&w=1600&auto=format&fit=crop",
+      alt: "Creative team working together",
+    }),
+    buildBlock("features", {
+      eyebrow: "Services",
+      heading: "A focused team for your next launch",
+      description: "Strategy, design, and conversion assets without agency sprawl.",
+      items: [
+        {
+          title: "Positioning sprint",
+          description: "Clarify your audience, offer, messaging, and proof in one guided sprint.",
+          icon: "MessageCircle",
+        },
+        {
+          title: "Landing page system",
+          description: "A polished page structure your team can reuse across campaigns.",
+          icon: "Sparkles",
+        },
+        {
+          title: "Launch support",
+          description: "Campaign copy, creative direction, and optimization after launch.",
+          icon: "BadgeCheck",
+        },
+      ],
+    }),
+    buildBlock("testimonials", {
+      heading: "Trusted by teams with a launch date",
+      items: [
+        {
+          quote: "Northline gave us the sharpest version of our story and a page we were proud to send.",
+          author: "Priya Shah",
+          role: "Founder, Forma Cloud",
+        },
+        {
+          quote: "The process was calm, clear, and faster than any agency engagement we have run.",
+          author: "Evan Brooks",
+          role: "COO, Tempo Supply",
+        },
+      ],
+    }),
+    buildBlock("leadForm", {
+      headline: "Tell us about the project",
+      description: "Share the launch window, goals, and current site. We will reply with the best next step.",
+      submitLabel: "Request a consult",
+    }),
+    buildBlock("faq", {
+      heading: "How projects work",
+      items: [
+        {
+          question: "What size team do you work with?",
+          answer: "Most clients are founder-led or growth-led B2B teams preparing for a launch or repositioning.",
+        },
+        {
+          question: "How long does a project take?",
+          answer: "Focused landing page and messaging projects usually run two to four weeks.",
+        },
+        {
+          question: "Can you work with our existing brand?",
+          answer: "Yes. We can sharpen an existing system or create a lightweight campaign direction.",
+        },
+      ],
+    }),
+    buildBlock("footer", {
+      brandText: "Northline Studio",
+    }),
+  ]);
+}
+
+function buildCommerceCollection(): PageSchema {
+  return buildSchema("warm", [
+    buildBlock("hero", {
+      heading: "The edit your workspace has been waiting for",
+      subheading:
+        "Warm desk essentials, clever storage, and tactile tools for a calmer, better-looking workday.",
+      buttonText: "Shop the collection",
+      buttonUrl: "#",
+    }),
+    buildBlock("products", {
+      eyebrow: "New collection",
+      heading: "Designed for focused days",
+      description: "A curated set of office pieces that feel warm, useful, and giftable.",
+      items: [
+        {
+          name: "Walnut Desk Shelf",
+          description: "A clean riser for monitors, notebooks, and daily tools.",
+          price: "$84",
+          originalPrice: "",
+          image:
+            "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=1200&auto=format&fit=crop",
+          imageAlt: "Wooden desk shelf on a tidy workspace",
+          badge: "New",
+          ctaLabel: "Shop now",
+          ctaUrl: "#",
+        },
+        {
+          name: "Task Lamp",
+          description: "A soft, adjustable light built for late notes and early starts.",
+          price: "$62",
+          originalPrice: "$78",
+          image:
+            "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=1200&auto=format&fit=crop",
+          imageAlt: "Modern desk lamp",
+          badge: "Save 20%",
+          ctaLabel: "Shop now",
+          ctaUrl: "#",
+        },
+        {
+          name: "Cable Tray",
+          description: "Hide the clutter and keep everyday charging within reach.",
+          price: "$28",
+          originalPrice: "",
+          image:
+            "https://images.unsplash.com/photo-1516321497487-e288fb19713f?q=80&w=1200&auto=format&fit=crop",
+          imageAlt: "Organized workspace with laptop",
+          badge: "",
+          ctaLabel: "Shop now",
+          ctaUrl: "#",
+        },
+      ],
+    }),
+    buildBlock("features", {
+      eyebrow: "Why customers love it",
+      heading: "Good-looking gear that earns its desk space",
+      description: "Every piece balances utility, texture, and a calmer visual rhythm.",
+      items: [
+        {
+          title: "Natural materials",
+          description: "Warm wood, matte finishes, and neutral details that pair well.",
+          icon: "Sparkles",
+        },
+        {
+          title: "Small-space friendly",
+          description: "Designed to make compact desks feel organized instead of crowded.",
+          icon: "Check",
+        },
+        {
+          title: "Fast shipping",
+          description: "Orders leave our studio within two business days.",
+          icon: "BadgeCheck",
+        },
+      ],
+    }),
+    buildBlock("testimonials", {
+      heading: "From desks that finally feel finished",
+      items: [
+        {
+          quote: "My workspace looks calmer and I can actually find what I need.",
+          author: "Nora Ellis",
+          role: "Designer",
+        },
+        {
+          quote: "The shelf and lamp instantly made my home office feel intentional.",
+          author: "Jon Bell",
+          role: "Product Manager",
+        },
+      ],
+    }),
+    buildBlock("cta", {
+      headline: "Build a desk you want to sit down to",
+      supportingText: "Bundle two or more collection pieces and get free shipping this week.",
+      primaryLabel: "Shop the edit",
+      secondaryLabel: "See best sellers",
+    }),
+    buildBlock("leadForm", {
+      headline: "Get the workspace guide",
+      description: "A short checklist for styling a calmer desk with fewer pieces.",
+      submitLabel: "Send the guide",
+    }),
+    buildBlock("footer", {
+      brandText: "Hearth Desk Co.",
+    }),
+  ]);
+}
+
 export const pageTemplates: PageTemplate[] = [
   {
     key: "blank",
@@ -317,6 +633,24 @@ export const pageTemplates: PageTemplate[] = [
     name: "Sales & promo",
     description: "Push a limited-time offer with pricing and a discount form.",
     build: buildSalesPromo,
+  },
+  {
+    key: "saas-growth",
+    name: "SaaS growth",
+    description: "Sell a SaaS platform with proof, pricing, and a strong demo CTA.",
+    build: buildSaasGrowth,
+  },
+  {
+    key: "agency-service",
+    name: "Agency service",
+    description: "Present a premium service offer and collect qualified project leads.",
+    build: buildAgencyService,
+  },
+  {
+    key: "commerce-collection",
+    name: "Commerce collection",
+    description: "Showcase products with warm visuals, proof, and a shopping CTA.",
+    build: buildCommerceCollection,
   },
 ];
 

@@ -12,6 +12,9 @@ const expectedTokens = {
   "product-launch": tokenPresets.bold,
   event: tokenPresets.clean,
   "sales-promo": tokenPresets.warm,
+  "saas-growth": tokenPresets.bold,
+  "agency-service": tokenPresets.clean,
+  "commerce-collection": tokenPresets.warm,
 } as const;
 
 describe("pageTemplates", () => {
@@ -57,6 +60,9 @@ describe("resolveTemplateSchema", () => {
     expect(resolveTemplateSchema("product-launch").blocks.length).toBeGreaterThan(0);
     expect(resolveTemplateSchema("event").blocks.length).toBeGreaterThan(0);
     expect(resolveTemplateSchema("sales-promo").blocks.length).toBeGreaterThan(0);
+    expect(resolveTemplateSchema("saas-growth").blocks.length).toBeGreaterThan(0);
+    expect(resolveTemplateSchema("agency-service").blocks.length).toBeGreaterThan(0);
+    expect(resolveTemplateSchema("commerce-collection").blocks.length).toBeGreaterThan(0);
   });
 
   it.each(["nope", undefined, 42, null, {}])("falls back to blank for %s", (key) => {

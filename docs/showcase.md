@@ -1,6 +1,6 @@
 # Pageforce Showcase
 
-Pageforce is a mini landing page builder SaaS MVP for founders, marketers, and small teams who need to create polished campaign pages without wiring a CMS from scratch.
+Pageforce is a mini multipage website builder SaaS MVP for founders, marketers, and small teams who need to create polished marketing sites without wiring a CMS from scratch.
 
 The project demonstrates a complete product loop: authenticate, create a site, compose pages from JSON-backed blocks, save live, share public URLs, upload images, and collect leads.
 

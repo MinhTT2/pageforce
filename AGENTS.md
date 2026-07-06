@@ -10,7 +10,7 @@ This file is the source of truth for agents working in this repository. Read it 
 
 ## Project Overview
 
-Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, create sites, compose landing pages from JSON-backed blocks, save changes live, capture leads, and view public pages at `/s/[siteSlug]`.
+Pageforce is a Mini Landing Page Builder SaaS MVP. Users register, create sites, compose landing pages from JSON-backed blocks, save changes live, upload page assets, capture leads, and view public pages at `/s/[siteSlug]`.
 
 Each Supabase Auth user can own multiple `Site` records, and each site can contain multiple `Page` records.
 
@@ -50,7 +50,9 @@ Each Supabase Auth user can own multiple `Site` records, and each site can conta
 - `Page.publishedSchema` is kept in sync for compatibility when a page is live, but there is no separate publish step in the MVP.
 - Saving updates the live schema and the public page immediately once the schema has at least one block.
 - Blank pages remain `DRAFT`; public pages render only `PUBLISHED` pages with content.
+- Global header/footer JSON belongs to `Site`; page-level header/footer modes can inherit, customize, or hide those sections.
 - Lead Form blocks can store public submissions in `LeadSubmission` or use mailto/external action delivery.
+- Authenticated image uploads use Supabase Storage bucket `page-assets`; keep file type, size, ownership, and public URL validation in place.
 - Keep shared block rendering logic reusable between builder preview and public render.
 
 ## Auth Rules
@@ -85,13 +87,16 @@ Each Supabase Auth user can own multiple `Site` records, and each site can conta
   - a default factory in `src/lib/blocks.ts`;
   - validation in `src/lib/validators.ts`;
   - rendering support in `src/components/blocks/BlockRenderer.tsx`;
-  - editing controls in the builder UI.
+  - editing controls in `src/components/builder/block-editors/`;
+  - focused tests when behavior, validation, defaults, or schema shape changes.
+- The current public block contract is `PageSchema` version 2.
 - Builder edits the live page schema.
 - Public render uses the live page schema for `PUBLISHED` pages with content.
 - Blocks are added by dragging from the palette onto the canvas (with a drop-position indicator) or by clicking a palette item.
 - Reordering uses drag-and-drop (dnd-kit) via a per-block drag handle; the handle is keyboard accessible (Space/Enter to lift, arrow keys to move, Space to drop, Esc to cancel).
 - Page-wide design tokens (`settings.tokens`: colors, fonts, radius, spacing) drive rendering through `--pf-*` CSS variables; per-block `style` overrides re-scope those variables. Colors are validated hex-only — do not relax this (style-attribute injection guard).
-- MVP images use URLs. Do not add uploads unless requested.
+- Images can be external URLs or authenticated Supabase uploads. Do not add a new storage provider, image transformation service, or upload surface unless requested.
+- Template-driven site/page creation must preserve schema validation and unique site/page slug behavior.
 
 ## UI Rules
 
@@ -105,6 +110,7 @@ Each Supabase Auth user can own multiple `Site` records, and each site can conta
 ## Quality Gates
 
 - Run `npm run lint` after code changes.
+- Run `npm run typecheck` after TypeScript-facing changes.
 - Run `npm run build` before handing off substantial changes.
 - Run `npm run test` for substantial logic, validator, schema, or builder changes.
 - Run `npm run prisma:generate` after Prisma schema changes.
@@ -112,8 +118,18 @@ Each Supabase Auth user can own multiple `Site` records, and each site can conta
 - Production must use committed migrations with `npm run prisma:deploy`.
 - Never run `prisma migrate dev` or `npm run prisma:migrate` against production.
 - If `.env` or Supabase credentials are missing, report the blocker clearly instead of faking database verification.
+- Use `npm run ci` before larger handoffs when time and environment allow.
+- Run `npm run test:e2e` for changes to auth, dashboard, builder save flows, public rendering, uploads, or lead capture when the dev Supabase environment is configured.
+- Lefthook runs `npm run lint` and `npm run typecheck` before commit, and `npm run test` before push. Keep these hooks fast; CI remains the full authoritative gate.
 
 ## Prompt Best Practices
+
+Use durable instructions here for repo rules, and use the prompt for task-specific context. Strong task prompts usually include:
+
+- Goal: what should change.
+- Context: relevant files, screenshots, logs, URLs, or reproduction steps.
+- Constraints: architecture, safety, design, or compatibility limits.
+- Done when: checks, behavior, or review criteria that prove completion.
 
 Before coding, read:
 
@@ -122,6 +138,12 @@ Before coding, read:
 - `package.json`
 - `prisma/schema.prisma`
 - the files/components directly related to the task
+
+For complex or fuzzy changes, plan first. Ask clarifying questions only when the missing answer cannot be safely inferred from the repo.
+
+Use review mode or an explicit review pass for risky diffs before committing, especially auth, ownership, migration, upload, public rendering, and builder schema changes.
+
+Avoid running multiple agent threads against the same files at once. If parallel work is needed, split it by branch, worktree, or clearly separate file ownership.
 
 When changing builder features, update the type, validator, renderer, editor, and default factory together.
 
@@ -139,6 +161,32 @@ When finishing, report:
 - checks run;
 - migration status if the database schema changed;
 - any remaining blocker, especially missing Supabase env vars or migrations.
+
+## Agent Workflow and Hooks
+
+Recommended Codex surface choices:
+
+- Put durable repo conventions in `AGENTS.md`.
+- Put personal defaults, MCP setup, model/reasoning defaults, and trusted project hooks in Codex `config.toml`, not in the app source unless they are meant to be shared.
+- Use a skill for repeated Pageforce workflows such as implement-test-commit-push.
+- Use MCPs for live external state, browser verification, Supabase/Vercel/GitHub inspection, and current library docs.
+- Use hooks only for mechanical guardrails that are cheap, deterministic, and worth running repeatedly.
+
+Recommended Codex hooks to consider in local or project `.codex/` config:
+
+- `UserPromptSubmit`: scan prompts for accidentally pasted secrets, Supabase service-role keys, access tokens, or production credentials before the agent starts.
+- `PreToolUse` for shell commands: block or warn on destructive git commands, production Prisma migrations, writes to `.env`, and commands that appear to target `pageforce-prod` from local dev.
+- `PreToolUse` for file edits: warn before editing `.env`, secrets, generated files, migrations, or lockfiles unless the task explicitly calls for it.
+- `PostToolUse` for `apply_patch`: run a quick formatting or static sanity check only when it is fast and scoped; do not auto-run the full build after every edit.
+- `Stop`: remind the agent to report changed files, checks, migration status, and blockers. Keep it informational, not a hidden auto-commit.
+- `PreCompact` or `PostCompact`: save a compact task summary for long builder/database changes so resumed work keeps the same constraints.
+
+Repo Git hooks use Lefthook:
+
+- `prepare` installs Lefthook after `npm install`.
+- `pre-commit` runs `npm run lint` and `npm run typecheck`.
+- `pre-push` runs `npm run test`.
+- Do not add `npm run build` to every local push unless the team explicitly wants slower hooks; use `npm run ci` for larger handoffs and let GitHub Actions remain the authoritative full gate.
 
 ## Recommended MCPs
 
@@ -162,5 +210,5 @@ Lower-priority MCPs:
 - Do not commit `.env` or credentials.
 - Do not commit service-role keys, access tokens, personal MCP config, or production project secrets.
 - Do not add a Prisma `User` model for the MVP.
-- Do not add teams, billing, analytics, custom domains, subdomains, uploads, templates, undo/redo, or breakpoint editing unless explicitly requested.
+- Do not add teams, billing, analytics, custom domains, subdomains, new upload providers, new template systems, undo/redo, or breakpoint editing unless explicitly requested.
 - Do not replace the chosen stack without a new architecture decision.

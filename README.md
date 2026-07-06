@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MinhTT2/pageforce/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTT2/pageforce/actions/workflows/ci.yml)
 
-Pageforce is a mini landing page builder SaaS MVP for creating multi-page marketing sites from structured JSON blocks. It combines a guarded dashboard and drag-and-drop builder with live public rendering, lead capture, image uploads, and Supabase-backed auth/data.
+Pageforce is a mini multipage website builder SaaS MVP for creating marketing sites from structured JSON blocks. It combines a guarded dashboard and drag-and-drop builder with live public rendering, lead capture, image uploads, and Supabase-backed auth/data.
 
 The project is intentionally small enough to review in one sitting, but built with production-minded boundaries: explicit ownership checks, schema validation, CI, Prisma migrations, environment guards, and reusable rendering between the builder preview and public pages.
 
@@ -46,7 +46,7 @@ See [docs/showcase.md](docs/showcase.md) for the product story and reviewer path
 ## Feature Tour
 
 - Google sign-in through Supabase Auth with guarded dashboard and builder routes.
-- Multi-site dashboard where each user can create sites and manage landing pages.
+- Multi-site dashboard where each user can create sites and manage pages.
 - Drag-and-drop builder with live canvas, block palette, keyboard-accessible reordering, duplication, deletion, and tabbed inspectors.
 - Thirteen block types: Hero, Text, Image, Carousel, Button, Features, Testimonials, Pricing, Products, FAQ, CTA, Lead Form, Footer.
 - Page-wide design tokens plus per-block style overrides for colors, fonts, radius, spacing, alignment, padding, and width.

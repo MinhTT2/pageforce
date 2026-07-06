@@ -3,6 +3,7 @@ import { POST } from "./route";
 import { getCurrentUser } from "@/lib/auth";
 import { emptyPageSchema } from "@/lib/blocks";
 import { createPageForUser, toPageSummary } from "@/lib/pages";
+import type { PageSummary } from "@/types/page";
 
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
@@ -43,7 +44,7 @@ function postPagesRequest(body: Record<string, unknown>) {
 describe("POST /api/pages", () => {
   it("creates new pages as blank drafts even when a template is sent", async () => {
     const createdPage = { id: "page-1" };
-    const summary = {
+    const summary: PageSummary = {
       id: "page-1",
       siteId: "site-1",
       siteName: "Demo Site",

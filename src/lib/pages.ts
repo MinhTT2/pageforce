@@ -9,6 +9,7 @@ export const MAX_PAGE_BODY_BYTES = 512 * 1024;
 export const MAX_SLUG_LENGTH = 64;
 const MAX_UNIQUE_SLUG_ATTEMPTS = 25;
 const RESERVED_SLUGS = new Set(["api", "dashboard", "builder", "login", "register", "s", "p"]);
+type PageSlugClient = Pick<typeof prisma, "page">;
 
 export function pagePublicationData(schema: PageSchema) {
   const publishable = schema.blocks.length > 0;
@@ -295,13 +296,18 @@ export async function getOrCreateDefaultSiteForUser(userId: string) {
   return { id: site.id };
 }
 
-export async function createUniqueSlug(base: string, currentPageId?: string, siteId?: string) {
+export async function createUniqueSlug(
+  base: string,
+  currentPageId?: string,
+  siteId?: string,
+  client: PageSlugClient = prisma,
+) {
   const cleanBase = normalizeSlugBase(base);
   let candidate = buildSlugCandidate(cleanBase);
   let suffix = 2;
 
   while (
-    await prisma.page.findFirst({
+    await client.page.findFirst({
       where: {
         slug: candidate,
         ...(siteId ? { siteId } : {}),
@@ -322,8 +328,9 @@ export async function updatePageWithUniqueSlug<T>(
   currentPageId: string,
   siteId: string,
   write: (slug: string) => Promise<T>,
+  client: PageSlugClient = prisma,
 ) {
-  return writeWithUniqueSlug(base, siteId, currentPageId, write);
+  return writeWithUniqueSlug(base, siteId, currentPageId, write, client);
 }
 
 export async function updateSiteWithUniqueSlug<T>(
@@ -359,6 +366,7 @@ async function writeWithUniqueSlug<T>(
   siteId: string,
   currentPageId: string | undefined,
   write: (slug: string) => Promise<T>,
+  client: PageSlugClient = prisma,
 ) {
   const cleanBase = normalizeSlugBase(base);
 
@@ -367,6 +375,7 @@ async function writeWithUniqueSlug<T>(
       buildSlugCandidate(cleanBase, attempt === 0 ? undefined : attempt + 1),
       currentPageId,
       siteId,
+      client,
     );
 
     try {

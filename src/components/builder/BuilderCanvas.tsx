@@ -187,7 +187,7 @@ function EmptyBuilderStart({
           Start with the shape of the page
         </h2>
         <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-          Pick a ready-made structure or add the first conversion block. A practical landing page
+          Pick a ready-made structure or add the first conversion block. A practical website page
           usually starts with Hero, Features, CTA or Lead Form, then FAQ and Footer.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">

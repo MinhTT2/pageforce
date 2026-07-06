@@ -18,7 +18,7 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur">
       <div className="mx-auto flex min-h-18 max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-        <BrandLogo tagline="Landing builder" />
+        <BrandLogo tagline="Website builder" />
 
         {user ? (
           <nav

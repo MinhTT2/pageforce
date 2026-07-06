@@ -1,11 +1,10 @@
 import Link from "next/link";
 import {
   ArrowLeft,
+  ExternalLink,
   Eye,
   FileText,
   LayoutGrid,
-  PanelRightClose,
-  PanelRightOpen,
   Pencil,
   Redo2,
   Save,
@@ -21,11 +20,12 @@ export const BuilderHeader = memo(function BuilderHeader({
   dirty,
   saveStatus,
   notice,
+  publicUrl,
+  isLive,
   previewMode,
   blocksOpen,
   pagesOpen,
   pageSettingsOpen,
-  rightSidebarOpen,
   canUndo,
   canRedo,
   onUndo,
@@ -33,18 +33,18 @@ export const BuilderHeader = memo(function BuilderHeader({
   onShowBlocks,
   onTogglePages,
   onTogglePageSettings,
-  onToggleRightSidebar,
   onTogglePreview,
   onSave,
 }: {
   dirty: boolean;
   saveStatus: SaveStatus;
   notice: string | null;
+  publicUrl: string;
+  isLive: boolean;
   previewMode: boolean;
   blocksOpen: boolean;
   pagesOpen: boolean;
   pageSettingsOpen: boolean;
-  rightSidebarOpen: boolean;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -52,11 +52,11 @@ export const BuilderHeader = memo(function BuilderHeader({
   onShowBlocks: () => void;
   onTogglePages: () => void;
   onTogglePageSettings: () => void;
-  onToggleRightSidebar: () => void;
   onTogglePreview: () => void;
   onSave: () => void;
 }) {
   const saving = saveStatus === "saving";
+  const showPublicUrl = saveStatus === "saved" && isLive;
 
   return (
     <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">
@@ -108,6 +108,16 @@ export const BuilderHeader = memo(function BuilderHeader({
             {notice}
           </span>
         ) : null}
+        {showPublicUrl ? (
+          <div className="flex max-w-full items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-2 py-1 text-sm text-success">
+            <span className="min-w-0 truncate font-medium">Saved: {publicUrl}</span>
+            <Button asChild variant="ghost" size="icon-sm" aria-label="Open public website">
+              <a href={publicUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink size={14} />
+              </a>
+            </Button>
+          </div>
+        ) : null}
         <Button
           variant="ghost"
           size="icon"
@@ -127,15 +137,6 @@ export const BuilderHeader = memo(function BuilderHeader({
           <Redo2 size={16} />
         </Button>
         <Button
-          variant={rightSidebarOpen ? "ghost" : "secondary"}
-          size="icon"
-          onClick={onToggleRightSidebar}
-          aria-pressed={rightSidebarOpen}
-          aria-label={rightSidebarOpen ? "Hide inspector" : "Show inspector"}
-        >
-          {rightSidebarOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
-        </Button>
-        <Button
           variant="secondary"
           onClick={onTogglePreview}
           aria-pressed={previewMode}
@@ -146,7 +147,7 @@ export const BuilderHeader = memo(function BuilderHeader({
         </Button>
         <Button onClick={onSave} disabled={saving || !dirty}>
           <Save size={16} />
-          {saving ? "Saving..." : "Save now"}
+          {saving ? "Saving..." : "Save & publish"}
         </Button>
       </div>
     </header>

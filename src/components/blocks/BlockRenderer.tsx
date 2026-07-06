@@ -85,7 +85,7 @@ export const BlockRenderer = memo(function BlockRenderer({
           </div>
           <h2 className="mt-4 text-lg font-semibold text-foreground">Start with a block</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Add practical sections to compose a complete landing page.
+            Add practical sections to compose a complete website page.
           </p>
           {emptyActions ? <div className="mt-5 flex flex-wrap justify-center gap-2">{emptyActions}</div> : null}
         </div>

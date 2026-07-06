@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,23 +16,24 @@ import {
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/Input";
 import { slugify } from "@/lib/slug";
+import type { PageSummary } from "@/types/page";
 
 type EditPageDialogProps = {
   page: {
     id: string;
     title: string;
     slug: string;
+    publicPath?: string;
   };
   triggerClassName?: string;
+  onSaved?: (page: PageSummary) => void | Promise<void>;
 };
 
-type EditPageResponse = {
+type EditPageResponse = Partial<PageSummary> & {
   error?: string;
-  slug?: string;
-  publicPath?: string;
 };
 
-export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) {
+export function EditPageDialog({ page, triggerClassName, onSaved }: EditPageDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(page.title);
@@ -40,6 +41,31 @@ export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const previewPath = useMemo(() => {
+    if (!page.publicPath) {
+      return slug ? `/${slug}` : "/page";
+    }
+
+    if (!page.slug) {
+      return page.publicPath;
+    }
+
+    const nextSlug = slug || page.slug;
+    return page.publicPath.endsWith(`/${page.slug}`)
+      ? `${page.publicPath.slice(0, -page.slug.length)}${nextSlug}`
+      : page.publicPath;
+  }, [page.publicPath, page.slug, slug]);
+
+  function updateOpen(nextOpen: boolean) {
+    if (nextOpen) {
+      setTitle(page.title);
+      setSlug(page.slug);
+    } else {
+      setError("");
+      setNotice("");
+    }
+    setOpen(nextOpen);
+  }
 
   async function savePage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,38 +74,43 @@ export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) 
     setNotice("");
     const requestedSlug = slug.trim();
 
-    const response = await fetch(`/api/pages/${page.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: title.trim(),
-        slug: requestedSlug,
-      }),
-    });
-    const payload = (await response.json().catch(() => ({}))) as EditPageResponse;
+    try {
+      const response = await fetch(`/api/pages/${page.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          slug: requestedSlug,
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as EditPageResponse;
 
-    setLoading(false);
+      if (!response.ok) {
+        setError(payload.error || "Could not update this page. Please try again.");
+        return;
+      }
 
-    if (!response.ok) {
-      setError(payload.error || "Could not update this page. Please try again.");
-      return;
+      if (payload.slug && payload.slug !== requestedSlug) {
+        setSlug(payload.slug);
+        setNotice(`That slug was taken. This page now uses ${payload.publicPath ?? payload.slug}.`);
+      } else {
+        updateOpen(false);
+      }
+
+      if (payload.id && onSaved) {
+        await onSaved(payload as PageSummary);
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setError("Could not update this page. Check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
-
-    if (payload.slug && payload.slug !== requestedSlug) {
-      setSlug(payload.slug);
-      setNotice(
-        `That slug was taken. This page is now published at ${payload.publicPath ?? payload.slug}.`,
-      );
-      router.refresh();
-      return;
-    }
-
-    setOpen(false);
-    router.refresh();
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={updateOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className={triggerClassName}>
           <Pencil />
@@ -91,7 +122,7 @@ export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) 
           <DialogHeader>
             <DialogTitle>Edit page details</DialogTitle>
             <DialogDescription>
-              Update the dashboard title and public slug. Content blocks stay in the builder.
+              Update the page name and visitor URL. Content blocks stay in the builder canvas.
             </DialogDescription>
           </DialogHeader>
 
@@ -114,6 +145,12 @@ export function EditPageDialog({ page, triggerClassName }: EditPageDialogProps) 
               disabled={loading}
             />
           </Field>
+          <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs leading-5 text-muted-foreground">
+            <p>
+              Slugs are automatically formatted with lowercase letters, numbers, and hyphens.
+            </p>
+            <p className="mt-1 truncate font-mono text-foreground">{previewPath}</p>
+          </div>
           {notice ? (
             <p className="text-xs leading-5 text-warning" role="status">
               {notice}

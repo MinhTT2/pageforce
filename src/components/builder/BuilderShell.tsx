@@ -16,6 +16,7 @@ import {
   type DragStartEvent,
   type KeyboardCoordinateGetter,
 } from "@dnd-kit/core";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -83,6 +84,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   const [sitePages, setSitePages] = useState(page.site.pages);
   const [switchingPageId, setSwitchingPageId] = useState<string | null>(null);
   const publicOrigin = usePublicOrigin();
+  const router = useRouter();
 
   const settings = state.schema.settings ?? defaultPageSettings;
   const publicUrl = useMemo(
@@ -107,16 +109,15 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     state.saveStatus !== "error";
 
   const blockIdsRef = useRef<string[]>([]);
-  const pageIdRef = useRef(page.id);
-  const lastAutosavedVersionRef = useRef(0);
-  const switchRequestIdRef = useRef(0);
+  const loadedPageIdRef = useRef(page.id);
+  const saveInFlightRef = useRef<Promise<boolean> | null>(null);
 
   useEffect(() => {
-    if (pageIdRef.current === page.id) {
+    if (loadedPageIdRef.current === page.id) {
       return;
     }
 
-    pageIdRef.current = page.id;
+    loadedPageIdRef.current = page.id;
     setActivePage(page);
     dispatch({ type: "loadPage", page });
     setSitePages(page.site.pages);
@@ -195,107 +196,101 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinates }),
   );
 
-  const savePage = useCallback(async () => {
-    const current = stateRef.current;
-    const currentPageId = pageIdRef.current;
-
-    if (!current.dirty || current.saveStatus === "saving") {
-      return;
+  const savePage = useCallback(async (): Promise<boolean> => {
+    if (saveInFlightRef.current) {
+      return saveInFlightRef.current;
     }
 
+    const current = stateRef.current;
+
+    if (!current.dirty) {
+      return true;
+    }
+
+    const currentPageId = current.pageId;
     const requestedSlug = current.slug;
     const editVersion = current.editVersion;
     dispatch({ type: "saveStarted" });
 
-    try {
-      const response = await fetch(`/api/pages/${currentPageId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: current.title,
-          slug: current.slug,
-          isHome: current.isHome,
-          headerMode: current.headerMode,
-          footerMode: current.footerMode,
-          headerSchema: current.headerSchema,
-          footerSchema: current.footerSchema,
-          schema: current.schema,
-          lastKnownUpdatedAt: current.updatedAt,
-        }),
-      });
-      const payload = (await response.json().catch(() => null)) as SaveResponse | null;
+    const save = (async () => {
+      try {
+        const response = await fetch(`/api/pages/${currentPageId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: current.title,
+            slug: current.slug,
+            isHome: current.isHome,
+            headerMode: current.headerMode,
+            footerMode: current.footerMode,
+            headerSchema: current.headerSchema,
+            footerSchema: current.footerSchema,
+            schema: current.schema,
+            lastKnownUpdatedAt: current.updatedAt,
+          }),
+        });
+        const payload = (await response.json().catch(() => null)) as SaveResponse | null;
+        const stillCurrent =
+          stateRef.current.pageId === currentPageId &&
+          stateRef.current.editVersion === editVersion;
 
-      if (response.ok && payload) {
-        dispatch({ type: "saveSucceeded", page: payload, requestedSlug, editVersion });
-        setActivePage(payload);
-        setSitePages(payload.site.pages);
-      } else {
+        if (response.ok && payload) {
+          dispatch({
+            type: "saveSucceeded",
+            page: payload,
+            requestedSlug,
+            editVersion,
+            pageId: currentPageId,
+          });
+
+          if (stillCurrent && payload.id === currentPageId) {
+            setActivePage(payload);
+            setSitePages(payload.site.pages);
+            return true;
+          }
+
+          return false;
+        }
+
         dispatch({
           type: "saveFailed",
           message: payload?.error ?? "Could not save page",
           editVersion,
+          pageId: currentPageId,
         });
+        return false;
+      } catch {
+        dispatch({
+          type: "saveFailed",
+          message: "Could not save page",
+          editVersion,
+          pageId: currentPageId,
+        });
+        return false;
+      } finally {
+        saveInFlightRef.current = null;
       }
-    } catch {
-      dispatch({ type: "saveFailed", message: "Could not save page", editVersion });
-    }
+    })();
+
+    saveInFlightRef.current = save;
+    return save;
   }, []);
 
   const switchPage = useCallback(async (pageId: string) => {
-    if (pageId === pageIdRef.current || switchingPageId) {
+    if (pageId === stateRef.current.pageId || switchingPageId) {
       return;
     }
 
     if (
       stateRef.current.dirty &&
-      !window.confirm("You have unsaved changes. Switch pages anyway?")
+      !window.confirm("You have unsaved changes. Switch pages and discard them?")
     ) {
       return;
     }
 
-    const requestId = switchRequestIdRef.current + 1;
-    switchRequestIdRef.current = requestId;
     setSwitchingPageId(pageId);
-
-    try {
-      const response = await fetch(`/api/pages/${pageId}`);
-      const payload = (await response.json().catch(() => null)) as SaveResponse | null;
-
-      if (switchRequestIdRef.current !== requestId) {
-        return;
-      }
-
-      if (!response.ok || !payload || payload.error) {
-        dispatch({
-          type: "saveFailed",
-          message: payload?.error ?? "Could not open page",
-          editVersion: stateRef.current.editVersion,
-        });
-        return;
-      }
-
-      pageIdRef.current = payload.id;
-      setActivePage(payload);
-      dispatch({ type: "loadPage", page: payload });
-      setSitePages(payload.site.pages);
-      setActiveDrag(null);
-      setDropIndicator(null);
-      lastAutosavedVersionRef.current = 0;
-      window.history.pushState(null, "", `/builder/site/${payload.site.id}?page=${payload.id}`);
-    } catch {
-      if (switchRequestIdRef.current === requestId) {
-        dispatch({
-          type: "saveFailed",
-          message: "Could not open page",
-          editVersion: stateRef.current.editVersion,
-        });
-      }
-    } finally {
-      if (switchRequestIdRef.current === requestId) {
-        setSwitchingPageId(null);
-      }
-    }
-  }, [switchingPageId]);
+    router.push(`/builder/site/${activePage.site.id}?page=${pageId}`, { scroll: false });
+  }, [activePage.site.id, router, switchingPageId]);
 
   const addBlock = useCallback((type: BlockType, index?: number) => {
     const blocks = stateRef.current.schema.blocks;
@@ -327,8 +322,19 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     [],
   );
   const clearSelection = useCallback(() => dispatch({ type: "selectBlock", id: null }), []);
+  const setTitle = useCallback((value: string) => dispatch({ type: "setTitle", value, at: Date.now() }), []);
   const setSlug = useCallback((value: string) => dispatch({ type: "setSlug", value, at: Date.now() }), []);
-  const setIsHome = useCallback((value: boolean) => dispatch({ type: "setIsHome", value, at: Date.now() }), []);
+  const setIsHome = useCallback((value: boolean) => {
+    if (
+      value &&
+      !stateRef.current.isHome &&
+      !window.confirm("Make this page the homepage? The current homepage will move to its slug URL.")
+    ) {
+      return;
+    }
+
+    dispatch({ type: "setIsHome", value, at: Date.now() });
+  }, []);
   const setHeaderMode = useCallback(
     (value: SectionMode) => dispatch({ type: "setHeaderMode", value, at: Date.now() }),
     [],
@@ -385,25 +391,6 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     },
     [],
   );
-  const toggleRightSidebar = useCallback(() => setRightSidebarOpen((current) => !current), []);
-
-  useEffect(() => {
-    if (
-      !state.dirty ||
-      state.saveStatus === "saving" ||
-      state.editVersion === lastAutosavedVersionRef.current
-    ) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      lastAutosavedVersionRef.current = stateRef.current.editVersion;
-      void savePage();
-    }, 1500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [savePage, state.dirty, state.editVersion, state.saveStatus]);
-
   useSaveShortcut(savePage);
   useUndoRedoShortcuts(undo, redo);
   useUnsavedChangesWarning(state.dirty);
@@ -499,11 +486,12 @@ export function BuilderShell({ page }: { page: EditablePage }) {
           dirty={state.dirty}
           saveStatus={state.saveStatus}
           notice={state.notice}
+          publicUrl={publicUrl}
+          isLive={isLive}
           previewMode={previewMode}
           blocksOpen={leftMode === "blocks"}
           pagesOpen={leftMode === "pages"}
           pageSettingsOpen={leftMode === "pageSettings"}
-          rightSidebarOpen={rightSidebarOpen}
           canUndo={state.past.length > 0}
           canRedo={state.future.length > 0}
           onUndo={undo}
@@ -511,7 +499,6 @@ export function BuilderShell({ page }: { page: EditablePage }) {
           onShowBlocks={showBlocks}
           onTogglePages={togglePages}
           onTogglePageSettings={togglePageSettings}
-          onToggleRightSidebar={toggleRightSidebar}
           onTogglePreview={togglePreview}
           onSave={savePage}
         />
@@ -565,9 +552,12 @@ export function BuilderShell({ page }: { page: EditablePage }) {
               {leftSidebarOpen && leftMode === "pageSettings" ? (
                 <BuilderPageSettingsSidebar
                   siteId={activePage.site.id}
+                  siteSlug={activePage.site.slug}
                   siteGlobalHeader={activePage.site.globalHeader}
                   siteGlobalFooter={activePage.site.globalFooter}
+                  pages={sitePages}
                   settings={settings}
+                  title={state.title}
                   slug={state.slug}
                   isHome={state.isHome}
                   headerMode={state.headerMode}
@@ -576,6 +566,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
                   footerSchema={state.footerSchema}
                   publicUrl={publicUrl}
                   isLive={isLive}
+                  onTitleChange={setTitle}
                   onSlugChange={setSlug}
                   onIsHomeChange={setIsHome}
                   onHeaderModeChange={setHeaderMode}
@@ -592,6 +583,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
                   currentPageId={activePage.id}
                   switchingPageId={switchingPageId}
                   onSelectPage={switchPage}
+                  onPagesChange={setSitePages}
                   onClose={() => setLeftMode("blocks")}
                 />
               ) : leftSidebarOpen ? (

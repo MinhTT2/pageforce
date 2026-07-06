@@ -43,7 +43,7 @@ export function ProductPreview() {
                   Launch faster with Pageforce
                 </h3>
                 <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
-                  Create a clean landing page from simple blocks, save changes, and share the URL
+                  Create clean website pages from simple blocks, save changes, and share the URL
                   as soon as the message feels right.
                 </p>
                 <div className="mt-5 inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground">

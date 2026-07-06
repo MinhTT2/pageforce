@@ -3,7 +3,7 @@ import { Quote } from "lucide-react";
 const testimonials = [
   {
     quote:
-      "I had a landing page for my side project live before lunch. The blocks already look designed, so I only wrote the copy.",
+      "I had a small website for my side project live before lunch. The blocks already look designed, so I only wrote the copy.",
     author: "An Nguyen",
     role: "Indie founder",
   },

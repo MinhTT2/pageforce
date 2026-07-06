@@ -69,7 +69,7 @@ export function BlockInsertMenu({
         <PopoverHeader className="pb-1">
           <PopoverTitle>Add a block</PopoverTitle>
         </PopoverHeader>
-        <div className="grid gap-3">
+        <div className="grid gap-2.5">
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -78,11 +78,11 @@ export function BlockInsertMenu({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search blocks"
               aria-label="Search blocks"
-              className="pl-8"
+              className="h-8 bg-surface pl-8 text-sm shadow-none"
             />
           </div>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-2">
-            <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+            <TabsList variant="line" className="w-full justify-start overflow-x-auto pb-0.5">
               <TabsTrigger value={allTab} className="h-7 flex-none px-2 text-xs">
                 All
               </TabsTrigger>
@@ -98,13 +98,13 @@ export function BlockInsertMenu({
             </TabsList>
             <TabsContent value={activeTab} className="max-h-80 overflow-auto pr-1">
               {hasMatches ? (
-                <div className="grid gap-1.5">
+                <div className="grid gap-1">
                   {visibleBlocks.map((type) => (
                     <InsertMenuItem key={type} type={type} onAdd={add} />
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-border bg-surface px-3 py-6 text-center">
+                <div className="rounded-md border border-dashed border-border bg-surface px-3 py-5 text-center">
                   <p className="text-sm font-medium text-surface-foreground">No blocks found</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Try another category or keyword.
@@ -130,7 +130,7 @@ function InsertMenuItem({ type, onAdd }: { type: BlockType; onAdd: (type: BlockT
           type="button"
           onClick={() => onAdd(type)}
           aria-label={`Add ${blockLabels[type]} block. ${option.description}`}
-          className="group flex h-12 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-left transition hover:border-primary/35 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="group flex h-12 items-center gap-2 rounded-md border border-border bg-surface px-2 text-left transition hover:border-primary/35 hover:bg-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-background text-primary ring-1 ring-border/60">
             <Icon className="size-4" />
@@ -139,7 +139,7 @@ function InsertMenuItem({ type, onAdd }: { type: BlockType; onAdd: (type: BlockT
             <span className="block truncate text-sm font-medium text-surface-foreground">
               {blockLabels[type]}
             </span>
-            <span className="mt-0.5 block truncate text-[11px] leading-none text-muted-foreground">
+            <span className="block truncate text-[11px] leading-4 text-muted-foreground">
               {option.description}
             </span>
           </span>

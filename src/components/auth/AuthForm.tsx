@@ -49,7 +49,7 @@ export function AuthForm(_props: AuthFormProps) {
           Log in or sign up
         </h1>
         <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
-          Continue with Google to open your dashboard and start building landing pages.
+          Continue with Google to open your dashboard and start building multipage websites.
         </p>
       </div>
 
@@ -108,10 +108,10 @@ export function AuthShowcase() {
               Start building today
             </h2>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Build landing pages, edit content, and open public URLs from one workspace.
+              Build multipage websites, edit content, and open public URLs from one workspace.
             </p>
             <div className="mt-4 grid gap-2.5 text-sm font-medium text-foreground">
-              <Benefit>Manage multiple landing pages from your dashboard</Benefit>
+              <Benefit>Manage websites and pages from your dashboard</Benefit>
               <Benefit>Edit hero, CTA, pricing, FAQ, and lead form blocks</Benefit>
               <Benefit>Save live and share public URLs instantly</Benefit>
             </div>

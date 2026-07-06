@@ -6,7 +6,7 @@ const productLinks = [
   { href: "/login", label: "Start building" },
 ];
 
-const websiteInfo = ["Mini landing page builder", "Live page saving", "Public page sharing"];
+const websiteInfo = ["Multipage website builder", "Live page saving", "Public site sharing"];
 
 const socialLinks = [
   { href: "#", label: "Facebook", icon: FacebookIcon },
@@ -20,7 +20,7 @@ export function SiteFooter() {
         <div>
           <BrandLogo size="sm" />
           <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
-            Mini landing page builder for fast launches.
+            Multipage website builder for fast launches.
           </p>
           <p className="mt-6 text-xs text-muted-foreground">
             © {new Date().getFullYear()} Pageforce. All rights reserved.

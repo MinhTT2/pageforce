@@ -23,7 +23,7 @@ type CreatePageDialogProps = {
   siteId?: string;
   triggerClassName?: string;
   iconOnly?: boolean;
-  onCreated?: (page: PageSummary) => void;
+  onCreated?: (page: PageSummary) => void | Promise<void>;
 };
 
 type CreatePageResponse = Partial<PageSummary> & {
@@ -56,35 +56,42 @@ export function CreatePageDialog({
     setLoading(true);
     setError("");
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const title = String(formData.get("title") || "Untitled page").trim() || "Untitled page";
 
-    const response = await fetch("/api/pages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, siteId }),
-    });
-    const page = (await response.json().catch(() => ({}))) as CreatePageResponse;
+    try {
+      const response = await fetch("/api/pages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, siteId }),
+      });
+      const page = (await response.json().catch(() => ({}))) as CreatePageResponse;
 
-    setLoading(false);
+      if (!response.ok) {
+        setError(page.error || "Could not create this page. Please try again.");
+        return;
+      }
 
-    if (!response.ok) {
-      setError(page.error || "Could not create this page. Please try again.");
-      return;
+      updateOpen(false);
+      form.reset();
+
+      if (page.id && onCreated) {
+        await onCreated(page as PageSummary);
+        return;
+      }
+
+      if (page.id) {
+        router.push(`/builder/${page.id}`);
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setError("Could not create this page. Check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
-
-    updateOpen(false);
-    if (page.id && onCreated) {
-      onCreated(page as PageSummary);
-      return;
-    }
-
-    if (page.id) {
-      router.push(`/builder/${page.id}`);
-      return;
-    }
-
-    router.refresh();
   }
 
   return (
@@ -100,16 +107,15 @@ export function CreatePageDialog({
           <DialogHeader>
             <DialogTitle>Create page</DialogTitle>
             <DialogDescription>
-              Start with an empty canvas in the current website.
+              Add a blank page to this website, then design it in the builder.
             </DialogDescription>
           </DialogHeader>
 
           <Field label="Page title" error={error}>
             <Input
               name="title"
-              defaultValue="Untitled page"
+              placeholder="Pricing, About, Contact..."
               autoFocus
-              required
               disabled={loading}
             />
           </Field>

@@ -9,7 +9,7 @@ export function DashboardMobileBar() {
       <BrandLogo size="sm" href="/dashboard" />
       <div className="flex items-center gap-1">
         <Button asChild variant="ghost" size="sm">
-          <Link href="/dashboard">Pages</Link>
+          <Link href="/dashboard">Websites</Link>
         </Button>
         <LogoutButton variant="ghost" size="sm" />
       </div>

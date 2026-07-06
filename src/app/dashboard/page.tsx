@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { headers } from "next/headers";
 import { CreateSiteDialog } from "@/components/dashboard/CreateSiteDialog";
-import { DeletePageButton } from "@/components/dashboard/DeletePageButton";
-import { EditPageDialog } from "@/components/dashboard/EditPageDialog";
+import { DeleteSiteButton } from "@/components/dashboard/DeleteSiteButton";
+import { EditSiteDialog } from "@/components/dashboard/EditSiteDialog";
 import { PageSchemaThumbnail } from "@/components/dashboard/PageSchemaThumbnail";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/card";
@@ -34,9 +34,7 @@ export default async function DashboardPage({
   const sites = query
     ? allSites.filter(
         (site) =>
-          site.name.toLowerCase().includes(query) ||
-          site.slug.toLowerCase().includes(query) ||
-          site.pages.some((page) => page.title.toLowerCase().includes(query)),
+          site.name.toLowerCase().includes(query) || site.slug.toLowerCase().includes(query),
       )
     : allSites;
 
@@ -47,7 +45,7 @@ export default async function DashboardPage({
           <div>
             <h1 className="text-2xl font-semibold tracking-normal text-foreground">Websites</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Manage sites, pages, public URLs, and captured leads.
+              Manage websites, public URLs, and captured leads.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -57,8 +55,8 @@ export default async function DashboardPage({
                 type="search"
                 name="q"
                 defaultValue={query}
-                placeholder="Search sites or pages"
-                aria-label="Search sites or pages"
+                placeholder="Search websites"
+                aria-label="Search websites"
                 className="w-60 pl-8"
               />
             </form>
@@ -112,13 +110,13 @@ export default async function DashboardPage({
                              Edit
                           </Link>
                         </Button>
-                        <EditPageDialog
-                          page={{ id: homePage.id, title: homePage.title, slug: homePage.slug }}
+                        <EditSiteDialog
+                          site={{ id: site.id, name: site.name, slug: site.slug }}
                           triggerClassName="w-full"
                         />
-                        <DeletePageButton
-                          pageId={homePage.id}
-                          title={homePage.title}
+                        <DeleteSiteButton
+                          siteId={site.id}
+                          name={site.name}
                           triggerClassName="w-full"
                         />
                         <Button asChild size="sm" variant="outline" className="w-full">
@@ -145,8 +143,8 @@ export default async function DashboardPage({
               </h2>
               <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
                 {query
-                  ? "Try a different site name, slug, or page title."
-                  : "Start from a ready structure, then Pageforce will open the builder for your home page."}
+                  ? "Try a different website name or slug."
+                  : "Start from a ready structure, then Pageforce will open the builder for your website."}
               </p>
               {query ? null : (
                 <div className="mt-5 flex justify-center">

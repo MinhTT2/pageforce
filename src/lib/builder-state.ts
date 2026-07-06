@@ -24,6 +24,7 @@ export type BuilderSnapshot = {
 };
 
 export type BuilderState = {
+  pageId: string;
   title: string;
   slug: string;
   isHome: boolean;
@@ -66,8 +67,14 @@ export type BuilderAction =
   | { type: "undo" }
   | { type: "redo" }
   | { type: "saveStarted" }
-  | { type: "saveSucceeded"; page: EditablePage; requestedSlug: string; editVersion: number }
-  | { type: "saveFailed"; message: string; editVersion: number };
+  | {
+      type: "saveSucceeded";
+      page: EditablePage;
+      requestedSlug: string;
+      editVersion: number;
+      pageId: string;
+    }
+  | { type: "saveFailed"; message: string; editVersion: number; pageId: string };
 
 const HISTORY_LIMIT = 50;
 const COALESCE_MS = 1000;
@@ -130,6 +137,7 @@ function normalizeSettings(schema: PageSchema): PageSettings {
 
 export function initialBuilderState(page: EditablePage): BuilderState {
   return {
+    pageId: page.id,
     title: page.title,
     slug: page.slug,
     isHome: page.isHome,
@@ -409,7 +417,11 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
   }
 
   if (action.type === "saveSucceeded") {
-    if (action.editVersion !== state.editVersion) {
+    if (
+      action.pageId !== state.pageId ||
+      action.page.id !== state.pageId ||
+      action.editVersion !== state.editVersion
+    ) {
       return state;
     }
 
@@ -444,7 +456,7 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
     };
   }
 
-  if (action.editVersion !== state.editVersion) {
+  if (action.pageId !== state.pageId || action.editVersion !== state.editVersion) {
     return state;
   }
 

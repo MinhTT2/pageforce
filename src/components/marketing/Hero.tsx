@@ -3,7 +3,7 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { ProductPreview } from "@/components/marketing/ProductPreview";
 import { Button } from "@/components/ui/button";
 
-const heroBullets = ["Live public URLs", "Visual landing blocks", "Built-in lead capture"];
+const heroBullets = ["Multipage public sites", "Visual website blocks", "Built-in lead capture"];
 
 export function Hero() {
   return (
@@ -12,13 +12,13 @@ export function Hero() {
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-muted-foreground shadow-xs">
             <CheckCircle2 className="size-4 text-primary" />
-            Landing page builder
+            Multipage website builder
           </div>
           <h1 className="mt-6 text-4xl font-semibold leading-tight text-foreground sm:text-5xl lg:text-6xl">
-            Build landing pages that look ready to share.
+            Build multipage websites that look ready to share.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-            Pageforce gives teams a focused builder, polished visual blocks, and public URLs that
+            Pageforce gives teams a focused builder, polished visual blocks, and public site URLs that
             update the moment the message is right.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">

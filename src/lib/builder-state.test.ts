@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { builderReducer, initialBuilderState, type BuilderState } from "./builder-state";
 import { createBlock, defaultPageSettings, defaultTokens } from "./blocks";
+import type { PageBlock } from "@/types/blocks";
 import type { EditablePage } from "@/types/page";
 
 function makePage(blockCount = 3): EditablePage {
@@ -45,6 +46,7 @@ describe("initialBuilderState", () => {
   it("selects the first block and starts clean", () => {
     const state = makeState();
 
+    expect(state.pageId).toBe("page-1");
     expect(state.selectedBlockId).toBe(state.schema.blocks[0].id);
     expect(state.dirty).toBe(false);
     expect(state.editVersion).toBe(0);
@@ -258,8 +260,8 @@ describe("undo and redo", () => {
 
   it("coalesces rapid edits on the same target", () => {
     const state = makeState();
-    const firstBlock = { ...state.schema.blocks[0], props: { content: "A", align: "left" } };
-    const secondBlock = { ...firstBlock, props: { content: "AB", align: "left" } };
+    const firstBlock = { ...state.schema.blocks[0], props: { content: "A", align: "left" } } as PageBlock;
+    const secondBlock = { ...firstBlock, props: { content: "AB", align: "left" } } as PageBlock;
     const next = builderReducer(
       builderReducer(state, { type: "updateBlock", block: firstBlock, at: 0 }),
       { type: "updateBlock", block: secondBlock, at: 500 },
@@ -270,9 +272,9 @@ describe("undo and redo", () => {
 
   it("does not coalesce slow edits or edits on different targets", () => {
     const state = makeState();
-    const firstEdit = { ...state.schema.blocks[0], props: { content: "A", align: "left" } };
-    const secondEdit = { ...firstEdit, props: { content: "AB", align: "left" } };
-    const differentBlock = { ...state.schema.blocks[1], props: { content: "Other", align: "left" } };
+    const firstEdit = { ...state.schema.blocks[0], props: { content: "A", align: "left" } } as PageBlock;
+    const secondEdit = { ...firstEdit, props: { content: "AB", align: "left" } } as PageBlock;
+    const differentBlock = { ...state.schema.blocks[1], props: { content: "Other", align: "left" } } as PageBlock;
 
     const slow = builderReducer(
       builderReducer(state, { type: "updateBlock", block: firstEdit, at: 0 }),
@@ -350,6 +352,7 @@ describe("save lifecycle", () => {
       page,
       requestedSlug: page.slug,
       editVersion: saving.editVersion,
+      pageId: saving.pageId,
     });
 
     expect(next.dirty).toBe(false);
@@ -370,6 +373,7 @@ describe("save lifecycle", () => {
       page,
       requestedSlug: page.slug,
       editVersion: 0,
+      pageId: "page-1",
     });
 
     expect(next.status).toBe("DRAFT");
@@ -384,6 +388,7 @@ describe("save lifecycle", () => {
       page,
       requestedSlug: page.slug,
       editVersion: cleared.editVersion,
+      pageId: cleared.pageId,
     });
 
     expect(next.selectedBlockId).toBeNull();
@@ -396,6 +401,7 @@ describe("save lifecycle", () => {
       page,
       requestedSlug: "launch",
       editVersion: 0,
+      pageId: "page-1",
     });
 
     expect(next.slug).toBe("launch-2");
@@ -408,6 +414,7 @@ describe("save lifecycle", () => {
       type: "saveFailed",
       message: "Could not save",
       editVersion: dirtyState.editVersion,
+      pageId: dirtyState.pageId,
     });
 
     expect(next.dirty).toBe(true);
@@ -424,6 +431,7 @@ describe("save lifecycle", () => {
       type: "saveFailed",
       message: "Conflict",
       editVersion: saving.editVersion,
+      pageId: saving.pageId,
     });
 
     expect(edited.editVersion).toBe(1);
@@ -440,16 +448,74 @@ describe("save lifecycle", () => {
       page: { ...makePage(), title: "First" },
       requestedSlug: "launch",
       editVersion: firstEdit.editVersion,
+      pageId: firstEdit.pageId,
     });
     const staleFailure = builderReducer(secondEdit, {
       type: "saveFailed",
       message: "Old conflict",
       editVersion: firstEdit.editVersion,
+      pageId: firstEdit.pageId,
     });
 
     expect(staleSuccess.title).toBe("Second");
     expect(staleSuccess.dirty).toBe(true);
     expect(staleFailure.notice).toBeNull();
     expect(staleFailure.saveStatus).toBe("idle");
+  });
+
+  it("loads a different page as a clean isolated editor state", () => {
+    const dirtyState = builderReducer(makeState(), { type: "setTitle", value: "Renamed", at: 0 });
+    const selectedState = builderReducer(dirtyState, {
+      type: "selectBlock",
+      id: dirtyState.schema.blocks[1].id,
+    });
+    const nextPage = {
+      ...makePage(2),
+      id: "page-2",
+      title: "Pricing",
+      slug: "pricing",
+      publicPath: "/s/demo/pricing",
+    };
+    const next = builderReducer(selectedState, { type: "loadPage", page: nextPage });
+
+    expect(next.pageId).toBe("page-2");
+    expect(next.title).toBe("Pricing");
+    expect(next.slug).toBe("pricing");
+    expect(next.selectedBlockId).toBe(nextPage.schema.blocks[0].id);
+    expect(next.dirty).toBe(false);
+    expect(next.past).toHaveLength(0);
+    expect(next.future).toHaveLength(0);
+    expect(next.editVersion).toBe(0);
+  });
+
+  it("ignores save responses for a previous page after loading another page", () => {
+    const firstEdit = builderReducer(makeState(), { type: "setTitle", value: "First edit", at: 0 });
+    const saving = builderReducer(firstEdit, { type: "saveStarted" });
+    const secondPage = {
+      ...makePage(1),
+      id: "page-2",
+      title: "Contact",
+      slug: "contact",
+      publicPath: "/s/demo/contact",
+    };
+    const loadedSecondPage = builderReducer(saving, { type: "loadPage", page: secondPage });
+    const staleSuccess = builderReducer(loadedSecondPage, {
+      type: "saveSucceeded",
+      page: { ...makePage(), title: "Saved first page" },
+      requestedSlug: "launch",
+      editVersion: saving.editVersion,
+      pageId: saving.pageId,
+    });
+    const staleFailure = builderReducer(loadedSecondPage, {
+      type: "saveFailed",
+      message: "Old page failed",
+      editVersion: saving.editVersion,
+      pageId: saving.pageId,
+    });
+
+    expect(staleSuccess).toBe(loadedSecondPage);
+    expect(staleFailure).toBe(loadedSecondPage);
+    expect(loadedSecondPage.pageId).toBe("page-2");
+    expect(loadedSecondPage.title).toBe("Contact");
   });
 });

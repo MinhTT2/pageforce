@@ -91,7 +91,7 @@ describe("POST /api/uploads", () => {
 
   it("uploads valid images to the page assets bucket", async () => {
     currentUser.mockResolvedValue({ id: "user-1" } as Awaited<ReturnType<typeof getCurrentUser>>);
-    pageFindFirst.mockResolvedValue({ id: "page-1" });
+    pageFindFirst.mockResolvedValue({ id: "page-1" } as Awaited<ReturnType<typeof pageFindFirst>>);
 
     const response = await POST(uploadRequest());
 
@@ -114,7 +114,7 @@ describe("POST /api/uploads", () => {
 
   it("returns a configuration error when the page assets bucket is missing", async () => {
     currentUser.mockResolvedValue({ id: "user-1" } as Awaited<ReturnType<typeof getCurrentUser>>);
-    pageFindFirst.mockResolvedValue({ id: "page-1" });
+    pageFindFirst.mockResolvedValue({ id: "page-1" } as Awaited<ReturnType<typeof pageFindFirst>>);
     mocks.storageUpload.mockResolvedValue({
       error: {
         message: "Bucket not found",

@@ -8,6 +8,7 @@ import {
   MAX_SLUG_LENGTH,
   pagePublicationData,
   toCreatedSiteSummary,
+  updatePageWithUniqueSlug,
 } from "./pages";
 import { prisma } from "@/lib/prisma";
 import type { PageSchema } from "@/types/blocks";
@@ -84,8 +85,8 @@ describe("createUniqueSlug", () => {
 
   it("adds numeric suffixes for existing slugs", async () => {
     pageFindFirst
-      .mockResolvedValueOnce({ id: "page-1" })
-      .mockResolvedValueOnce({ id: "page-2" })
+      .mockResolvedValueOnce({ id: "page-1" } as never)
+      .mockResolvedValueOnce({ id: "page-2" } as never)
       .mockResolvedValueOnce(null);
 
     await expect(createUniqueSlug("launch")).resolves.toBe("launch-3");
@@ -102,7 +103,7 @@ describe("createUniqueSlug", () => {
   });
 
   it("keeps suffixed slugs within the max length", async () => {
-    pageFindFirst.mockResolvedValueOnce({ id: "page-1" }).mockResolvedValueOnce(null);
+    pageFindFirst.mockResolvedValueOnce({ id: "page-1" } as never).mockResolvedValueOnce(null);
 
     const slug = await createUniqueSlug("a".repeat(MAX_SLUG_LENGTH));
 
@@ -120,6 +121,30 @@ describe("createUniqueSlug", () => {
     await expect(createUniqueSlug("!!!")).resolves.toBe("page-1782979200000-4fzyo8");
 
     vi.useRealTimers();
+  });
+});
+
+describe("updatePageWithUniqueSlug", () => {
+  it("uses the provided client for slug checks", async () => {
+    const transactionPageFindFirst = vi.fn().mockResolvedValue(null);
+    const write = vi.fn().mockResolvedValue({ slug: "launch" });
+
+    await expect(
+      updatePageWithUniqueSlug(
+        "Launch",
+        "page-1",
+        "site-1",
+        write,
+        { page: { findFirst: transactionPageFindFirst } } as never,
+      ),
+    ).resolves.toEqual({ slug: "launch" });
+
+    expect(transactionPageFindFirst).toHaveBeenCalledWith({
+      where: { slug: "launch", siteId: "site-1", id: { not: "page-1" } },
+      select: { id: true },
+    });
+    expect(pageFindFirst).not.toHaveBeenCalled();
+    expect(write).toHaveBeenCalledWith("launch");
   });
 });
 
@@ -145,10 +170,10 @@ describe("createPageForUser", () => {
       updatedAt: new Date(),
     };
 
-    siteFindFirst.mockResolvedValue({ id: "site-1" });
+    siteFindFirst.mockResolvedValue({ id: "site-1" } as never);
     pageCount.mockResolvedValue(1);
     pageFindFirst.mockResolvedValue(null);
-    pageCreate.mockRejectedValueOnce(uniqueSlugError()).mockResolvedValueOnce(createdPage);
+    pageCreate.mockRejectedValueOnce(uniqueSlugError()).mockResolvedValueOnce(createdPage as never);
 
     await expect(createPageForUser("user-1", "Launch")).resolves.toMatchObject({
       slug: "launch-2",
@@ -192,12 +217,12 @@ describe("createSiteFromTemplateForUser", () => {
       settings: emptyPageSchema.settings,
     };
 
-    siteCreate.mockResolvedValue(createdSite);
-    siteUpdate.mockResolvedValue(createdSite);
+    siteCreate.mockResolvedValue(createdSite as never);
+    siteUpdate.mockResolvedValue(createdSite as never);
     siteFindFirst
       .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: "site-1" })
-      .mockResolvedValueOnce({ id: "site-1" });
+      .mockResolvedValueOnce({ id: "site-1" } as never)
+      .mockResolvedValueOnce({ id: "site-1" } as never);
     pageFindFirst.mockResolvedValue(null);
     pageCount.mockResolvedValueOnce(0).mockResolvedValueOnce(1);
     pageCreate
@@ -213,7 +238,7 @@ describe("createSiteFromTemplateForUser", () => {
         status: "PUBLISHED" as const,
         publishedAt: new Date(),
         updatedAt: new Date(),
-      })
+      } as never)
       .mockResolvedValueOnce({
         id: "page-pricing",
         siteId: "site-1",
@@ -226,7 +251,7 @@ describe("createSiteFromTemplateForUser", () => {
         status: "DRAFT" as const,
         publishedAt: null,
         updatedAt: new Date(),
-      });
+      } as never);
 
     await expect(
       createSiteFromTemplateForUser("user-1", "Demo Site", [

@@ -136,7 +136,7 @@ export async function PATCH(
         }
       : {}),
   };
-  const updated = await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     if (data.isHome) {
       await tx.page.updateMany({
         where: { siteId: page.siteId, id: { not: pageId } },
@@ -148,22 +148,31 @@ export async function PATCH(
       tx.page.update({
         where: { id: pageId },
         data: { ...updateData, slug },
-        include: {
-          site: {
-            include: {
-              pages: {
-                include: { site: { select: { name: true, slug: true } } },
-                orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
-              },
-            },
-          },
-        },
+        select: { id: true },
       });
 
     return data.slug
-      ? updatePageWithUniqueSlug(data.slug, pageId, page.siteId, write)
+      ? updatePageWithUniqueSlug(data.slug, pageId, page.siteId, write, tx)
       : write(page.slug);
   });
+
+  const updated = await prisma.page.findFirst({
+    where: { id: pageId, site: { is: { userId: user.id } } },
+    include: {
+      site: {
+        include: {
+          pages: {
+            include: { site: { select: { name: true, slug: true } } },
+            orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
+          },
+        },
+      },
+    },
+  });
+
+  if (!updated) {
+    return NextResponse.json({ error: "Page not found" }, { status: 404 });
+  }
 
   revalidatePath(`/s/${page.site.slug}`);
   revalidatePath(`/s/${updated.site.slug}`);
@@ -186,14 +195,28 @@ export async function DELETE(
   const { pageId } = await params;
   const page = await prisma.page.findFirst({
     where: { id: pageId, site: { is: { userId: user.id } } },
-    select: { id: true, slug: true, isHome: true, site: { select: { slug: true } } },
+    select: { id: true, siteId: true, slug: true, isHome: true, site: { select: { slug: true } } },
   });
 
   if (!page) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
   }
 
-  await prisma.page.delete({ where: { id: pageId } });
+  await prisma.$transaction(async (tx) => {
+    await tx.page.delete({ where: { id: pageId } });
+
+    if (page.isHome) {
+      const nextHome = await tx.page.findFirst({
+        where: { siteId: page.siteId },
+        orderBy: { updatedAt: "desc" },
+        select: { id: true },
+      });
+
+      if (nextHome) {
+        await tx.page.update({ where: { id: nextHome.id }, data: { isHome: true } });
+      }
+    }
+  });
   revalidatePath(`/s/${page.site.slug}`);
   if (!page.isHome) revalidatePath(`/s/${page.site.slug}/${page.slug}`);
 

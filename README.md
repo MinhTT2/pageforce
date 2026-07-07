@@ -25,7 +25,7 @@ The project is intentionally small enough to review in one sitting, but built wi
 - Security-minded API boundaries: private routes enforce `Site.userId`, public lead submission stays unauthenticated but validated.
 - Quality posture: unit tests, Playwright smoke tests, CI, Prisma migration scripts, and production-safe migration commands.
 
-## Demo
+## Demo Gallery
 
 Live demo URL can be added after deployment. Until then, the screenshot set below gives reviewers a quick visual pass through the unauthenticated product surfaces.
 

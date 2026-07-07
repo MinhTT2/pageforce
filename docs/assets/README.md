@@ -7,9 +7,9 @@ This folder contains static screenshots used by `README.md` and `docs/showcase.m
 | File | Source route | Viewport | Notes |
 | --- | --- | --- | --- |
 | `screenshots/home-desktop.png` | `/` | 1440x1100 | Marketing page first viewport. |
+| `screenshots/home-mobile.png` | `/` | 390x844 | Mobile marketing page first viewport. |
 | `screenshots/login-desktop.png` | `/login` | 1440x1000 | Auth page and builder mockup. |
 | `screenshots/design-system-desktop.png` | `/design-system` | 1440x1100 | UI primitives and visual system. |
-| `screenshots/home-mobile.png` | `/` | 390x844 | Mobile marketing page first viewport. |
 
 ## Regenerate
 

@@ -30,7 +30,6 @@ export async function GET() {
         isHome: page.isHome,
         status: page.status,
         updatedAt: page.updatedAt.toISOString(),
-        publishedAt: page.publishedAt?.toISOString() ?? null,
       })),
     })),
   );

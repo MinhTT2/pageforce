@@ -144,7 +144,6 @@ function makePage(id: string, title: string): EditablePage {
       headerMode: "INHERIT" as const,
       footerMode: "INHERIT" as const,
       status: "PUBLISHED" as const,
-      publishedAt: null,
       updatedAt: "2026-01-01T00:00:00.000Z",
     },
     {
@@ -159,7 +158,6 @@ function makePage(id: string, title: string): EditablePage {
       headerMode: "INHERIT" as const,
       footerMode: "INHERIT" as const,
       status: "PUBLISHED" as const,
-      publishedAt: null,
       updatedAt: "2026-01-01T00:00:00.000Z",
     },
   ];
@@ -176,7 +174,6 @@ function makePage(id: string, title: string): EditablePage {
     headerMode: "INHERIT",
     footerMode: "INHERIT",
     status: "PUBLISHED",
-    publishedAt: null,
     updatedAt: "2026-01-01T00:00:00.000Z",
     schema: {
       version: 2,

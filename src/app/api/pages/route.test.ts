@@ -56,7 +56,6 @@ describe("POST /api/pages", () => {
       headerMode: "INHERIT",
       footerMode: "INHERIT",
       status: "DRAFT",
-      publishedAt: null,
       updatedAt: "2026-07-06T00:00:00.000Z",
     };
 

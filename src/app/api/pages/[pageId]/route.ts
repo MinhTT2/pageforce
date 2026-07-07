@@ -44,7 +44,6 @@ export async function GET(
       headerMode: true,
       footerMode: true,
       status: true,
-      publishedAt: true,
       updatedAt: true,
       schema: true,
       site: {
@@ -65,7 +64,6 @@ export async function GET(
               headerMode: true,
               footerMode: true,
               status: true,
-              publishedAt: true,
               updatedAt: true,
             },
             orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
@@ -151,7 +149,6 @@ export async function PATCH(
     ...(publication
       ? {
           status: publication.status,
-          publishedAt: publication.publishedAt,
         }
       : {}),
   };
@@ -186,7 +183,6 @@ export async function PATCH(
       headerMode: true,
       footerMode: true,
       status: true,
-      publishedAt: true,
       updatedAt: true,
       schema: true,
       site: {
@@ -207,7 +203,6 @@ export async function PATCH(
               headerMode: true,
               footerMode: true,
               status: true,
-              publishedAt: true,
               updatedAt: true,
             },
             orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],

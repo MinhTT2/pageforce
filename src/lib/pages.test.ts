@@ -62,7 +62,6 @@ describe("pagePublicationData", () => {
     const publication = pagePublicationData(emptyPageSchema);
 
     expect(publication.status).toBe("DRAFT");
-    expect(publication.publishedAt).toBeNull();
   });
 
   it("publishes schemas with at least one block", () => {
@@ -74,7 +73,6 @@ describe("pagePublicationData", () => {
     const publication = pagePublicationData(schema);
 
     expect(publication.status).toBe("PUBLISHED");
-    expect(publication.publishedAt).toBeInstanceOf(Date);
   });
 });
 
@@ -97,7 +95,6 @@ describe("listDashboardSitesForUser", () => {
             status: true,
             schema: true,
             updatedAt: true,
-            publishedAt: true,
           },
           orderBy: { updatedAt: "desc" },
           take: 1,
@@ -194,7 +191,6 @@ describe("createPageForUser", () => {
       footerMode: "INHERIT" as const,
       status: "DRAFT" as const,
       schema: emptyPageSchema,
-      publishedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -265,7 +261,6 @@ describe("createSiteFromTemplateForUser", () => {
         headerMode: "INHERIT" as const,
         footerMode: "INHERIT" as const,
         status: "PUBLISHED" as const,
-        publishedAt: new Date(),
         updatedAt: new Date(),
       } as never)
       .mockResolvedValueOnce({
@@ -278,7 +273,6 @@ describe("createSiteFromTemplateForUser", () => {
         headerMode: "INHERIT" as const,
         footerMode: "INHERIT" as const,
         status: "DRAFT" as const,
-        publishedAt: null,
         updatedAt: new Date(),
       } as never);
 

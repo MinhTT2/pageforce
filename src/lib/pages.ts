@@ -17,11 +17,9 @@ function toAppSectionMode(mode: PrismaSectionMode): SectionMode {
 
 export function pagePublicationData(schema: PageSchema) {
   const publishable = schema.blocks.length > 0;
-  const publishedAt = publishable ? new Date() : null;
 
   return {
     status: publishable ? ("PUBLISHED" as const) : ("DRAFT" as const),
-    publishedAt,
   };
 }
 
@@ -35,7 +33,6 @@ export function toPageSummary(page: {
   headerMode: PrismaSectionMode;
   footerMode: PrismaSectionMode;
   status: PageStatus;
-  publishedAt: Date | null;
   updatedAt: Date;
 }): PageSummary {
   return {
@@ -50,7 +47,6 @@ export function toPageSummary(page: {
     headerMode: toAppSectionMode(page.headerMode),
     footerMode: toAppSectionMode(page.footerMode),
     status: page.status,
-    publishedAt: page.publishedAt?.toISOString() ?? null,
     updatedAt: page.updatedAt.toISOString(),
   };
 }
@@ -75,7 +71,6 @@ export function toEditablePage(page: {
       headerMode: PrismaSectionMode;
       footerMode: PrismaSectionMode;
       status: PageStatus;
-      publishedAt: Date | null;
       updatedAt: Date;
     }>;
   };
@@ -85,7 +80,6 @@ export function toEditablePage(page: {
   headerMode: PrismaSectionMode;
   footerMode: PrismaSectionMode;
   status: PageStatus;
-  publishedAt: Date | null;
   updatedAt: Date;
   schema: Prisma.JsonValue;
 }): EditablePage {
@@ -159,7 +153,6 @@ export async function listSitesForUser(userId: string, take = 50) {
           status: true,
           schema: true,
           updatedAt: true,
-          publishedAt: true,
         },
         orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
       },
@@ -183,7 +176,6 @@ export async function listDashboardSitesForUser(userId: string, take = 50) {
           status: true,
           schema: true,
           updatedAt: true,
-          publishedAt: true,
         },
         orderBy: { updatedAt: "desc" },
         take: 1,
@@ -230,7 +222,6 @@ export async function createPageForUser(
         isHome,
         status: publication.status,
         schema: schemaToJson(schema),
-        publishedAt: publication.publishedAt,
       },
       include: { site: { select: { name: true, slug: true } } },
     });

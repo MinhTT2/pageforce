@@ -27,7 +27,6 @@ export type PageSummary = {
   headerMode: SectionMode;
   footerMode: SectionMode;
   status: PageStatus;
-  publishedAt: string | null;
   updatedAt: string;
 };
 

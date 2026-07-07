@@ -29,7 +29,6 @@ export type BuilderState = {
   headerMode: SectionMode;
   footerMode: SectionMode;
   status: PageStatus;
-  publishedAt: string | null;
   updatedAt: string;
   schema: PageSchema;
   selectedBlockId: string | null;
@@ -132,7 +131,6 @@ export function initialBuilderState(page: EditablePage): BuilderState {
     headerMode: page.headerMode,
     footerMode: page.footerMode,
     status: page.status,
-    publishedAt: page.publishedAt,
     updatedAt: page.updatedAt,
     schema: { ...page.schema, settings: normalizeSettings(page.schema) },
     selectedBlockId: page.schema.blocks[0]?.id ?? null,
@@ -416,7 +414,6 @@ function applyAction(state: BuilderState, action: ApplyableAction): BuilderState
       headerMode: action.page.headerMode,
       footerMode: action.page.footerMode,
       status: action.page.status,
-      publishedAt: action.page.publishedAt,
       updatedAt: action.page.updatedAt,
       schema,
       selectedBlockId: selectedStillExists

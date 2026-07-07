@@ -17,7 +17,6 @@ function makePage(blockCount = 3): EditablePage {
     headerMode: "INHERIT",
     footerMode: "INHERIT",
     status: "PUBLISHED",
-    publishedAt: null,
     updatedAt: "2026-01-01T00:00:00.000Z",
     schema: {
       version: 2,
@@ -364,7 +363,6 @@ describe("save lifecycle", () => {
     const page = {
       ...makePage(0),
       status: "DRAFT" as const,
-      publishedAt: null,
     };
     const next = builderReducer(makeState(), {
       type: "saveSucceeded",
@@ -375,7 +373,6 @@ describe("save lifecycle", () => {
     });
 
     expect(next.status).toBe("DRAFT");
-    expect(next.publishedAt).toBeNull();
   });
 
   it("keeps a cleared selection after save", () => {

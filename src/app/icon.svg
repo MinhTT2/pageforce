@@ -1,22 +1,6 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="pf-icon-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#4E56D3"/>
-      <stop offset="0.55" stop-color="#6D4FE0"/>
-      <stop offset="1" stop-color="#9333EA"/>
-    </linearGradient>
-    <linearGradient id="pf-icon-shine" x1="32" y1="0" x2="32" y2="40" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFFFFF" stop-opacity="0.22"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="14" fill="url(#pf-icon-bg)"/>
-  <rect width="64" height="64" rx="14" fill="url(#pf-icon-shine)"/>
-  <path
-    d="M34.9 9.6 11.9 37.2h20.7l-2.3 18.4 23-27.6H32.6l2.3-18.4Z"
-    fill="#FFFFFF"
-    stroke="#FFFFFF"
-    stroke-width="2"
-    stroke-linejoin="round"
-  />
+  <rect width="64" height="64" rx="14" fill="#111111"/>
+  <path d="M17.6 16h24.3C49.6 16 54.4 20.5 54.4 27.2c0 6.8-4.8 11.2-12.5 11.2H28.8V48H17.6V16Z" fill="#FFFFFF"/>
+  <path d="M28.8 25.6H41c1.6 0 2.6.6 2.6 1.9s-1 1.9-2.6 1.9H28.8v-3.8Z" fill="#111111"/>
+  <path d="M17.6 51.2h28.8" stroke="#2DE38B" stroke-width="4.8" stroke-linecap="round"/>
 </svg>

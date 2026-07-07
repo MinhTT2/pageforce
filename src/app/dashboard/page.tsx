@@ -60,7 +60,7 @@ export default async function DashboardPage({
                 className="w-60 pl-8"
               />
             </form>
-            <CreateSiteDialog />
+            <CreateSiteDialog defaultOpen={allSites.length === 0} />
           </div>
         </div>
 

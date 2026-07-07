@@ -33,7 +33,7 @@ export function BrandLogo({
       <span className="leading-none">
         <span
           className={cn(
-            "block font-semibold tracking-normal",
+            "block font-semibold tracking-normal text-foreground",
             size === "sm" ? "text-sm" : "text-base",
           )}
         >
@@ -58,40 +58,13 @@ function BrandMark({ className, ...props }: ComponentPropsWithoutRef<"svg">) {
       className={className}
       {...props}
     >
-      <defs>
-        <linearGradient
-          id="pf-mark-bg"
-          x1="0"
-          y1="0"
-          x2="40"
-          y2="40"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#4E56D3" />
-          <stop offset="0.55" stopColor="#6D4FE0" />
-          <stop offset="1" stopColor="#9333EA" />
-        </linearGradient>
-        <linearGradient
-          id="pf-mark-shine"
-          x1="20"
-          y1="0"
-          x2="20"
-          y2="25"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#FFFFFF" stopOpacity="0.22" />
-          <stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <rect width="40" height="40" rx="10" fill="url(#pf-mark-bg)" />
-      <rect width="40" height="40" rx="10" fill="url(#pf-mark-shine)" />
+      <rect width="40" height="40" rx="9" fill="#111111" />
       <path
-        d="M21.95 6 7.45 23.4h13.05L19.05 35l14.5-17.4H20.5L21.95 6Z"
+        d="M11 10h15.2C31 10 34 12.8 34 17s-3 7-7.8 7H18v6h-7V10Z"
         fill="#FFFFFF"
-        stroke="#FFFFFF"
-        strokeWidth="1.3"
-        strokeLinejoin="round"
       />
+      <path d="M18 16h7.6c1 0 1.6.4 1.6 1.2s-.6 1.2-1.6 1.2H18V16Z" fill="#111111" />
+      <path d="M11 32h18" stroke="#2DE38B" strokeLinecap="round" strokeWidth="3" />
     </svg>
   );
 }

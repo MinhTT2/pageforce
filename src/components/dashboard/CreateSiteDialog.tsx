@@ -48,9 +48,13 @@ type CreateSiteResponse = {
   homePageId?: string;
 };
 
-export function CreateSiteDialog() {
+type CreateSiteDialogProps = {
+  defaultOpen?: boolean;
+};
+
+export function CreateSiteDialog({ defaultOpen = false }: CreateSiteDialogProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [siteName, setSiteName] = useState("My Store");

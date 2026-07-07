@@ -29,9 +29,17 @@ The project is intentionally small enough to review in one sitting, but built wi
 
 Live demo URL can be added after deployment. Until then, the screenshot set below gives reviewers a quick visual pass through the unauthenticated product surfaces.
 
-| Landing | Auth | Design system | Mobile |
+| Landing | Landing full page | Tablet | Mobile |
 | --- | --- | --- | --- |
-| ![Landing page](docs/assets/screenshots/home-desktop.png) | ![Login page](docs/assets/screenshots/login-desktop.png) | ![Design system](docs/assets/screenshots/design-system-desktop.png) | ![Mobile landing page](docs/assets/screenshots/home-mobile.png) |
+| ![Landing page desktop](docs/assets/screenshots/home-desktop.png) | ![Landing page full desktop](docs/assets/screenshots/home-full-desktop.png) | ![Landing page tablet](docs/assets/screenshots/home-tablet.png) | ![Landing page mobile](docs/assets/screenshots/home-mobile.png) |
+
+| Login | Register | Design system | Not found |
+| --- | --- | --- | --- |
+| ![Login page desktop](docs/assets/screenshots/login-desktop.png) | ![Register page desktop](docs/assets/screenshots/register-desktop.png) | ![Design system desktop](docs/assets/screenshots/design-system-desktop.png) | ![Not found page](docs/assets/screenshots/not-found-desktop.png) |
+
+| Login mobile | Register mobile | Design system tablet | Design system mobile |
+| --- | --- | --- | --- |
+| ![Login page mobile](docs/assets/screenshots/login-mobile.png) | ![Register page mobile](docs/assets/screenshots/register-mobile.png) | ![Design system tablet](docs/assets/screenshots/design-system-tablet.png) | ![Design system mobile](docs/assets/screenshots/design-system-mobile.png) |
 
 See [docs/showcase.md](docs/showcase.md) for the product story and reviewer path. Screenshot regeneration notes live in [docs/assets/README.md](docs/assets/README.md).
 

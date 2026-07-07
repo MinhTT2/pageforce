@@ -13,9 +13,51 @@ const shots = [
     fullPage: false,
   },
   {
+    name: "home-full-desktop.png",
+    path: "/",
+    viewport: { width: 1440, height: 1100 },
+    fullPage: true,
+  },
+  {
+    name: "home-tablet.png",
+    path: "/",
+    viewport: { width: 834, height: 1112 },
+    fullPage: false,
+  },
+  {
+    name: "home-mobile.png",
+    path: "/",
+    viewport: { width: 390, height: 844 },
+    fullPage: false,
+  },
+  {
+    name: "home-mobile-full.png",
+    path: "/",
+    viewport: { width: 390, height: 844 },
+    fullPage: true,
+  },
+  {
     name: "login-desktop.png",
     path: "/login",
     viewport: { width: 1440, height: 1000 },
+    fullPage: false,
+  },
+  {
+    name: "login-mobile.png",
+    path: "/login",
+    viewport: { width: 390, height: 844 },
+    fullPage: false,
+  },
+  {
+    name: "register-desktop.png",
+    path: "/register",
+    viewport: { width: 1440, height: 1000 },
+    fullPage: false,
+  },
+  {
+    name: "register-mobile.png",
+    path: "/register",
+    viewport: { width: 390, height: 844 },
     fullPage: false,
   },
   {
@@ -25,9 +67,27 @@ const shots = [
     fullPage: false,
   },
   {
-    name: "home-mobile.png",
-    path: "/",
+    name: "design-system-full-desktop.png",
+    path: "/design-system",
+    viewport: { width: 1440, height: 1100 },
+    fullPage: true,
+  },
+  {
+    name: "design-system-tablet.png",
+    path: "/design-system",
+    viewport: { width: 834, height: 1112 },
+    fullPage: false,
+  },
+  {
+    name: "design-system-mobile.png",
+    path: "/design-system",
     viewport: { width: 390, height: 844 },
+    fullPage: false,
+  },
+  {
+    name: "not-found-desktop.png",
+    path: "/missing-demo-route",
+    viewport: { width: 1440, height: 900 },
     fullPage: false,
   },
 ];
@@ -63,7 +123,10 @@ try {
     const title = await page.title();
     const bodyText = await page.locator("body").innerText({ timeout: 5_000 }).catch(() => "");
 
-    if (/error|not found|unauthorized/i.test(title) || /^404\b/i.test(bodyText.trim())) {
+    if (
+      shot.path !== "/missing-demo-route" &&
+      (/error|not found|unauthorized/i.test(title) || /^404\b/i.test(bodyText.trim()))
+    ) {
       throw new Error(`Refusing to capture ${shot.name}; page looks unhealthy: ${title}`);
     }
 

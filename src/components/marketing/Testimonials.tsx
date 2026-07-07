@@ -9,13 +9,13 @@ const testimonials = [
   },
   {
     quote:
-      "Clients ask for campaign pages constantly. Pageforce lets me ship one, share the URL, and tweak the message after feedback — same link.",
+      "Clients need more than a single page. Pageforce lets me build the site structure, share the URL, and tweak each page after feedback.",
     author: "Mai Le",
     role: "Marketing freelancer",
   },
   {
     quote:
-      "The lead form going straight to the dashboard means one less tool to wire up for every little launch.",
+      "The lead form going straight to the dashboard means one less tool to wire up across every service page.",
     author: "Duc Pham",
     role: "Small agency owner",
   },
@@ -28,7 +28,7 @@ export function Testimonials() {
         <div className="max-w-2xl">
           <p className="text-sm font-medium text-primary">What builders say</p>
           <h2 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
-            Made for people who ship pages weekly
+            Made for people who ship websites quickly
           </h2>
         </div>
         <div className="grid gap-4 md:grid-cols-3">

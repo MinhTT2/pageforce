@@ -1,44 +1,42 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ProductPreview } from "@/components/marketing/ProductPreview";
 import { Button } from "@/components/ui/button";
 
-const heroBullets = ["Multipage public sites", "Visual website blocks", "Built-in lead capture"];
-
 export function Hero() {
   return (
-    <section className="border-b border-border/70 bg-[linear-gradient(180deg,var(--background)_0%,var(--surface)_100%)]">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-14 lg:grid-cols-[0.86fr_1.14fr] lg:py-20">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-muted-foreground shadow-xs">
-            <CheckCircle2 className="size-4 text-primary" />
-            Multipage website builder
-          </div>
-          <h1 className="mt-6 text-4xl font-semibold leading-tight text-foreground sm:text-5xl lg:text-6xl">
-            Build multipage websites that look ready to share.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-            Pageforce gives teams a focused builder, polished visual blocks, and public site URLs that
-            update the moment the message is right.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link href="/login">
-                Start building
-                <ArrowRight />
-              </Link>
-            </Button>
-          </div>
-          <div className="mt-8 flex flex-wrap gap-3 text-sm text-muted-foreground">
-            {heroBullets.map((bullet) => (
-              <span key={bullet} className="inline-flex items-center gap-2">
-                <CheckCircle2 className="size-4 text-primary" />
-                {bullet}
-              </span>
-            ))}
-          </div>
+    <section className="border-b border-border/70 bg-background">
+      <div className="mx-auto max-w-6xl px-6 pb-12 pt-16 text-center sm:pt-20 lg:pb-16">
+        <p className="pf-landing-fade mx-auto inline-flex items-center rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-xs">
+          Multipage sites. Live in minutes.
+        </p>
+        <h1 className="pf-landing-fade-delay-1 mx-auto mt-6 max-w-4xl text-5xl font-semibold leading-tight text-foreground sm:text-6xl lg:text-7xl">
+          Build multipage websites from visual blocks
+        </h1>
+        <p className="pf-landing-fade-delay-2 mx-auto mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+          Create a site, add pages for every offer or service, publish clean public URLs, and
+          collect leads from one focused builder.
+        </p>
+        <div className="pf-landing-fade-delay-2 mt-8 flex flex-wrap items-center justify-center gap-4">
+          <Button
+            asChild
+            size="lg"
+            className="h-12 rounded-full px-7 text-base shadow-lg shadow-primary/20"
+          >
+            <Link href="/login">
+              Start building
+              <ArrowRight />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="link"
+            className="h-12 px-1 text-base text-foreground"
+          >
+            <Link href="/login?next=%2Fdashboard">Explore templates</Link>
+          </Button>
         </div>
-
         <ProductPreview />
       </div>
     </section>

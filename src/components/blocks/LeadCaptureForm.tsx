@@ -2,6 +2,7 @@
 
 import { Check, Send } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { resolveSiteHref } from "@/lib/site-hrefs";
 import type { LeadFormBlock } from "@/types/blocks";
 
 type LeadCaptureFormProps = {
@@ -23,7 +24,9 @@ export function LeadCaptureForm({ blockId, props, pageId }: LeadCaptureFormProps
   const isCapture = props.deliveryMode === "capture";
   const isLive = Boolean(pageId);
   const legacyAction =
-    props.deliveryMode === "mailto" ? `mailto:${props.mailto || ""}` : props.actionUrl || "#";
+    props.deliveryMode === "mailto"
+      ? resolveSiteHref(`mailto:${props.mailto || ""}`)
+      : resolveSiteHref(props.actionUrl || "#");
 
   async function handleCaptureSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

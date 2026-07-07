@@ -9,6 +9,7 @@ const APP_ROUTE_PREFIXES = new Set([
 ]);
 
 const URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
+const SAFE_URL_SCHEMES = new Set(["http:", "https:", "mailto:"]);
 
 export function resolveSiteHref(href: string, siteSlug?: string) {
   const value = href.trim();
@@ -17,12 +18,20 @@ export function resolveSiteHref(href: string, siteSlug?: string) {
     return "#";
   }
 
-  if (!siteSlug || value.startsWith("#") || value.startsWith("?")) {
+  if (value.startsWith("#") || value.startsWith("?")) {
     return value;
   }
 
-  if (URL_SCHEME_PATTERN.test(value) || value.startsWith("//")) {
-    return value;
+  if (value.startsWith("//")) {
+    return "#";
+  }
+
+  if (URL_SCHEME_PATTERN.test(value)) {
+    return isSafeUrlScheme(value) ? value : "#";
+  }
+
+  if (!siteSlug) {
+    return value.startsWith("/") ? value : "#";
   }
 
   if (!value.startsWith("/")) {
@@ -36,4 +45,12 @@ export function resolveSiteHref(href: string, siteSlug?: string) {
   }
 
   return value === "/" ? `/s/${siteSlug}` : `/s/${siteSlug}${value}`;
+}
+
+function isSafeUrlScheme(value: string) {
+  try {
+    return SAFE_URL_SCHEMES.has(new URL(value).protocol);
+  } catch {
+    return false;
+  }
 }

@@ -340,7 +340,15 @@ export const leadSubmissionValidator = z
     data: z
       .object({
         name: z.string().trim().max(200).optional().default(""),
-        email: z.string().trim().max(320).optional().default(""),
+        email: z
+          .string()
+          .trim()
+          .max(320)
+          .optional()
+          .default("")
+          .refine((value) => !value || z.email().safeParse(value).success, {
+            message: "Invalid email address",
+          }),
         message: z.string().trim().max(5000).optional().default(""),
       })
       .strict(),

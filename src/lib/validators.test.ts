@@ -199,6 +199,15 @@ describe("leadSubmissionValidator", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects invalid email addresses", () => {
+    const result = leadSubmissionValidator.safeParse({
+      blockId: "block-1",
+      data: { email: "not-an-email" },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("rejects an oversized message", () => {
     const result = leadSubmissionValidator.safeParse({
       blockId: "block-1",

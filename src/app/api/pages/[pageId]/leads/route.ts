@@ -41,7 +41,10 @@ export async function POST(
 
   const schema = normalizePageSchema(page.schema);
   const acceptsLeads = schema.blocks.some(
-    (block) => block.type === "leadForm" && block.id === parsed.value.blockId,
+    (block) =>
+      block.type === "leadForm" &&
+      block.id === parsed.value.blockId &&
+      block.props.deliveryMode === "capture",
   );
 
   if (!acceptsLeads) {

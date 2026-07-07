@@ -41,6 +41,33 @@ Live demo URL can be added after deployment. Until then, the screenshot set belo
 | --- | --- | --- | --- |
 | ![Login page mobile](docs/assets/screenshots/login-mobile.png) | ![Register page mobile](docs/assets/screenshots/register-mobile.png) | ![Design system tablet](docs/assets/screenshots/design-system-tablet.png) | ![Design system mobile](docs/assets/screenshots/design-system-mobile.png) |
 
+## Builder Workflow Gallery
+
+These authenticated demo screenshots show the product loop that matters most: manage a site, compose a real page, edit block content/style, switch pages, tune design tokens, preview the visitor view, and verify that the public route renders the same schema.
+
+| Dashboard | Builder overview |
+| --- | --- |
+| ![Dashboard site management](docs/assets/screenshots/dashboard-sites-demo.png) | ![Builder overview with block palette, canvas, and inspector](docs/assets/screenshots/builder-overview.png) |
+
+| Content inspector | Style inspector |
+| --- | --- |
+| ![Builder hero block content inspector](docs/assets/screenshots/builder-hero-inspector.png) | ![Builder block style inspector](docs/assets/screenshots/builder-style-inspector.png) |
+
+| Page navigator | Design tokens |
+| --- | --- |
+| ![Builder multi-page navigator](docs/assets/screenshots/builder-pages-navigator.png) | ![Builder page design token controls](docs/assets/screenshots/builder-design-tokens.png) |
+
+| Preview mode | Public render |
+| --- | --- |
+| ![Builder visitor preview mode](docs/assets/screenshots/builder-preview-mode.png) | ![Public page rendered from the live builder schema](docs/assets/screenshots/public-demo-site.png) |
+
+What this demonstrates:
+
+- A real multi-page builder, not a static CRUD dashboard: pages, blocks, global header, live public URL, preview, and inspector all appear in one workflow.
+- A typed `PageSchema` contract drives defaults, validation, editor controls, builder preview, and public rendering.
+- Page-wide design tokens and per-block style overrides are visible in the UI and validated before save.
+- Authenticated dashboard/builder routes stay private, while public `/s` routes render only published pages with content.
+
 See [docs/showcase.md](docs/showcase.md) for the product story and reviewer path. Screenshot regeneration notes live in [docs/assets/README.md](docs/assets/README.md).
 
 ## Tech Stack

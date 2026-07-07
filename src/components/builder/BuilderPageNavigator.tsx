@@ -248,9 +248,6 @@ function PageListItem({
             </span>
             {isCurrent ? <Badge variant="secondary">Current</Badge> : null}
             {page.isHome ? <Badge variant="secondary">Home</Badge> : null}
-            <Badge variant={page.status === "PUBLISHED" ? "success" : "warning"}>
-              {page.status === "PUBLISHED" ? "Live" : "Draft"}
-            </Badge>
           </span>
           <span className="mt-1 block truncate font-mono text-[11px] text-muted-foreground">
             {page.publicPath}

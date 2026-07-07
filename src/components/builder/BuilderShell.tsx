@@ -16,7 +16,6 @@ import {
   type DragStartEvent,
   type KeyboardCoordinateGetter,
 } from "@dnd-kit/core";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -46,6 +45,7 @@ type ActiveDrag =
   | null;
 
 type SaveResponse = EditablePage & { error?: string };
+type PageLoadResponse = EditablePage & { error?: string };
 
 // Pointer drags only drop where the pointer actually is (drag out = cancel);
 // keyboard drags have no pointer, so they fall back to closest-center. Block
@@ -92,7 +92,6 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   } | null>(null);
   const [switchingPageId, setSwitchingPageId] = useState<string | null>(null);
   const publicOrigin = usePublicOrigin();
-  const router = useRouter();
 
   const settings = state.schema.settings ?? defaultPageSettings;
   const publicUrl = useMemo(
@@ -123,10 +122,12 @@ export function BuilderShell({ page }: { page: EditablePage }) {
 
   const blockIdsRef = useRef<string[]>([]);
   const loadedPageIdRef = useRef(page.id);
+  const pageCacheRef = useRef(new Map<string, EditablePage>([[page.id, page]]));
   const saveInFlightRef = useRef<Promise<boolean> | null>(null);
   const saveInFlightPageIdRef = useRef<string | null>(null);
   const siteGlobalHeaderRef = useRef(siteGlobalHeader);
   const siteGlobalFooterRef = useRef(siteGlobalFooter);
+  const sitePagesRef = useRef(sitePages);
   const globalSectionsDirtyRef = useRef(globalSectionsDirty);
 
   useEffect(() => {
@@ -135,6 +136,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     }
 
     loadedPageIdRef.current = page.id;
+    pageCacheRef.current.set(page.id, page);
     saveInFlightRef.current = null;
     saveInFlightPageIdRef.current = null;
     setActivePage(page);
@@ -166,6 +168,10 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   useEffect(() => {
     siteGlobalFooterRef.current = siteGlobalFooter;
   }, [siteGlobalFooter]);
+
+  useEffect(() => {
+    sitePagesRef.current = sitePages;
+  }, [sitePages]);
 
   useEffect(() => {
     globalSectionsDirtyRef.current = globalSectionsDirty;
@@ -231,6 +237,36 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinates }),
   );
 
+  const activatePage = useCallback((nextPage: EditablePage) => {
+    loadedPageIdRef.current = nextPage.id;
+    pageCacheRef.current.set(nextPage.id, nextPage);
+    setActivePage(nextPage);
+    dispatch({ type: "loadPage", page: nextPage });
+    setSitePages(nextPage.site.pages);
+    sitePagesRef.current = nextPage.site.pages;
+    setSiteGlobalHeaderState(nextPage.site.globalHeader);
+    siteGlobalHeaderRef.current = nextPage.site.globalHeader;
+    setSiteGlobalFooterState(nextPage.site.globalFooter);
+    siteGlobalFooterRef.current = nextPage.site.globalFooter;
+    setGlobalSectionsDirty(false);
+    setGlobalSectionsNotice(null);
+    setActiveDrag(null);
+    setDropIndicator(null);
+    setSwitchingPageId(null);
+  }, []);
+
+  const cachePageWithCurrentSiteState = useCallback((cachedPage: EditablePage): EditablePage => {
+    return {
+      ...cachedPage,
+      site: {
+        ...cachedPage.site,
+        globalHeader: siteGlobalHeaderRef.current,
+        globalFooter: siteGlobalFooterRef.current,
+        pages: sitePagesRef.current,
+      },
+    };
+  }, []);
+
   const savePage = useCallback(async (): Promise<boolean> => {
     const current = stateRef.current;
     const currentPageId = current.pageId;
@@ -268,6 +304,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
           stateRef.current.editVersion === editVersion;
 
         if (response.ok && payload) {
+          pageCacheRef.current.set(currentPageId, payload);
           dispatch({
             type: "saveSucceeded",
             page: payload,
@@ -279,6 +316,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
           if (stillCurrent && payload.id === currentPageId) {
             setActivePage(payload);
             setSitePages(payload.site.pages);
+            sitePagesRef.current = payload.site.pages;
             return true;
           }
 
@@ -337,14 +375,19 @@ export function BuilderShell({ page }: { page: EditablePage }) {
         throw new Error(payload?.error || "Could not save global sections");
       }
 
-      setActivePage((current) => ({
-        ...current,
-        site: {
-          ...current.site,
-          globalHeader: siteGlobalHeaderRef.current,
-          globalFooter: siteGlobalFooterRef.current,
-        },
-      }));
+      setActivePage((current) => {
+        const nextPage = {
+          ...current,
+          site: {
+            ...current.site,
+            globalHeader: siteGlobalHeaderRef.current,
+            globalFooter: siteGlobalFooterRef.current,
+          },
+        };
+
+        pageCacheRef.current.set(nextPage.id, nextPage);
+        return nextPage;
+      });
       setGlobalSectionsDirty(false);
       return true;
     } catch (error) {
@@ -373,16 +416,47 @@ export function BuilderShell({ page }: { page: EditablePage }) {
       return;
     }
 
-    if (
-      (stateRef.current.dirty || globalSectionsDirtyRef.current) &&
-      !window.confirm("You have unsaved changes. Switch pages and discard them?")
-    ) {
-      return;
-    }
-
     setSwitchingPageId(pageId);
-    router.push(`/builder/site/${activePage.site.id}?page=${pageId}`, { scroll: false });
-  }, [activePage.site.id, router, switchingPageId]);
+
+    try {
+      if (stateRef.current.dirty || globalSectionsDirtyRef.current) {
+        const saved = await savePageAndGlobalSections();
+
+        if (!saved) {
+          return;
+        }
+      }
+
+      const cachedPage = pageCacheRef.current.get(pageId);
+      let nextPage = cachedPage ? cachePageWithCurrentSiteState(cachedPage) : null;
+
+      if (!nextPage) {
+        const response = await fetch(`/api/pages/${pageId}`);
+        const payload = (await response.json().catch(() => null)) as PageLoadResponse | null;
+
+        if (!response.ok || !payload || payload.error) {
+          throw new Error(payload?.error ?? "Could not load page");
+        }
+
+        nextPage = payload;
+      }
+
+      activatePage(nextPage);
+      window.history.pushState(null, "", `/builder/site/${nextPage.site.id}?page=${nextPage.id}`);
+    } catch (error) {
+      setGlobalSectionsNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Could not load page",
+      });
+    } finally {
+      setSwitchingPageId((current) => (current === pageId ? null : current));
+    }
+  }, [
+    activatePage,
+    cachePageWithCurrentSiteState,
+    savePageAndGlobalSections,
+    switchingPageId,
+  ]);
 
   const addBlock = useCallback((type: BlockType, index?: number) => {
     const blocks = stateRef.current.schema.blocks;

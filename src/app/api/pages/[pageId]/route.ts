@@ -13,6 +13,15 @@ import { prisma } from "@/lib/prisma";
 import { readJsonBody } from "@/lib/request-body";
 import { pagePatchValidator } from "@/lib/validators";
 
+type EditablePageRecord = Parameters<typeof toEditablePage>[0];
+type SitePageRecord = NonNullable<EditablePageRecord["site"]["pages"]>[number];
+type SitePageRecordWithoutSite = Omit<SitePageRecord, "site">;
+type EditablePageRecordWithSummaryPages = Omit<EditablePageRecord, "site"> & {
+  site: Omit<EditablePageRecord["site"], "pages"> & {
+    pages: SitePageRecordWithoutSite[];
+  };
+};
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ pageId: string }> },
@@ -26,11 +35,39 @@ export async function GET(
   const { pageId } = await params;
   const page = await prisma.page.findFirst({
     where: { id: pageId, site: { is: { userId: user.id } } },
-    include: {
+    select: {
+      id: true,
+      siteId: true,
+      title: true,
+      slug: true,
+      isHome: true,
+      headerMode: true,
+      footerMode: true,
+      status: true,
+      publishedAt: true,
+      updatedAt: true,
+      schema: true,
       site: {
-        include: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          globalHeader: true,
+          globalFooter: true,
+          updatedAt: true,
           pages: {
-            include: { site: { select: { name: true, slug: true } } },
+            select: {
+              id: true,
+              siteId: true,
+              title: true,
+              slug: true,
+              isHome: true,
+              headerMode: true,
+              footerMode: true,
+              status: true,
+              publishedAt: true,
+              updatedAt: true,
+            },
             orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
           },
         },
@@ -42,7 +79,7 @@ export async function GET(
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
   }
 
-  return NextResponse.json(toEditablePage(page));
+  return NextResponse.json(toEditablePage(withSitePageSummaries(page)));
 }
 
 export async function PATCH(
@@ -140,11 +177,39 @@ export async function PATCH(
 
   const updated = await prisma.page.findFirst({
     where: { id: pageId, site: { is: { userId: user.id } } },
-    include: {
+    select: {
+      id: true,
+      siteId: true,
+      title: true,
+      slug: true,
+      isHome: true,
+      headerMode: true,
+      footerMode: true,
+      status: true,
+      publishedAt: true,
+      updatedAt: true,
+      schema: true,
       site: {
-        include: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          globalHeader: true,
+          globalFooter: true,
+          updatedAt: true,
           pages: {
-            include: { site: { select: { name: true, slug: true } } },
+            select: {
+              id: true,
+              siteId: true,
+              title: true,
+              slug: true,
+              isHome: true,
+              headerMode: true,
+              footerMode: true,
+              status: true,
+              publishedAt: true,
+              updatedAt: true,
+            },
             orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
           },
         },
@@ -161,7 +226,7 @@ export async function PATCH(
   if (!page.isHome) revalidatePath(`/s/${page.site.slug}/${page.slug}`);
   if (!updated.isHome) revalidatePath(`/s/${updated.site.slug}/${updated.slug}`);
 
-  return NextResponse.json(toEditablePage(updated));
+  return NextResponse.json(toEditablePage(withSitePageSummaries(updated)));
 }
 
 export async function DELETE(
@@ -203,4 +268,17 @@ export async function DELETE(
   if (!page.isHome) revalidatePath(`/s/${page.site.slug}/${page.slug}`);
 
   return NextResponse.json({ ok: true });
+}
+
+function withSitePageSummaries(page: EditablePageRecordWithSummaryPages): EditablePageRecord {
+  return {
+    ...page,
+    site: {
+      ...page.site,
+      pages: page.site.pages.map((sitePage) => ({
+        ...sitePage,
+        site: { name: page.site.name, slug: page.site.slug },
+      })),
+    },
+  };
 }

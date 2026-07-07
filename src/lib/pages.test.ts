@@ -5,6 +5,7 @@ import {
   createPageForUser,
   createSiteFromTemplateForUser,
   createUniqueSlug,
+  listDashboardSitesForUser,
   MAX_SLUG_LENGTH,
   pagePublicationData,
   toCreatedSiteSummary,
@@ -17,6 +18,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     site: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },
@@ -29,6 +31,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 const siteFindFirst = vi.mocked(prisma.site.findFirst);
+const siteFindMany = vi.mocked(prisma.site.findMany);
 const siteCreate = vi.mocked(prisma.site.create);
 const siteUpdate = vi.mocked(prisma.site.update);
 const pageFindFirst = vi.mocked(prisma.page.findFirst);
@@ -46,6 +49,7 @@ function uniqueSlugError() {
 beforeEach(() => {
   vi.restoreAllMocks();
   siteFindFirst.mockReset();
+  siteFindMany.mockReset();
   siteCreate.mockReset();
   siteUpdate.mockReset();
   pageFindFirst.mockReset();
@@ -71,6 +75,37 @@ describe("pagePublicationData", () => {
 
     expect(publication.status).toBe("PUBLISHED");
     expect(publication.publishedAt).toBeInstanceOf(Date);
+  });
+});
+
+describe("listDashboardSitesForUser", () => {
+  it("loads only homepage schema data needed by dashboard cards", async () => {
+    siteFindMany.mockResolvedValue([]);
+
+    await expect(listDashboardSitesForUser("user-1")).resolves.toEqual([]);
+
+    expect(siteFindMany).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      include: {
+        pages: {
+          where: { isHome: true },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            isHome: true,
+            status: true,
+            schema: true,
+            updatedAt: true,
+            publishedAt: true,
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 1,
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    });
   });
 });
 

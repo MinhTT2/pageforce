@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/card";
 import { Input } from "@/components/ui/Input";
 import { requireUser } from "@/lib/auth";
-import { listSitesForUser } from "@/lib/pages";
+import { listDashboardSitesForUser } from "@/lib/pages";
 import { normalizePageSchema } from "@/lib/blocks";
 
 export default async function DashboardPage({
@@ -30,7 +30,7 @@ export default async function DashboardPage({
   ]);
   const publicOrigin = getRequestOrigin(headerStore);
   const query = typeof params.q === "string" ? params.q.trim().toLowerCase() : "";
-  const allSites = await listSitesForUser(user.id);
+  const allSites = await listDashboardSitesForUser(user.id);
   const sites = query
     ? allSites.filter(
         (site) =>

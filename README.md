@@ -68,6 +68,16 @@ What this demonstrates:
 - Page-wide design tokens and per-block style overrides are visible in the UI and validated before save.
 - Authenticated dashboard/builder routes stay private, while public `/s` routes render only published pages with content.
 
+## Render Mechanism
+
+Pageforce stores pages as structured JSON, not generated HTML. The builder edits the schema, saves it to Postgres, and the public route renders the same schema through the shared `BlockRenderer`.
+
+![Pageforce render mechanism diagram](docs/assets/screenshots/render-mechanism-diagram.png)
+
+The builder is not a separate preview implementation. It is the public renderer wrapped with editing controls.
+
+For a slide-ready Mermaid flow, three-step visual story, and speaker notes, see [Render Mechanism Slide](docs/render-mechanism-slide.md).
+
 See [docs/showcase.md](docs/showcase.md) for the product story and reviewer path. Screenshot regeneration notes live in [docs/assets/README.md](docs/assets/README.md).
 
 ## Tech Stack

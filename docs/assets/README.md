@@ -28,6 +28,7 @@ This folder contains static screenshots used by `README.md` and `docs/showcase.m
 | `screenshots/builder-design-tokens.png` | `/builder/site/[siteId]` | 1600x1000 | Page-wide design token controls. |
 | `screenshots/builder-preview-mode.png` | `/builder/site/[siteId]` | 1600x1000 | Visitor preview mode inside the builder. |
 | `screenshots/public-demo-site.png` | `/s/[siteSlug]` | 1600x1000 | Public render from the live builder schema. |
+| `screenshots/render-mechanism-diagram.png` | Generated diagram | 1600x940 | Visual explanation of builder schema storage and public rendering. |
 
 ## Regenerate
 
@@ -54,6 +55,12 @@ DEMO_SITE_ID="[site-id]" \
 DEMO_SITE_SLUG="[site-slug]" \
 DEMO_HOME_PAGE_ID="[home-page-id]" \
 npm run demo:builder-screenshots
+```
+
+Regenerate the render mechanism diagram after changing the builder/public screenshots:
+
+```bash
+npm run demo:render-diagram
 ```
 
 ## Safety

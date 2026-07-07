@@ -124,6 +124,7 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   const blockIdsRef = useRef<string[]>([]);
   const loadedPageIdRef = useRef(page.id);
   const saveInFlightRef = useRef<Promise<boolean> | null>(null);
+  const saveInFlightPageIdRef = useRef<string | null>(null);
   const siteGlobalHeaderRef = useRef(siteGlobalHeader);
   const siteGlobalFooterRef = useRef(siteGlobalFooter);
   const globalSectionsDirtyRef = useRef(globalSectionsDirty);
@@ -134,6 +135,8 @@ export function BuilderShell({ page }: { page: EditablePage }) {
     }
 
     loadedPageIdRef.current = page.id;
+    saveInFlightRef.current = null;
+    saveInFlightPageIdRef.current = null;
     setActivePage(page);
     dispatch({ type: "loadPage", page });
     setSitePages(page.site.pages);
@@ -229,17 +232,17 @@ export function BuilderShell({ page }: { page: EditablePage }) {
   );
 
   const savePage = useCallback(async (): Promise<boolean> => {
-    if (saveInFlightRef.current) {
+    const current = stateRef.current;
+    const currentPageId = current.pageId;
+
+    if (saveInFlightRef.current && saveInFlightPageIdRef.current === currentPageId) {
       return saveInFlightRef.current;
     }
-
-    const current = stateRef.current;
 
     if (!current.dirty) {
       return true;
     }
 
-    const currentPageId = current.pageId;
     const requestedSlug = current.slug;
     const editVersion = current.editVersion;
     dispatch({ type: "saveStarted" });
@@ -298,11 +301,15 @@ export function BuilderShell({ page }: { page: EditablePage }) {
         });
         return false;
       } finally {
-        saveInFlightRef.current = null;
+        if (saveInFlightPageIdRef.current === currentPageId) {
+          saveInFlightRef.current = null;
+          saveInFlightPageIdRef.current = null;
+        }
       }
     })();
 
     saveInFlightRef.current = save;
+    saveInFlightPageIdRef.current = currentPageId;
     return save;
   }, []);
 

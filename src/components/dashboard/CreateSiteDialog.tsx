@@ -61,44 +61,45 @@ export function CreateSiteDialog({ defaultOpen = false }: CreateSiteDialogProps)
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<SiteTemplateKey>("saas-site");
   const [previewing, setPreviewing] = useState(false);
   const [previewPageIndex, setPreviewPageIndex] = useState(0);
-  const templatePreviewPages = useMemo(
-    () =>
-      new Map(
-        siteTemplates.map((template) => [
-          template.key,
-          template.pages.map((page) => ({
-            title: page.title,
-            slug: page.title.toLowerCase().replace(/\s+/g, "-"),
-            schema: page.schema(),
-          })),
-        ]),
-      ),
-    [],
-  );
+  const templatePreviewPages = useMemo(() => {
+    if (!open) {
+      return null;
+    }
+
+    return new Map(
+      siteTemplates.map((template) => [
+        template.key,
+        template.pages.map((page) => ({
+          title: page.title,
+          slug: page.title.toLowerCase().replace(/\s+/g, "-"),
+          schema: page.schema(),
+        })),
+      ]),
+    );
+  }, [open]);
   const selectedTemplate =
     siteTemplates.find((template) => template.key === selectedTemplateKey) ?? siteTemplates[0];
-  const selectedPages =
-    templatePreviewPages.get(selectedTemplate.key) ??
-    selectedTemplate.pages.map((page) => ({
-      title: page.title,
-      slug: page.title.toLowerCase().replace(/\s+/g, "-"),
-      schema: page.schema(),
-    }));
-  const selectedPreviewPage =
-    selectedPages[Math.min(previewPageIndex, selectedPages.length - 1)] ?? selectedPages[0];
-  const previewHeaderSchema = buildSiteHeaderSchema({
-    brandText: selectedTemplate.brandText,
-    pages: selectedPages.map((page, index) => ({
-      title: page.title,
-      slug: page.slug,
-      isHome: index === 0,
-    })),
-    urlForPage: (_page, index) => `#template-preview-page-${index}`,
-  });
-  const selectedPreviewSchema = {
-    ...selectedPreviewPage.schema,
-    blocks: [...previewHeaderSchema.blocks, ...selectedPreviewPage.schema.blocks],
-  };
+  const selectedPages = templatePreviewPages?.get(selectedTemplate.key) ?? [];
+  const selectedPreviewPage = selectedPages.length
+    ? selectedPages[Math.min(previewPageIndex, selectedPages.length - 1)] ?? selectedPages[0]
+    : null;
+  const selectedPreviewSchema = selectedPreviewPage
+    ? {
+        ...selectedPreviewPage.schema,
+        blocks: [
+          ...buildSiteHeaderSchema({
+            brandText: selectedTemplate.brandText,
+            pages: selectedPages.map((page, index) => ({
+              title: page.title,
+              slug: page.slug,
+              isHome: index === 0,
+            })),
+            urlForPage: (_page, index) => `#template-preview-page-${index}`,
+          }).blocks,
+          ...selectedPreviewPage.schema.blocks,
+        ],
+      }
+    : null;
 
   function updateOpen(nextOpen: boolean) {
     setOpen(nextOpen);
@@ -192,7 +193,7 @@ export function CreateSiteDialog({ defaultOpen = false }: CreateSiteDialogProps)
                 {siteTemplates.map((template) => {
                   const TemplateIcon = templateIcons[template.key];
                   const selected = selectedTemplateKey === template.key;
-                  const templatePages = templatePreviewPages.get(template.key);
+                  const templatePages = templatePreviewPages?.get(template.key);
                   const homeSchema = templatePages?.[0].schema ?? template.pages[0].schema();
 
                   return (
@@ -242,7 +243,7 @@ export function CreateSiteDialog({ defaultOpen = false }: CreateSiteDialogProps)
             </ScrollArea>
           </fieldset>
 
-          {previewing ? (
+          {previewing && selectedPreviewSchema ? (
             <div className="fixed inset-0 z-50 grid bg-background/95 p-4 backdrop-blur-sm sm:p-6">
               <div className="mx-auto grid h-full w-full max-w-6xl grid-rows-[auto_1fr_auto] gap-4 overflow-hidden">
                 <div className="flex flex-col gap-3 rounded-lg border border-border bg-panel p-4 sm:flex-row sm:items-start sm:justify-between">

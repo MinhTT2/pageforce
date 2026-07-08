@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -71,6 +72,12 @@ export async function POST(request: Request) {
         }),
     },
   );
+
+  // A visitor may have 404-cached these URLs before the site existed.
+  revalidatePath(`/s/${site.slug}`);
+  for (const page of site.pages) {
+    revalidatePath(`/s/${site.slug}/${page.slug}`);
+  }
 
   return NextResponse.json(toCreatedSiteSummary(site), { status: 201 });
 }

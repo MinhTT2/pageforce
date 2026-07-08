@@ -2,6 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSafeNextPath } from "@/lib/auth-routes";
 
+const PUBLIC_LEADS_PATH = /^\/api\/pages\/[^/]+\/leads\/?$/;
+
+function isPublicPath(pathname: string) {
+  return pathname === "/s" || pathname.startsWith("/s/") || PUBLIC_LEADS_PATH.test(pathname);
+}
+
 export async function updateSession(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(
@@ -14,6 +20,12 @@ export async function updateSession(request: NextRequest) {
       headers: requestHeaders,
     },
   });
+
+  // Public site pages and lead submission never read auth state; skip the
+  // Supabase round-trip so anonymous visitors don't pay for it.
+  if (isPublicPath(request.nextUrl.pathname)) {
+    return response;
+  }
   let authResponseHeaders: Record<string, string> = {};
 
   const supabase = createServerClient(

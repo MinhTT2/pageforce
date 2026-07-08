@@ -218,8 +218,8 @@ export async function PATCH(
 
   revalidatePath(`/s/${page.site.slug}`);
   revalidatePath(`/s/${updated.site.slug}`);
-  if (!page.isHome) revalidatePath(`/s/${page.site.slug}/${page.slug}`);
-  if (!updated.isHome) revalidatePath(`/s/${updated.site.slug}/${updated.slug}`);
+  revalidatePath(`/s/${page.site.slug}/${page.slug}`);
+  revalidatePath(`/s/${updated.site.slug}/${updated.slug}`);
 
   return NextResponse.json(toEditablePage(withSitePageSummaries(updated)));
 }
@@ -260,7 +260,7 @@ export async function DELETE(
     }
   });
   revalidatePath(`/s/${page.site.slug}`);
-  if (!page.isHome) revalidatePath(`/s/${page.site.slug}/${page.slug}`);
+  revalidatePath(`/s/${page.site.slug}/${page.slug}`);
 
   return NextResponse.json({ ok: true });
 }

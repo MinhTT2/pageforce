@@ -11,7 +11,12 @@ type PublicSitePageProps = {
   params: Promise<{ siteSlug: string; pageSlug?: string[] }>;
 };
 
-export const dynamic = "force-dynamic";
+// Empty list opts this route into on-demand ISR: pages render on first visit,
+// are cached, and are invalidated by the revalidatePath calls in the page/site
+// API routes whenever content changes.
+export function generateStaticParams(): Array<{ siteSlug: string; pageSlug?: string[] }> {
+  return [];
+}
 
 function toAppSectionMode(mode: PrismaSectionMode): SectionMode {
   return mode as SectionMode;
@@ -41,7 +46,7 @@ const getPublicSitePage = cache(async (siteSlug: string, pageSlug?: string) => {
     return null;
   }
 
-  return { site, page };
+  return { site, page, pageSchema: normalizePageSchema(page.schema) };
 });
 
 export async function generateMetadata({ params }: PublicSitePageProps): Promise<Metadata> {
@@ -55,7 +60,7 @@ export async function generateMetadata({ params }: PublicSitePageProps): Promise
     return {};
   }
 
-  const schema = normalizePageSchema(resolved.page.schema);
+  const schema = resolved.pageSchema;
   if (schema.blocks.length === 0) {
     return {};
   }
@@ -85,7 +90,7 @@ export default async function PublicSitePage({ params }: PublicSitePageProps) {
     notFound();
   }
 
-  const pageSchema = normalizePageSchema(resolved.page.schema);
+  const pageSchema = resolved.pageSchema;
   if (pageSchema.blocks.length === 0) {
     notFound();
   }

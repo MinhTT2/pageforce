@@ -8,6 +8,17 @@ import { prisma } from "@/lib/prisma";
 import { readJsonBody } from "@/lib/request-body";
 import { sitePatchValidator } from "@/lib/validators";
 
+// Cached public pages are tagged by concrete URL, so site-wide changes
+// (slug rename, global header/footer, delete) must revalidate every page path.
+function revalidateSitePaths(siteSlugs: string[], pageSlugs: string[]) {
+  for (const siteSlug of new Set(siteSlugs)) {
+    revalidatePath(`/s/${siteSlug}`);
+    for (const pageSlug of pageSlugs) {
+      revalidatePath(`/s/${siteSlug}/${pageSlug}`);
+    }
+  }
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ siteId: string }> },
@@ -21,7 +32,7 @@ export async function PATCH(
   const { siteId } = await params;
   const site = await prisma.site.findFirst({
     where: { id: siteId, userId: user.id },
-    select: { id: true, slug: true },
+    select: { id: true, slug: true, pages: { select: { slug: true } } },
   });
 
   if (!site) {
@@ -64,8 +75,10 @@ export async function PATCH(
       )
     : await prisma.site.update({ where: { id: siteId }, data: updateData });
 
-  revalidatePath(`/s/${site.slug}`);
-  revalidatePath(`/s/${updated.slug}`);
+  revalidateSitePaths(
+    [site.slug, updated.slug],
+    site.pages.map((page) => page.slug),
+  );
 
   return NextResponse.json(toSiteSummary(updated));
 }
@@ -83,7 +96,7 @@ export async function DELETE(
   const { siteId } = await params;
   const site = await prisma.site.findFirst({
     where: { id: siteId, userId: user.id },
-    select: { id: true, slug: true },
+    select: { id: true, slug: true, pages: { select: { slug: true } } },
   });
 
   if (!site) {
@@ -91,7 +104,10 @@ export async function DELETE(
   }
 
   await prisma.site.delete({ where: { id: siteId } });
-  revalidatePath(`/s/${site.slug}`);
+  revalidateSitePaths(
+    [site.slug],
+    site.pages.map((page) => page.slug),
+  );
 
   return NextResponse.json({ ok: true });
 }

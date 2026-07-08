@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Check,
   ExternalLink,
   Eye,
   FileText,
@@ -11,8 +13,16 @@ import {
   Settings,
   Undo2,
 } from "lucide-react";
-import { memo } from "react";
+import { memo, useEffect, useState, type MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { SaveStatus } from "@/lib/builder-state";
 import { cn } from "@/lib/utils";
 
@@ -55,19 +65,94 @@ export const BuilderHeader = memo(function BuilderHeader({
   onTogglePages: () => void;
   onTogglePageSettings: () => void;
   onTogglePreview: () => void;
-  onSave: () => void;
+  onSave: () => void | boolean | Promise<boolean>;
 }) {
+  const router = useRouter();
   const saving = saveStatus === "saving" || savingGlobal;
   const showPublicUrl = isLive;
+  const [showSaved, setShowSaved] = useState(false);
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  // beforeunload only covers tab close/reload; client-side navigation to the
+  // dashboard would silently drop unsaved edits without this guard.
+  function handleBackClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (dirty) {
+      event.preventDefault();
+      setLeaveDialogOpen(true);
+    }
+  }
+
+  async function saveAndLeave() {
+    setLeaving(true);
+
+    try {
+      const saved = await onSave();
+
+      if (saved !== false) {
+        router.push("/dashboard");
+        return;
+      }
+
+      // Close so the save error notice in the header is visible.
+      setLeaveDialogOpen(false);
+    } finally {
+      setLeaving(false);
+    }
+  }
+
+  // Transient success confirmation; errors already surface through `notice`.
+  useEffect(() => {
+    if (saveStatus !== "saved") {
+      setShowSaved(false);
+      return;
+    }
+
+    setShowSaved(true);
+    const timeoutId = window.setTimeout(() => setShowSaved(false), 2500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [saveStatus]);
 
   return (
     <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
         <Button asChild variant="ghost" size="icon" aria-label="Dashboard">
-          <Link href="/dashboard">
+          <Link href="/dashboard" onClick={handleBackClick}>
             <ArrowLeft size={18} />
           </Link>
         </Button>
+        <Dialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Unsaved changes</DialogTitle>
+              <DialogDescription>
+                This page has changes that are not saved yet. Save them before leaving, or they
+                will be lost.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="ghost"
+                disabled={leaving}
+                onClick={() => setLeaveDialogOpen(false)}
+              >
+                Keep editing
+              </Button>
+              <Button
+                variant="outline"
+                disabled={leaving}
+                onClick={() => router.push("/dashboard")}
+              >
+                Leave without saving
+              </Button>
+              <Button disabled={leaving || saving} onClick={saveAndLeave}>
+                <Save size={16} />
+                {leaving ? "Saving..." : "Save & leave"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <Button
           variant={blocksOpen ? "secondary" : "ghost"}
           size="icon"
@@ -147,6 +232,15 @@ export const BuilderHeader = memo(function BuilderHeader({
           {previewMode ? <Pencil size={16} /> : <Eye size={16} />}
           {previewMode ? "Edit" : "Preview"}
         </Button>
+        {showSaved && !dirty && !saving ? (
+          <span
+            role="status"
+            className="flex items-center gap-1 text-sm font-medium text-success"
+          >
+            <Check size={14} />
+            Saved
+          </span>
+        ) : null}
         <Button onClick={onSave} disabled={saving || !dirty}>
           <Save size={16} />
           {saving ? "Saving..." : "Save & publish"}

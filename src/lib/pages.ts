@@ -151,7 +151,6 @@ export async function listSitesForUser(userId: string, take = 50) {
           slug: true,
           isHome: true,
           status: true,
-          schema: true,
           updatedAt: true,
         },
         orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
@@ -189,7 +188,18 @@ export async function listDashboardSitesForUser(userId: string, take = 50) {
 export async function listPagesForUser(userId: string, siteId?: string, take = 50) {
   return prisma.page.findMany({
     where: { site: { is: { userId } }, ...(siteId ? { siteId } : {}) },
-    include: { site: { select: { name: true, slug: true } } },
+    select: {
+      id: true,
+      siteId: true,
+      site: { select: { name: true, slug: true } },
+      title: true,
+      slug: true,
+      isHome: true,
+      headerMode: true,
+      footerMode: true,
+      status: true,
+      updatedAt: true,
+    },
     orderBy: { updatedAt: "desc" },
     take,
   });

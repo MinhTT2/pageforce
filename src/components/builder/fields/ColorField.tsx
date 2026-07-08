@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useEffect, useRef, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 
@@ -18,6 +19,47 @@ export function ColorField({
   allowClear?: boolean;
 }) {
   const shown = value ?? fallback;
+  const frameRef = useRef<number | null>(null);
+  const pendingRef = useRef<string | null>(null);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
+
+  // Scrubbing the native picker fires several change events per frame; commit
+  // at most one per animation frame so large pages don't jank while dragging.
+  // The last scheduled value always commits, so the final color is never lost.
+  function handlePickerChange(event: ChangeEvent<HTMLInputElement>) {
+    pendingRef.current = event.target.value;
+
+    if (frameRef.current !== null) {
+      return;
+    }
+
+    frameRef.current = window.requestAnimationFrame(() => {
+      frameRef.current = null;
+
+      if (pendingRef.current !== null) {
+        onChangeRef.current(pendingRef.current);
+        pendingRef.current = null;
+      }
+    });
+  }
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+
+        if (pendingRef.current !== null) {
+          onChangeRef.current(pendingRef.current);
+          pendingRef.current = null;
+        }
+      }
+    };
+  }, []);
 
   return (
     <div className="space-y-2">
@@ -31,7 +73,7 @@ export function ColorField({
         <input
           type="color"
           value={shown}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={handlePickerChange}
           aria-label={`${label} color picker`}
           className="size-9 shrink-0 cursor-pointer rounded-md border border-border bg-background p-1"
         />

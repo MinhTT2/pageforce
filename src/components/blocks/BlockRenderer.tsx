@@ -96,6 +96,17 @@ export const BlockRenderer = memo(function BlockRenderer({
     );
   }
 
+  // The first image near the top of the page is the likely LCP element; load
+  // it eagerly instead of lazily. Blocks further down keep default lazy loading.
+  const priorityBlockId = schema.blocks
+    .slice(0, 3)
+    .find(
+      (block) =>
+        (block.type === "image" && block.props.src) ||
+        (block.type === "carousel" && block.props.items.some((item) => item.src)) ||
+        (block.type === "products" && block.props.items.some((item) => item.image)),
+    )?.id;
+
   return (
     <div className="pf-root transition-colors" style={tokenCssVars(tokens)}>
       {schema.blocks.map((block) => {
@@ -105,6 +116,7 @@ export const BlockRenderer = memo(function BlockRenderer({
             renderMode={renderMode}
             pageId={pageId}
             siteSlug={siteSlug}
+            priorityImage={block.id === priorityBlockId}
           />
         );
 
@@ -120,18 +132,21 @@ export const BlockRenderer = memo(function BlockRenderer({
 
 // Blocks keep their object identity in the reducer unless edited, and page
 // tokens reach blocks via --pf-* CSS variables on the pf-root wrapper.
-// `pageId` is constant per render context, so `block` remains the only prop
-// that can invalidate the memo.
+// `pageId` is constant per render context, so `block` (and `priorityImage`,
+// which only flips when blocks reorder) are the only props that can
+// invalidate the memo.
 const RenderedBlock = memo(function RenderedBlock({
   block,
   renderMode,
   pageId,
   siteSlug,
+  priorityImage = false,
 }: {
   block: PageBlock;
   renderMode: "live" | "editor";
   pageId?: string;
   siteSlug?: string;
+  priorityImage?: boolean;
 }) {
   const siteHref = (href: string) => resolveSiteHref(href, siteSlug);
 
@@ -249,6 +264,7 @@ const RenderedBlock = memo(function RenderedBlock({
               alt={block.props.alt}
               fill
               sizes="(min-width: 1024px) 960px, 100vw"
+              priority={priorityImage}
               className="object-cover"
             />
           ) : (
@@ -282,7 +298,11 @@ const RenderedBlock = memo(function RenderedBlock({
               {block.props.heading}
             </h2>
           ) : null}
-          <CarouselViewer items={block.props.items} autoplay={block.props.autoplay} />
+          <CarouselViewer
+            items={block.props.items}
+            autoplay={block.props.autoplay}
+            priorityFirstSlide={priorityImage}
+          />
         </div>
       </section>
     );
@@ -480,6 +500,7 @@ const RenderedBlock = memo(function RenderedBlock({
                       alt={item.imageAlt}
                       fill
                       sizes="(min-width: 1024px) 360px, 100vw"
+                      priority={priorityImage && index === 0}
                       className="object-cover"
                     />
                   ) : (

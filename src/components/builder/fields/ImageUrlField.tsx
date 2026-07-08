@@ -1,4 +1,4 @@
-import { ImageOff, Link2, Upload } from "lucide-react";
+import { ImageOff, Link2, LoaderCircle, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
@@ -77,11 +77,15 @@ export function ImageUrlField({
             type="button"
             variant="outline"
             size="icon"
-            aria-label="Upload image"
+            aria-label={uploading ? "Uploading image" : "Upload image"}
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload className="size-4" />
+            {uploading ? (
+              <LoaderCircle className="size-4 animate-spin" />
+            ) : (
+              <Upload className="size-4" />
+            )}
           </Button>
         </div>
       ) : (
@@ -97,7 +101,8 @@ export function ImageUrlField({
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
           >
-            Replace
+            {uploading ? <LoaderCircle className="size-4 animate-spin" /> : null}
+            {uploading ? "Uploading..." : "Replace"}
           </Button>
           <Button
             type="button"

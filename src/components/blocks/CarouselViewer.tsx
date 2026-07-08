@@ -14,9 +14,11 @@ type CarouselItem = {
 export function CarouselViewer({
   items,
   autoplay,
+  priorityFirstSlide = false,
 }: {
   items: CarouselItem[];
   autoplay: boolean;
+  priorityFirstSlide?: boolean;
 }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -78,6 +80,7 @@ export function CarouselViewer({
                 alt={item.alt}
                 fill
                 sizes="(min-width: 1024px) 960px, 100vw"
+                priority={priorityFirstSlide && itemIndex === 0}
                 className="object-cover"
               />
             ) : (

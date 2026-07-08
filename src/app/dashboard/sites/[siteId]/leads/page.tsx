@@ -65,7 +65,12 @@ export default async function SiteLeadsPage({ params }: SiteLeadsProps) {
         <Panel className="overflow-hidden rounded-lg">
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
             <h2 className="text-base font-semibold text-panel-foreground">Submissions</h2>
-            <Badge variant="secondary">{leads.length}</Badge>
+            <div className="flex items-center gap-2">
+              {leads.length === 200 ? (
+                <span className="text-xs text-muted-foreground">Showing latest 200</span>
+              ) : null}
+              <Badge variant="secondary">{leads.length}</Badge>
+            </div>
           </div>
 
           {leads.length ? (

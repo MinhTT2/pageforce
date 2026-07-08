@@ -105,7 +105,7 @@ export default async function DashboardPage({
                     {homePage ? (
                       <div className="grid grid-cols-2 gap-2">
                         <Button asChild>
-                          <Link href={`/builder/site/${site.id}?page=${homePage.id}`}>
+                          <Link href={`/builder/site/${site.id}?page=${homePage.id}`} prefetch={false}>
                             <Edit />
                              Edit
                           </Link>

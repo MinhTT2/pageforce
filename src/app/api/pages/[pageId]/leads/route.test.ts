@@ -8,6 +8,7 @@ import type { LeadFormBlock, PageSchema } from "@/types/blocks";
 const mocks = vi.hoisted(() => ({
   pageFindFirst: vi.fn(),
   createLeadSubmission: vi.fn(),
+  isLeadSubmissionFlooded: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -24,6 +25,7 @@ vi.mock("@/lib/leads", async (importOriginal) => {
   return {
     ...actual,
     createLeadSubmission: mocks.createLeadSubmission,
+    isLeadSubmissionFlooded: mocks.isLeadSubmissionFlooded,
   };
 });
 
@@ -34,6 +36,8 @@ beforeEach(() => {
   vi.restoreAllMocks();
   mocks.pageFindFirst.mockReset();
   mocks.createLeadSubmission.mockReset();
+  mocks.isLeadSubmissionFlooded.mockReset();
+  mocks.isLeadSubmissionFlooded.mockResolvedValue(false);
 });
 
 function params(pageId = "page-1") {
@@ -150,6 +154,26 @@ describe("POST /api/pages/[pageId]/leads", () => {
 
     await expect(response.json()).resolves.toEqual({ error: "Lead form not found" });
     expect(response.status).toBe(404);
+    expect(createLead).not.toHaveBeenCalled();
+  });
+
+  it("rejects submissions with 429 when the site is flooded", async () => {
+    const block = createBlock("leadForm") as LeadFormBlock;
+    block.id = "lead-1";
+    block.props.deliveryMode = "capture";
+    pageWithSchema({ version: 2, blocks: [block] });
+    mocks.isLeadSubmissionFlooded.mockResolvedValue(true);
+
+    const response = await POST(
+      leadRequest({
+        blockId: "lead-1",
+        data: { email: "minh@example.com" },
+      }),
+      params(),
+    );
+
+    expect(response.status).toBe(429);
+    expect(mocks.isLeadSubmissionFlooded).toHaveBeenCalledWith("site-1");
     expect(createLead).not.toHaveBeenCalled();
   });
 

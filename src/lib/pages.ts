@@ -1,7 +1,7 @@
 import { Prisma, PageStatus, type SectionMode as PrismaSectionMode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { fallbackSlug, slugify } from "@/lib/slug";
-import { emptyPageSchema, normalizePageSchema } from "@/lib/blocks";
+import { emptyPageSchema, normalizePageSchema, PAGE_PREVIEW_BLOCK_COUNT } from "@/lib/blocks";
 import type { CreatedSiteSummary, EditablePage, PageSummary, SiteSummary } from "@/types/page";
 import type { PageSchema, SectionMode } from "@/types/blocks";
 
@@ -161,28 +161,107 @@ export async function listSitesForUser(userId: string, take = 50) {
   });
 }
 
-export async function listDashboardSitesForUser(userId: string, take = 50) {
-  return prisma.site.findMany({
-    where: { userId },
-    include: {
-      pages: {
-        where: { isHome: true },
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          isHome: true,
-          status: true,
-          schema: true,
-          updatedAt: true,
+export type DashboardSiteRow = {
+  id: string;
+  name: string;
+  slug: string;
+  updatedAt: Date;
+  pageId: string | null;
+  pageTitle: string | null;
+  pageSlug: string | null;
+  pageIsHome: boolean | null;
+  pageStatus: PageStatus | null;
+  pageUpdatedAt: Date | null;
+  blockCount: number | null;
+  schemaVersion: Prisma.JsonValue | null;
+  schemaSettings: Prisma.JsonValue | null;
+  previewBlocks: Prisma.JsonValue | null;
+};
+
+export function toDashboardSite(row: DashboardSiteRow) {
+  const pages = row.pageId
+    ? [
+        {
+          id: row.pageId,
+          title: row.pageTitle ?? "",
+          slug: row.pageSlug ?? "",
+          isHome: row.pageIsHome ?? true,
+          status: row.pageStatus ?? ("DRAFT" as PageStatus),
+          updatedAt: row.pageUpdatedAt ?? row.updatedAt,
+          blockCount: row.blockCount ?? 0,
+          // Normalized preview schema holding only the first
+          // PAGE_PREVIEW_BLOCK_COUNT blocks; use blockCount for page size.
+          schema: normalizePageSchema({
+            ...(row.schemaVersion === null ? {} : { version: row.schemaVersion }),
+            ...(row.schemaSettings === null ? {} : { settings: row.schemaSettings }),
+            blocks: Array.isArray(row.previewBlocks) ? row.previewBlocks : [],
+          }),
         },
-        orderBy: { updatedAt: "desc" },
-        take: 1,
-      },
-    },
-    orderBy: { updatedAt: "desc" },
-    take,
-  });
+      ]
+    : [];
+
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    updatedAt: row.updatedAt,
+    pages,
+  };
+}
+
+export async function listDashboardSitesForUser(userId: string, take = 50) {
+  // The dashboard grid only needs the first PAGE_PREVIEW_BLOCK_COUNT blocks
+  // for the card thumbnail plus a block count for the Live badge. Slicing the
+  // schema JSON in Postgres keeps the payload bounded regardless of page size
+  // (a full schema can be up to MAX_PAGE_BODY_BYTES per site).
+  const rows = await prisma.$queryRaw<DashboardSiteRow[]>`
+    SELECT
+      s.id,
+      s.name,
+      s.slug,
+      s."updatedAt",
+      p.id AS "pageId",
+      p.title AS "pageTitle",
+      p.slug AS "pageSlug",
+      p."isHome" AS "pageIsHome",
+      p.status AS "pageStatus",
+      p."updatedAt" AS "pageUpdatedAt",
+      p."blockCount",
+      p."schemaVersion",
+      p."schemaSettings",
+      p."previewBlocks"
+    FROM "Site" s
+    LEFT JOIN LATERAL (
+      SELECT
+        pg.id,
+        pg.title,
+        pg.slug,
+        pg."isHome",
+        pg.status,
+        pg."updatedAt",
+        CASE WHEN jsonb_typeof(pg.schema->'blocks') = 'array'
+             THEN jsonb_array_length(pg.schema->'blocks')
+             ELSE 0 END AS "blockCount",
+        pg.schema->'version' AS "schemaVersion",
+        pg.schema->'settings' AS "schemaSettings",
+        CASE WHEN jsonb_typeof(pg.schema->'blocks') = 'array'
+             THEN COALESCE((
+               SELECT jsonb_agg(t.b ORDER BY t.ord)
+               FROM jsonb_array_elements(pg.schema->'blocks') WITH ORDINALITY AS t(b, ord)
+               WHERE t.ord <= ${PAGE_PREVIEW_BLOCK_COUNT}
+             ), '[]'::jsonb)
+             ELSE '[]'::jsonb END AS "previewBlocks"
+      FROM "Page" pg
+      WHERE pg."siteId" = s.id AND pg."isHome" = true
+      ORDER BY pg."updatedAt" DESC
+      LIMIT 1
+    ) p ON true
+    WHERE s."userId" = ${userId}
+    ORDER BY s."updatedAt" DESC
+    LIMIT ${take}
+  `;
+
+  return rows.map(toDashboardSite);
 }
 
 export async function listPagesForUser(userId: string, siteId?: string, take = 50) {

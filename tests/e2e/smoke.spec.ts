@@ -37,7 +37,10 @@ test("dashboard pages route redirects anonymous users through the dashboard guar
 }) => {
   await page.goto("/dashboard/pages");
 
-  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard$/);
+  // The middleware guard preserves the requested path (%2Fdashboard%2Fpages);
+  // on a cold dev server the in-page redirect to /dashboard can win instead.
+  // Both land on login with a dashboard next path.
+  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard(%2Fpages)?$/);
   await expect(page.getByRole("heading", { name: "Log in or sign up" })).toBeVisible();
 });
 

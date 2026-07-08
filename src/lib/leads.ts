@@ -5,6 +5,8 @@ import { leadSubmissionValidator } from "@/lib/validators";
 import type { LeadSubmissionData, LeadSubmissionSummary } from "@/types/lead";
 
 export const MAX_LEAD_BODY_BYTES = 16 * 1024;
+export const MAX_LEAD_SUBMISSIONS_PER_MINUTE = 30;
+const LEAD_FLOOD_WINDOW_MS = 60_000;
 
 type LeadSubmissionInput = z.infer<typeof leadSubmissionValidator>;
 
@@ -68,6 +70,21 @@ export function toLeadSummary(row: {
     data,
     createdAt: row.createdAt.toISOString(),
   };
+}
+
+// Per-site sliding-window flood cap for the public submission endpoint. A DB
+// count is the only option that stays correct across serverless instances
+// without storing visitor IPs; the small count/insert race is acceptable.
+// Backed by the existing [siteId, createdAt] index.
+export async function isLeadSubmissionFlooded(siteId: string) {
+  const recent = await prisma.leadSubmission.count({
+    where: {
+      siteId,
+      createdAt: { gte: new Date(Date.now() - LEAD_FLOOD_WINDOW_MS) },
+    },
+  });
+
+  return recent >= MAX_LEAD_SUBMISSIONS_PER_MINUTE;
 }
 
 export async function createLeadSubmission(

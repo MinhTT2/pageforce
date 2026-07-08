@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { normalizePageSchema } from "@/lib/blocks";
-import { createLeadSubmission, parseLeadBody } from "@/lib/leads";
+import { createLeadSubmission, isLeadSubmissionFlooded, parseLeadBody } from "@/lib/leads";
 import { prisma } from "@/lib/prisma";
 
 // Public endpoint: visitors on public /s routes submit lead forms here, so there is
 // no auth. The page id is the only linkage; abuse is bounded by the body-size
-// cap, the strict payload schema, and the honeypot field.
+// cap, the strict payload schema, the honeypot field, and a per-site flood cap.
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ pageId: string }> },
@@ -49,6 +49,13 @@ export async function POST(
 
   if (!acceptsLeads) {
     return NextResponse.json({ error: "Lead form not found" }, { status: 404 });
+  }
+
+  if (await isLeadSubmissionFlooded(page.siteId)) {
+    return NextResponse.json(
+      { error: "Too many submissions. Try again shortly." },
+      { status: 429 },
+    );
   }
 
   await createLeadSubmission(page.siteId, parsed.value.blockId, parsed.value.data);

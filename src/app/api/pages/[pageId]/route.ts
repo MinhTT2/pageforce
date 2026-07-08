@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
@@ -12,6 +13,37 @@ import {
 import { prisma } from "@/lib/prisma";
 import { readJsonBody } from "@/lib/request-body";
 import { pagePatchValidator } from "@/lib/validators";
+
+const pageSummarySelect = Prisma.validator<Prisma.PageSelect>()({
+  id: true,
+  siteId: true,
+  title: true,
+  slug: true,
+  isHome: true,
+  headerMode: true,
+  footerMode: true,
+  status: true,
+  updatedAt: true,
+});
+
+const editablePageSelect = Prisma.validator<Prisma.PageSelect>()({
+  ...pageSummarySelect,
+  schema: true,
+  site: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      globalHeader: true,
+      globalFooter: true,
+      updatedAt: true,
+      pages: {
+        select: pageSummarySelect,
+        orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
+      },
+    },
+  },
+});
 
 type EditablePageRecord = Parameters<typeof toEditablePage>[0];
 type SitePageRecord = NonNullable<EditablePageRecord["site"]["pages"]>[number];
@@ -35,42 +67,7 @@ export async function GET(
   const { pageId } = await params;
   const page = await prisma.page.findFirst({
     where: { id: pageId, site: { is: { userId: user.id } } },
-    select: {
-      id: true,
-      siteId: true,
-      title: true,
-      slug: true,
-      isHome: true,
-      headerMode: true,
-      footerMode: true,
-      status: true,
-      updatedAt: true,
-      schema: true,
-      site: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          globalHeader: true,
-          globalFooter: true,
-          updatedAt: true,
-          pages: {
-            select: {
-              id: true,
-              siteId: true,
-              title: true,
-              slug: true,
-              isHome: true,
-              headerMode: true,
-              footerMode: true,
-              status: true,
-              updatedAt: true,
-            },
-            orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
-          },
-        },
-      },
-    },
+    select: editablePageSelect,
   });
 
   if (!page) {
@@ -115,10 +112,8 @@ export async function PATCH(
   const page = await prisma.page.findFirst({
     where: { id: pageId, site: { is: { userId: user.id } } },
     select: {
-      id: true,
       siteId: true,
       slug: true,
-      isHome: true,
       updatedAt: true,
       site: { select: { slug: true } },
     },
@@ -152,68 +147,38 @@ export async function PATCH(
         }
       : {}),
   };
-  await prisma.$transaction(async (tx) => {
-    if (data.isHome) {
-      await tx.page.updateMany({
-        where: { siteId: page.siteId, id: { not: pageId } },
-        data: { isHome: false },
-      });
+  // The update returns the full editable shape (ownership was proven by the
+  // findFirst above), so no re-fetch is needed after the transaction. The
+  // isHome sibling reset runs first in the same transaction, so the returned
+  // sibling page summaries already reflect it.
+  let updated;
+  try {
+    updated = await prisma.$transaction(async (tx) => {
+      if (data.isHome) {
+        await tx.page.updateMany({
+          where: { siteId: page.siteId, id: { not: pageId } },
+          data: { isHome: false },
+        });
+      }
+
+      const write = (slug: string) =>
+        tx.page.update({
+          where: { id: pageId },
+          data: { ...updateData, slug },
+          select: editablePageSelect,
+        });
+
+      return data.slug
+        ? updatePageWithUniqueSlug(data.slug, pageId, page.siteId, write, tx)
+        : write(page.slug);
+    });
+  } catch (error) {
+    // The page was deleted between the ownership check and the update.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return NextResponse.json({ error: "Page not found" }, { status: 404 });
     }
 
-    const write = (slug: string) =>
-      tx.page.update({
-        where: { id: pageId },
-        data: { ...updateData, slug },
-        select: { id: true },
-      });
-
-    return data.slug
-      ? updatePageWithUniqueSlug(data.slug, pageId, page.siteId, write, tx)
-      : write(page.slug);
-  });
-
-  const updated = await prisma.page.findFirst({
-    where: { id: pageId, site: { is: { userId: user.id } } },
-    select: {
-      id: true,
-      siteId: true,
-      title: true,
-      slug: true,
-      isHome: true,
-      headerMode: true,
-      footerMode: true,
-      status: true,
-      updatedAt: true,
-      schema: true,
-      site: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          globalHeader: true,
-          globalFooter: true,
-          updatedAt: true,
-          pages: {
-            select: {
-              id: true,
-              siteId: true,
-              title: true,
-              slug: true,
-              isHome: true,
-              headerMode: true,
-              footerMode: true,
-              status: true,
-              updatedAt: true,
-            },
-            orderBy: [{ isHome: "desc" }, { updatedAt: "desc" }],
-          },
-        },
-      },
-    },
-  });
-
-  if (!updated) {
-    return NextResponse.json({ error: "Page not found" }, { status: 404 });
+    throw error;
   }
 
   revalidatePath(`/s/${page.site.slug}`);

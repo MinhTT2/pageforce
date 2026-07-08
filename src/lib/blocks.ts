@@ -52,6 +52,10 @@ export const emptyPageSchema: PageSchema = {
   settings: defaultPageSettings,
 };
 
+// Blocks shown in dashboard card previews; the dashboard query slices page
+// schemas to this many blocks in the database, so keep the two in sync.
+export const PAGE_PREVIEW_BLOCK_COUNT = 4;
+
 export const blockLabels: Record<BlockType, string> = {
   header: "Header",
   hero: "Hero",

@@ -4,6 +4,8 @@ import {
   IMAGE_UPLOAD_BUCKET,
   isImageUploadBucketUrl,
   isMissingImageUploadBucketError,
+  isOptimizedImageUrl,
+  isSupabasePublicAssetUrl,
   MAX_IMAGE_UPLOAD_BYTES,
   validateImageUploadFile,
 } from "./uploads";
@@ -81,6 +83,55 @@ describe("isImageUploadBucketUrl", () => {
       ),
     ).toBe(true);
     expect(isImageUploadBucketUrl("https://example.com/hero.png")).toBe(false);
+  });
+});
+
+describe("isSupabasePublicAssetUrl", () => {
+  // The module resolves NEXT_PUBLIC_SUPABASE_URL once at import time, so the
+  // tests run against whatever host the loaded module captured.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseHost = supabaseUrl ? new URL(supabaseUrl).hostname : undefined;
+
+  it.runIf(Boolean(supabaseHost))(
+    "accepts public storage URLs on the configured Supabase host",
+    () => {
+      expect(
+        isSupabasePublicAssetUrl(
+          `https://${supabaseHost}/storage/v1/object/public/page-assets/users/user-1/hero.png`,
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it.runIf(!supabaseHost)("rejects everything when the Supabase env is missing", () => {
+    expect(
+      isSupabasePublicAssetUrl("https://project.supabase.co/storage/v1/object/public/page-assets/a.png"),
+    ).toBe(false);
+  });
+
+  it("rejects other hosts, paths, protocols, and invalid URLs", () => {
+    expect(
+      isSupabasePublicAssetUrl("https://evil.example/storage/v1/object/public/page-assets/a.png"),
+    ).toBe(false);
+    if (supabaseHost) {
+      expect(isSupabasePublicAssetUrl(`https://${supabaseHost}/other/path.png`)).toBe(false);
+      expect(
+        isSupabasePublicAssetUrl(`http://${supabaseHost}/storage/v1/object/public/page-assets/a.png`),
+      ).toBe(false);
+    }
+    expect(isSupabasePublicAssetUrl("not a url")).toBe(false);
+    expect(isSupabasePublicAssetUrl("")).toBe(false);
+  });
+});
+
+describe("isOptimizedImageUrl", () => {
+  it("allows Unsplash imagery used by templates and rejects arbitrary hosts", () => {
+    expect(
+      isOptimizedImageUrl("https://images.unsplash.com/photo-123?q=80&w=1600"),
+    ).toBe(true);
+    expect(isOptimizedImageUrl("http://images.unsplash.com/photo-123")).toBe(false);
+    expect(isOptimizedImageUrl("https://example.com/photo.png")).toBe(false);
+    expect(isOptimizedImageUrl("not a url")).toBe(false);
   });
 });
 

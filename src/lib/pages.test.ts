@@ -9,6 +9,7 @@ import {
   MAX_SLUG_LENGTH,
   pagePublicationData,
   toCreatedSiteSummary,
+  toDashboardSite,
   updatePageWithUniqueSlug,
 } from "./pages";
 import { prisma } from "@/lib/prisma";
@@ -27,16 +28,17 @@ vi.mock("@/lib/prisma", () => ({
       count: vi.fn(),
       create: vi.fn(),
     },
+    $queryRaw: vi.fn(),
   },
 }));
 
 const siteFindFirst = vi.mocked(prisma.site.findFirst);
-const siteFindMany = vi.mocked(prisma.site.findMany);
 const siteCreate = vi.mocked(prisma.site.create);
 const siteUpdate = vi.mocked(prisma.site.update);
 const pageFindFirst = vi.mocked(prisma.page.findFirst);
 const pageCount = vi.mocked(prisma.page.count);
 const pageCreate = vi.mocked(prisma.page.create);
+const queryRaw = vi.mocked(prisma.$queryRaw);
 
 function uniqueSlugError() {
   return new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
@@ -49,7 +51,6 @@ function uniqueSlugError() {
 beforeEach(() => {
   vi.restoreAllMocks();
   siteFindFirst.mockReset();
-  siteFindMany.mockReset();
   siteCreate.mockReset();
   siteUpdate.mockReset();
   pageFindFirst.mockReset();
@@ -77,32 +78,90 @@ describe("pagePublicationData", () => {
 });
 
 describe("listDashboardSitesForUser", () => {
-  it("loads only homepage schema data needed by dashboard cards", async () => {
-    siteFindMany.mockResolvedValue([]);
+  it("queries sliced home-page schemas per site", async () => {
+    queryRaw.mockResolvedValue([]);
 
     await expect(listDashboardSitesForUser("user-1")).resolves.toEqual([]);
 
-    expect(siteFindMany).toHaveBeenCalledWith({
-      where: { userId: "user-1" },
-      include: {
-        pages: {
-          where: { isHome: true },
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            isHome: true,
-            status: true,
-            schema: true,
-            updatedAt: true,
-          },
-          orderBy: { updatedAt: "desc" },
-          take: 1,
-        },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 50,
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    const sql = (queryRaw.mock.calls[0][0] as unknown as readonly string[]).join("?");
+    expect(sql).toContain('pg."isHome" = true');
+    expect(sql).toContain("LIMIT 1");
+    expect(sql).toContain('s."userId" =');
+    expect(sql).toContain("jsonb_array_length");
+  });
+});
+
+describe("toDashboardSite", () => {
+  const baseRow = {
+    id: "site-1",
+    name: "Demo",
+    slug: "demo",
+    updatedAt: new Date("2026-07-01T00:00:00Z"),
+  };
+
+  it("reassembles the sliced schema and keeps the full block count", () => {
+    const heroBlock = createBlock("hero");
+    const site = toDashboardSite({
+      ...baseRow,
+      pageId: "page-1",
+      pageTitle: "Home",
+      pageSlug: "home",
+      pageIsHome: true,
+      pageStatus: "PUBLISHED",
+      pageUpdatedAt: new Date("2026-07-02T00:00:00Z"),
+      blockCount: 9,
+      schemaVersion: 2,
+      schemaSettings: { metaTitle: "Hello", metaDescription: "" },
+      previewBlocks: [heroBlock] as unknown as Prisma.JsonValue,
     });
+
+    expect(site.pages).toHaveLength(1);
+    expect(site.pages[0]).toMatchObject({
+      id: "page-1",
+      status: "PUBLISHED",
+      blockCount: 9,
+      schema: {
+        version: 2,
+        settings: { metaTitle: "Hello" },
+        blocks: [heroBlock],
+      },
+    });
+  });
+
+  it("omits null schema parts and returns no pages for sites without a home page", () => {
+    const withoutPage = toDashboardSite({
+      ...baseRow,
+      pageId: null,
+      pageTitle: null,
+      pageSlug: null,
+      pageIsHome: null,
+      pageStatus: null,
+      pageUpdatedAt: null,
+      blockCount: null,
+      schemaVersion: null,
+      schemaSettings: null,
+      previewBlocks: null,
+    });
+
+    expect(withoutPage.pages).toEqual([]);
+
+    const withEmptySchema = toDashboardSite({
+      ...baseRow,
+      pageId: "page-1",
+      pageTitle: "Home",
+      pageSlug: "home",
+      pageIsHome: true,
+      pageStatus: "DRAFT",
+      pageUpdatedAt: new Date("2026-07-02T00:00:00Z"),
+      blockCount: null,
+      schemaVersion: null,
+      schemaSettings: null,
+      previewBlocks: null,
+    });
+
+    expect(withEmptySchema.pages[0].blockCount).toBe(0);
+    expect(withEmptySchema.pages[0].schema).toEqual(emptyPageSchema);
   });
 });
 

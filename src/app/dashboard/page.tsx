@@ -16,7 +16,7 @@ import { Panel } from "@/components/ui/card";
 import { Input } from "@/components/ui/Input";
 import { requireUser } from "@/lib/auth";
 import { listDashboardSitesForUser } from "@/lib/pages";
-import { normalizePageSchema } from "@/lib/blocks";
+import { emptyPageSchema } from "@/lib/blocks";
 
 export default async function DashboardPage({
   searchParams,
@@ -69,8 +69,10 @@ export default async function DashboardPage({
             {sites.map((site) => {
               const homePage = site.pages.find((page) => page.isHome) ?? site.pages[0];
               const siteUrl = `${publicOrigin}/s/${site.slug}`;
-              const homeSchema = normalizePageSchema(homePage?.schema);
-              const live = Boolean(homePage && homePage.status === "PUBLISHED" && homeSchema.blocks.length);
+              const homeSchema = homePage?.schema ?? emptyPageSchema;
+              // The schema is sliced to preview blocks in the DB, so the Live
+              // badge relies on the full blockCount rather than blocks.length.
+              const live = Boolean(homePage && homePage.status === "PUBLISHED" && homePage.blockCount > 0);
               return (
                 <Panel
                   key={site.id}

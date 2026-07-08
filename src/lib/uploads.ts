@@ -59,8 +59,51 @@ export function buildImageUploadPath({
   return `users/${userId}/pages/${pageId}/${id}.${extension}`;
 }
 
+const SUPABASE_PUBLIC_STORAGE_PATH = "/storage/v1/object/public/";
+// NEXT_PUBLIC_* env is inlined at build time in client bundles, so the
+// hostname is constant for the process lifetime — parse it once.
+const supabasePublicHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+  : undefined;
+
 export function isImageUploadBucketUrl(value: string) {
-  return value.includes(`/storage/v1/object/public/${IMAGE_UPLOAD_BUCKET}/`);
+  return value.includes(`${SUPABASE_PUBLIC_STORAGE_PATH}${IMAGE_UPLOAD_BUCKET}/`);
+}
+
+export function isSupabasePublicAssetUrl(value: string) {
+  if (!supabasePublicHostname) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+
+    return (
+      url.protocol === "https:" &&
+      url.hostname === supabasePublicHostname &&
+      url.pathname.startsWith(SUPABASE_PUBLIC_STORAGE_PATH)
+    );
+  } catch {
+    return false;
+  }
+}
+
+// Mirrors images.remotePatterns in next.config.ts: our Supabase project's
+// public storage plus the Unsplash imagery used by templates and defaults.
+// Every other URL must render with `unoptimized` or next/image rejects it at
+// request time.
+export function isOptimizedImageUrl(value: string) {
+  if (isSupabasePublicAssetUrl(value)) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+
+    return url.protocol === "https:" && url.hostname === "images.unsplash.com";
+  } catch {
+    return false;
+  }
 }
 
 export function isMissingImageUploadBucketError(error: unknown) {

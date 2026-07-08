@@ -21,6 +21,7 @@ import { CarouselViewer } from "@/components/blocks/CarouselViewer";
 import { LeadCaptureForm } from "@/components/blocks/LeadCaptureForm";
 import { BLOCK_PADDING_Y, BLOCK_WIDTH, blockStyleCssVars, tokenCssVars } from "@/lib/design";
 import { resolveSiteHref } from "@/lib/site-hrefs";
+import { isOptimizedImageUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
 
 type BlockRendererProps = {
@@ -265,6 +266,7 @@ const RenderedBlock = memo(function RenderedBlock({
               fill
               sizes="(min-width: 1024px) 960px, 100vw"
               priority={priorityImage}
+              unoptimized={!isOptimizedImageUrl(block.props.src)}
               className="object-cover"
             />
           ) : (
@@ -501,6 +503,7 @@ const RenderedBlock = memo(function RenderedBlock({
                       fill
                       sizes="(min-width: 1024px) 360px, 100vw"
                       priority={priorityImage && index === 0}
+                      unoptimized={!isOptimizedImageUrl(item.image)}
                       className="object-cover"
                     />
                   ) : (

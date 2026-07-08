@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { isOptimizedImageUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
 
 type CarouselItem = {
@@ -81,6 +82,7 @@ export function CarouselViewer({
                 fill
                 sizes="(min-width: 1024px) 960px, 100vw"
                 priority={priorityFirstSlide && itemIndex === 0}
+                unoptimized={!isOptimizedImageUrl(item.src)}
                 className="object-cover"
               />
             ) : (

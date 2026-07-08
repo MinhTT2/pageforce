@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createLeadSubmission,
+  isLeadSubmissionFlooded,
   listLeadsForSite,
   MAX_LEAD_BODY_BYTES,
+  MAX_LEAD_SUBMISSIONS_PER_MINUTE,
   parseLeadBody,
   toLeadSummary,
 } from "./leads";
@@ -13,17 +15,20 @@ vi.mock("@/lib/prisma", () => ({
     leadSubmission: {
       create: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
 
 const leadCreate = vi.mocked(prisma.leadSubmission.create);
 const leadFindMany = vi.mocked(prisma.leadSubmission.findMany);
+const leadCount = vi.mocked(prisma.leadSubmission.count);
 
 beforeEach(() => {
   vi.restoreAllMocks();
   leadCreate.mockReset();
   leadFindMany.mockReset();
+  leadCount.mockReset();
 });
 
 describe("parseLeadBody", () => {
@@ -133,5 +138,26 @@ describe("lead persistence", () => {
       orderBy: { createdAt: "desc" },
       take: 200,
     });
+  });
+});
+
+describe("isLeadSubmissionFlooded", () => {
+  it("counts recent submissions for the site within a sliding window", async () => {
+    leadCount.mockResolvedValue(0);
+
+    await expect(isLeadSubmissionFlooded("site-1")).resolves.toBe(false);
+
+    expect(leadCount).toHaveBeenCalledWith({
+      where: {
+        siteId: "site-1",
+        createdAt: { gte: expect.any(Date) },
+      },
+    });
+  });
+
+  it("reports flooding at the per-minute threshold", async () => {
+    leadCount.mockResolvedValue(MAX_LEAD_SUBMISSIONS_PER_MINUTE);
+
+    await expect(isLeadSubmissionFlooded("site-1")).resolves.toBe(true);
   });
 });

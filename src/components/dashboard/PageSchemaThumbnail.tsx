@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { PageBlock, PageSchema } from "@/types/blocks";
+import { PAGE_PREVIEW_BLOCK_COUNT } from "@/lib/blocks";
+import { isOptimizedImageUrl } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
 
 type PageSchemaThumbnailProps = {
@@ -29,7 +31,7 @@ export function PageSchemaThumbnail({
   className,
   frameClassName,
 }: PageSchemaThumbnailProps) {
-  const previewBlocks = schema.blocks.slice(0, 4);
+  const previewBlocks = schema.blocks.slice(0, PAGE_PREVIEW_BLOCK_COUNT);
 
   return (
     <div
@@ -111,6 +113,7 @@ function PreviewBlock({ block }: { block: PageBlock }) {
               alt={block.props.alt || ""}
               fill
               sizes="360px"
+              unoptimized={!isOptimizedImageUrl(block.props.src)}
               className="object-cover"
             />
           ) : (
